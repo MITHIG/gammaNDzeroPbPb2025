@@ -49,10 +49,10 @@ namespace xjjroot {
     void draw_fmc() const { fun_mc_swap_->Draw("same"); for (const auto& f : vfun_mc_mass_) { f->Draw("same"); } fun_mc_mass_->Draw("same"); }
     void draw_leg(float x1 = 0.65, float y2 = 0.88) { xjjroot::moveleg_n_draw(leg_, x1, y2); }
     
-    double S() const { return S_; }
-    double B() const { return B_; }
     double yield() const { return yield_; }
     double yieldErr() const { return yieldErr_; }
+    double S() const { return S_; }
+    double B() const { return B_; }
     double chi2() const { return 2.*r_->MinFcnValue(); }
     double ndf() const { return fun_f_->GetNDF(); }
     double chi2prob() const { return TMath::Prob(chi2(), ndf()); }
@@ -442,9 +442,9 @@ void xjjroot::dfitter::draw_params(float x, float y, float tsize, float lspacesc
     frac_mass += std::string(Form("%s%.2f", (frac_mass.empty() ? "" : ", "), f->GetParameter(0) / norm));
   }
   std::vector<std::string> rtex = {
-    "Mean (data) = " + std::string(Form("%.3f#pm%.3f", fun_f_->GetParameter(1), fun_f_->GetParError(1))),
+    "Mean (data) = " + std::string(Form("%.3f %s", fun_f_->GetParameter(1), (fun_f_->GetParError(1)==0 ? "(fixed)" : Form("#pm %.3f", fun_f_->GetParError(1))))),
     "Signal#scale[0.5]{ }#sigma in MC = " + sigma_mass,
-    "#sigma_{data}/#sigma_{MC} - 1 = " + std::string(Form(" %.2f#pm%.2f", fun_f_->GetParameter(11), fun_f_->GetParError(11))),
+    "#sigma_{data}/#sigma_{MC} - 1 = " + std::string(Form("%.2f %s", fun_f_->GetParameter(11), (fun_f_->GetParError(11)==0 ? "(fixed)" : Form("#pm %.2f", fun_f_->GetParError(11))))),
     "Fraction of each gaus = " + frac_mass,
     Form("N_{sig}/(N_{sig}+N_{swap}) = %.2f", fun_f_->GetParameter(7)),
   };
