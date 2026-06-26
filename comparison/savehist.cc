@@ -32,7 +32,7 @@ int macro(std::string inputname, std::string cutstr,
   }
 
   // output
-  auto* outf = xjjroot::newfile("rootfiles/" + varname + "/save_" + output + ".root");
+  auto* outf = xjjroot::newfile(output + ".root");
   // /eos/user/c/cmsdqm/www/CAF/certification/Collisions23HI/Cert_Collisions2023HI_374288_375823_Good_ZDC_Golden.json
   auto* h3 = new TH3D("h3_run_var_l1", Form(";Run;%s;isL1ZDCOr_Min400_Max10000", the_var.vartex.c_str()), 943, 374804, 375747, the_var.nbin, the_var.varmin, the_var.varmax, 2, 0, 2);
   __XJJLOG << ">> "<<h3->GetName()<<" [ "<<the_var.varname<<" ] \e[2m"<<cut<<"\e[0m"<<std::endl;
