@@ -13,13 +13,13 @@ VARS=(
     # HFEMaxPlusforest-Low
     # HFEMaxMinusforest
     #
-    # Dmass
-    # Dalpha
-    # Dalpha-Low
+    Dmass
+    Dalpha
+    Dalpha-Low
     Ddls
-    # Dtrk1Pt
-    # Dtrk2Pt
-    # Dchi2cl
+    Dtrk1Pt
+    Dtrk2Pt
+    Dchi2cl
     Dtrk1ptrel
     Dtrk2ptrel
     Dtrk1nhit

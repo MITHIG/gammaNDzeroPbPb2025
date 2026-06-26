@@ -66,20 +66,16 @@ int macro(std::string inputnames, std::string output)
   auto draw_hist_list = [&inputs, &pdf, &cut_tex](std::string key, int logy, float pratio) {
     std::vector<TH1D*> result;
     pratio = std::min(pratio, (float)1.);
-    float tsize = 0.037/pratio;
+    float tsize = 0.033/pratio;
     auto* leg = new TLegend(0.86-tsize*5, 0.80-tsize*1.1*inputs.size(), 0.86, 0.80);
     xjjroot::setleg(leg, tsize);
     for (auto& ii : inputs) {
       result.push_back(ii.h1s[key]);
       leg->AddEntry(ii.h1s[key], ii.info["input_tex"].c_str(), "f");
     }
-    auto ymin = xjjana::sethsmin(result, logy ? 0.5 : 0);
-    if (ymin == 0 && logy) {
-      for (auto& h : result) {
-        h->SetMinimum(1);
-      }
-    }
-    xjjana::sethsmax(result, logy ? 5. : 1.4);
+    if (logy) xjjana::sethsnonzeromin(result, 0.5);
+    else xjjana::sethsmin(result, 0.1);
+    xjjana::sethsmax(result, logy ? 10. : 1.4);
 
     std::vector<TH1D*> result_ratio;
     for (auto& h : result) {
@@ -89,7 +85,7 @@ int macro(std::string inputnames, std::string output)
       hratio->GetYaxis()->SetTitle("Ratio");
       result_ratio.push_back(hratio);
     }
-    xjjana::sethsmin(result_ratio, 0.9);
+    xjjana::sethsnonzeromin(result_ratio, 0.95);
     xjjana::sethsmax(result_ratio, 1.05);    
     
     auto pads = xjjroot::twopads(pdf->getc(), result.front(), result_ratio.front(), pratio);
