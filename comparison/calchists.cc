@@ -15,42 +15,33 @@ int macro(std::string input)
   xjjc::print_tab(info, -1);
 
   //
-  auto* h3 = (TH3D*)inf->Get("h3_run_var_l1");
+  auto h3s = xjjana::getobj_regexp<TH3D>(inf, "h3_.+_.+_.+");
+  if (h3s.empty() || h3s.size() != 1) {
+    __XJJLOG << "!! no good h3 in the file, abort." << std::endl;
+    return 2;
+  }
+  auto* h3 = h3s.front();
+  auto axisvars = xjjc::str_divide_trim(xjjc::str_eraseall(h3->GetName(), "h3_"), "_");
 
   //
   std::map<std::string, TH1D*> h1s;
-  h1s["var"] = (TH1D*)h3->ProjectionY(Form("%s", xjjc::str_replaceall(h3->GetName(), "h3_run_var_l1", "h1_var").c_str()), // Y : var
-                                      0, -1, // X : run
-                                      0, -1, "e"); // Z : l1
-  h1s["var__Max400"] = (TH1D*)h3->ProjectionY(Form("%s__Max400", xjjc::str_replaceall(h3->GetName(), "h3_run_var_l1", "h1_var").c_str()), // Y : var
-                                              0, -1, // X : run
-                                              1, 1, "e"); // Z : l1
-  h1s["var__Min400"] = (TH1D*)h3->ProjectionY(Form("%s__Min400", xjjc::str_replaceall(h3->GetName(), "h3_run_var_l1", "h1_var").c_str()), // Y : var
-                                              0, -1, // X : run
-                                              2, 2, "e"); // Z : l1
-  TH1D* h1 = nullptr;
-  h1 = (TH1D*)h3->ProjectionX("h1", // X : run
-                              0, -1, // Y : var
-                              0, -1, "e"); // Z : l1
-  h1s["run"] = xjjana::rmthemptybins(h1, xjjc::str_replaceall(h3->GetName(), "h3_run_var_l1", "h1_run").c_str());
-  delete h1;
-  h1 = (TH1D*)h3->ProjectionX("h1", // X : run
-                              0, -1, // Y : var
-                              1, 1, "e"); // Z : l1
-  h1s["run__Max400"] = xjjana::rmthemptybins(h1, Form("%s__Max400", xjjc::str_replaceall(h3->GetName(), "h3_run_var_l1", "h1_run").c_str()));
-  delete h1;
-  h1 = (TH1D*)h3->ProjectionX("h1", // X : run
-                              0, -1, // Y : var
-                              2, 2, "e"); // Z : l1
-  h1s["run__Min400"] = xjjana::rmthemptybins(h1, Form("%s__Min400", xjjc::str_replaceall(h3->GetName(), "h3_run_var_l1", "h1_run").c_str()));
-  delete h1;
+  std::map<std::string, std::vector<TH1D*>> h1vs;
+  h1s["var"] = (TH1D*)h3->ProjectionY("h1_var", 0, -1, 0, -1, "e");
 
-  auto* outf = xjjroot::newfile(xjjc::str_replaceall(input, "save_", "calc_"));
-  xjjroot::writehist(h3);
-  for (auto& h1 : h1s) {
-    xjjroot::sethempty(h1.second, 0, 0);
-    xjjroot::writehist(h1.second);
+  for (int i=0; i<h3->GetXaxis()->GetNbins(); i++) {
+    auto* h = (TH1D*)h3->ProjectionY(Form("h1_var__%s-%d", axisvars[0].c_str(), i),
+                                     i+1, i+1, 0, -1, "e");
+    h1vs["var"].push_back(h);
   }
+
+  auto* outf = xjjroot::newfile(xjjc::str_replaceall(input, "savehist", "calchist"));
+  xjjroot::writehist(h3);
+  for (auto& [_, h] : h1s)
+    xjjroot::writehist(h);
+  for (auto& [_, hh] : h1vs)
+    for (auto& h : hh)
+      xjjroot::writehist(h);
+
   auto* tinfo = xjjana::write_info(info);
   tinfo->Fill();
   tinfo->Write();

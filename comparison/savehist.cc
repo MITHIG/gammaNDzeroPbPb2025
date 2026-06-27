@@ -4,6 +4,9 @@
 #include "xjjrootuti.h"
 #include "variables.h"
 
+#define __BINS_PTY_EQ__
+#include "../include/bins.h"
+
 int macro(std::string inputname, std::string cutstr,
           std::string varname, std::string output)
 {
@@ -16,11 +19,13 @@ int macro(std::string inputname, std::string cutstr,
     return 2;
   }
   const auto& the_var = *it_var;
+  auto isDvar = std::regex_match(the_var.varname, std::regex("-?D.+"));
+  __XJJLOG << ">> isDvar: " << isDvar << std::endl;
 
   // parse cut
   auto cuts = xjjc::str_divide_trim(cutstr, ";");
   auto cut = cuts[0], cut_tex = cuts[1];
-  cut = cut + " && (isL1ZDCOr_Max400_Pixel || isL1ZDCOr_Min400_Max10000)";
+  // cut = cut + " && isL1ZDCOr";
 
   // parse input
   auto inputs = xjjc::str_divide_trim(inputname, ";");
@@ -34,9 +39,21 @@ int macro(std::string inputname, std::string cutstr,
   // output
   auto* outf = xjjroot::newfile(output + ".root");
   // /eos/user/c/cmsdqm/www/CAF/certification/Collisions23HI/Cert_Collisions2023HI_374288_375823_Good_ZDC_Golden.json
-  auto* h3 = new TH3D("h3_run_var_l1", Form(";Run;%s;isL1ZDCOr_Min400_Max10000", the_var.vartex.c_str()), 943, 374804, 375747, the_var.nbin, the_var.varmin, the_var.varmax, 2, 0, 2);
+  TH3D* h3;
+  if (isDvar) {
+    h3 = new TH3D("h3_y_var_pt", Form(";y;%s;p_{T} [GeV]", the_var.vartex.c_str()),
+                  bins::ny, bins::miny, bins::maxy,
+                  the_var.nbin, the_var.varmin, the_var.varmax,
+                  bins::npt, bins::minpt, bins::maxpt);
+  } else {
+    h3 = new TH3D("h3_l1_var_vz", Form(";isL1ZDCOr_Min400_Max10000;%s;v_{z} [cm]", the_var.vartex.c_str()),
+                  2, 0, 2,
+                  the_var.nbin, the_var.varmin, the_var.varmax,
+                  60, -15, 15);
+  }
   __XJJLOG << ">> "<<h3->GetName()<<" [ "<<the_var.varname<<" ] \e[2m"<<cut<<"\e[0m"<<std::endl;
-  nt->Project(h3->GetName(), Form("isL1ZDCOr_Min400_Max10000:%s:Run", the_var.var.c_str()), cut.c_str());
+  std::string str_proj = isDvar ? ("Dpt:" + the_var.var + ":Dy") : ("VZ:" + the_var.var + ":isL1ZDCOr_Min400_Max10000");
+  nt->Project(h3->GetName(), str_proj.c_str(), cut.c_str());
   xjjroot::writehist(h3);
 
   auto* tinfo = new TTree("info", "");
