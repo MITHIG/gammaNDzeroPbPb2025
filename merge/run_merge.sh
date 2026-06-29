@@ -1,6 +1,6 @@
 #!/bin/bash
 
-e_skim=3,0
+e_skim=3
 [[ $e_skim == *1* ]] && label=$label'_isL1ZDCOr'
 [[ $e_skim == *2* ]] && label=$label'_isL1ZDCXORJet8'
 [[ $e_skim == *3* ]] && label=$label'_Dsize'
@@ -11,9 +11,40 @@ ntotal=-1
 
 inputdirs=(
     # '/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260123_PbPbUPC_HIForward*_Drej-pasor.root'
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260205cc_PbPbUPC_HIForward0_Drej-pasor
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Dpt-2_ZDCgap-3.root
     # '/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward*_Dpt-2_Trig-2.root'
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260311-ydiffmva_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2_Dpt-2
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2
+
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward0_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward2_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward4_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward6_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward8_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward10_Dpt-2.root
+
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward12_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward14_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward16_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward18_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward20_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward22_Dpt-2.root
+
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward1_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward3_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward5_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward7_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward9_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward11_Dpt-2.root
+
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward13_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward15_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward17_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward19_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward21_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward23_Dpt-2.root
+
+    # '/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward*_Dpt-2_Trig-2.root'
 
     #####################
     # Example input patterns
@@ -76,10 +107,11 @@ for i in "${inputdirs[@]}" ; do
         }
 
         [[ $willrun -eq 0 ]] && continue
-        ./merge_${tmp}.exe $output $filelist "$e_skim" $ntotal
+        ./merge_${tmp}.exe $output $filelist "$e_skim" $ntotal &
     }
 
 done
+wait
 
 echo
 rm -v merge_${tmp}.*

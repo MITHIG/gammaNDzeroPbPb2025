@@ -37,13 +37,13 @@ std::vector<std::string> str_skim() {
 
 int macro(std::string outputname, std::string filelist, int ntotal = -1) {
   //
-  LOG_XJJ << ": -- Skim presets selected" << std::endl;
+  __XJJLOG << "-- Skim presets selected" << std::endl;
   xjjc::print_vec_v(str_skim(), 0);
 
-  LOG_XJJ << ": -- Finalize tree list" << std::endl;
+  __XJJLOG << "-- Finalize tree list" << std::endl;
   auto trees = get_trees_regexp(dump_file(filelist));
   if (trees.empty()) {
-    LOG_XJJ << ": !! No valid trees. End." << std::endl;
+    __XJJLOG << "!! No valid trees. End." << std::endl;
     return 0;
   }
 
@@ -68,7 +68,7 @@ int macro(std::string outputname, std::string filelist, int ntotal = -1) {
   
   m.CloneTree();
   const auto nentries = m.GetEntries();
-  LOG_XJJ << ": -- Process events" << std::endl;
+  __XJJLOG << "-- Process events" << std::endl;
   for (Long64_t i=0; i<nentries; i++) {
     xjjc::progressbar(i, nentries, 10000);
 
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
 
   if (argc==5) { return macro(argv[1], argv[2], atoi(argv[4])); }
   if (argc==3 || argc==4) { return macro(argv[1], argv[2]); }
-  LOG_XJJ << ": ./macro.exe [outputname] [filelist] ([skimPreset]) ([number of files])" << std::endl;
+  __XJJLOG << "./macro.exe [outputname] [filelist] ([skimPreset]) ([number of files])" << std::endl;
   return 1;
 }
 

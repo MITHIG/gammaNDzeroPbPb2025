@@ -9,9 +9,6 @@
 
 #include "xjjrootuti.h"
 
-#define LOG_XJJ \
-  std::cout << std::left << std::setw(11) << __FUNCTION__
-
 namespace xjjroot
 {
   class merge
@@ -45,14 +42,14 @@ xjjroot::merge::merge(const std::vector<std::string>& treelist, std::string file
   TTree::SetMaxTreeSize(1LL * 1024 * 1024 * 1024 * 1024);
   set_files(filelist, ntotal);
 
-  LOG_XJJ << ": -- Chain files" << std::endl;
+  __XJJLOG << "-- Chain files" << std::endl;
   for (const auto& t : treelist)
     trs_[t] = new TChain(t.c_str()); //
   for (auto& i : files_) {
     std::cout << "\e[2m" << i << "\e[0m" << std::endl;
     for (auto& t : trs_) t.second->Add(i.c_str());
   }
-  LOG_XJJ << ": >> Merged \e[32m" << files_.size() << "\e[0m files." << std::endl;
+  __XJJLOG << ">> Merged \e[31;1m" << files_.size() << "\e[0m file(s)." << std::endl;
 
   outf_ = xjjroot::newfile(outputname);
   for (const auto& [t, _] : trs_) {
@@ -69,7 +66,7 @@ xjjroot::merge::merge(const std::vector<std::string>& treelist, std::string file
 }
 
 void xjjroot::merge::CloneTree() {
-  LOG_XJJ << ": -- Clone trees" << std::endl;
+  __XJJLOG << "-- Clone trees" << std::endl;
   for (const auto& [t, _] : trs_) {
     dirs_.at(t)->cd();
     newtrs_[t] = trs_.at(t)->CloneTree(0); //
@@ -83,7 +80,7 @@ Long64_t xjjroot::merge::GetEntries() const {
   auto n = trs_.begin()->second->GetEntries();
   for (const auto& t : trs_) {
     auto diff_n = t.second->GetEntries() != n;
-    LOG_XJJ << ": " << (diff_n ? "!!" : ">>") << " " << t.first << " (" << t.second->GetEntries() << ")" << std::endl;
+    __XJJLOG << (diff_n ? "!!" : ">>") << " " << t.first << " (" << t.second->GetEntries() << ")" << std::endl;
     n = std::max(n, t.second->GetEntries());
   }
   return n;
@@ -120,7 +117,7 @@ std::vector<std::string> xjjroot::merge::GetTreeList() const {
 TChain* xjjroot::merge::GetTree(const std::string& key) {
   auto it = trs_.find(key);
   if (it == trs_.end()) {
-    LOG_XJJ << ": !! bad key " << key << std::endl;
+    __XJJLOG << "!! bad key " << key << std::endl;
     return nullptr;
   }
   return it->second;
