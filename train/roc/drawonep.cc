@@ -51,6 +51,8 @@ int macro(std::string inputname) {
     grys[t] = xjjana::getobj_regexp<TGraph>(inf, "gr_" + t + "__y-[0-9]*");
   }
   xjjroot::print_tab(grys, 0);
+  for (auto& g : grys.at("roc_cut"))
+    xjjroot::print_gr(g);
 
   auto* h3_dump = static_cast<TH3F*>(xjjana::getobj_regexp<TH3F>(inf, "h3_.+").front()->Clone("h3_dump")); h3_dump->Reset();
   auto label_y = [&h3_dump](int i) {
@@ -62,6 +64,7 @@ int macro(std::string inputname) {
   auto* hempty = new TH2F("hempty", "", 10, 0, 1, 10, 0, 1);
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(xjjc::str_replaceall(inputname, "rootfiles/", "figspdf/"), ".root", ".pdf"));
+  auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
 
   for (int i=0; i<h1ys.at("mass_Mass").size(); i++) {
     const auto& h = h1ys.at("mass_Mass").at(i),
@@ -104,7 +107,8 @@ int macro(std::string inputname) {
     leg->Draw();
     xjjroot::drawtexgroup(0.25, 0.51, { label_y(i) }, 0.038, 11);
     xjjroot::drawCMS(xjjroot::CMS::internal, info.at("label"));
-    pdf->write();
+    // pdf->write();
+    pdf->write(Form("%s__y-%d.pdf", name_png.c_str(), i));
   } //    
   
   delete hempty; hempty = new TH2F("hempty", ";Signal Efficiency;Background Rejection", 10, 0, 0.8, 10, 0.85, 1);

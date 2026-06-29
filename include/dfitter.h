@@ -26,7 +26,7 @@
 
 namespace xjjroot {
   const std::map<std::string, thgrstyle> fstyle = {
-    { "h", thgrstyle(kBlack, 20, 1.3, kBlack, 1, 1) },
+    { "h", thgrstyle(kBlack, 20, 1.4, kBlack, 1, 1) },
     { "f", thgrstyle(-1, -1, -1, 2, 1, 3) },
     { "mass", thgrstyle(-1, -1, -1, kOrange-3, 2, 3, kOrange-3, 0.4, 1001) },
     { "swap", thgrstyle(-1, -1, -1, kGreen+4, 1, 3, kGreen+4, 1, 3005) },
@@ -265,7 +265,7 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
 
   calculate_SnB();
   
-  h->Draw("e");
+  h->Draw("pe1");
   fun_mass->Draw("same");
   fun_background->Draw("same");
   fun_swap->Draw("same");
@@ -405,7 +405,7 @@ TF1* xjjroot::dfitter::clone_fun(const TF1* fun, const std::string& name) const 
 void xjjroot::dfitter::set_hist(TH1* h) {
   h->SetXTitle("m_{#piK} (GeV/c^{2})");
   h->SetYTitle(Form("Entries / (%.0f MeV/c^{2})", h->GetBinWidth(1)*1.e+3));
-  xjjroot::sethempty(h, 0.045);
+  xjjroot::sethempty(h, 0., 0.04);
   xjjroot::setthgrstyle(h, fstyle.at("h"));
   h->SetMaximum(-1111);
   h->SetAxisRange(0, h->GetMaximum()*1.4*1.2, "Y");

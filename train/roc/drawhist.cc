@@ -76,6 +76,7 @@ int macro(std::string inputname) {
   auto* hempty = new TH2F("hempty", "", 10, 0, 1, 10, 0, 1);
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(xjjc::str_replaceall(inputname, "rootfiles/", "figspdf/"), ".root", ".pdf"));
+  auto name_png = xjjc::str_replaceall(pdf->getfilename(), {{ "figspdf/", "figs/" }, { ".pdf", "" }} );
 
   if (h1ys.at("S_trainbin").size() != rmva.size()) {
     __XJJLOG << "!! application trainbin hists have different binning number with mva size" << std::endl;
@@ -130,7 +131,7 @@ int macro(std::string inputname) {
   tex_label2->Draw();
   legr->Draw();
   xjjroot::drawCMS(xjjroot::CMS::internal, info.at("label"));
-  pdf->write();
+  pdf->write(name_png + "__rejBvsS.pdf");
 
   delete hempty; hempty = new TH2F("hempty", ";Signal Efficiency;Background Rejection", 10, 0, 0.6, 10, 0.9, 1);
   xjjroot::sethempty(hempty);
@@ -242,7 +243,8 @@ int macro(std::string inputname) {
   legp->Draw();
   xjjroot::drawtex(0.25, 0.81, info.at("label2").c_str(), 0.038, 11);
   xjjroot::drawCMS(xjjroot::CMS::internal, info.at("label"));
-  pdf->write();
+  pdf->write(name_png + "__significance.pdf");
+  // pdf->write();
 
   for (auto& f1 : tfys.at("sig25")) {
     auto* f1_2 = (TF1*)f1->Clone(xjjc::str_replaceall(f1->GetName(), "sig25", "sig").c_str());
@@ -264,19 +266,19 @@ int macro(std::string inputname) {
   xjjroot::drawCMS(xjjroot::CMS::internal, info.at("label"));
   pdf->write();
 
-  delete hempty; hempty = new TH2F("hempty", Form(";%s;Signal Efficiency", method.c_str()), 10, h1s["S_high"]->GetXaxis()->GetXmin(), h1s["S_high"]->GetXaxis()->GetXmax(), 10, 0, 1.1);
-  xjjroot::sethempty(hempty);
-  pdf->prepare();
-  hempty->Draw("axis");  
-  for (const auto& h : h1ys.at("effS")) {
-    auto* gr = coarse_bin(h);
-    gr->Draw("c same");
-    // rmva->hroc(".+_effS")->Draw("c same");
-  }
-  tex_label2->Draw();
-  leg->Draw();
-  xjjroot::drawCMS(xjjroot::CMS::internal, info.at("label"));
-  pdf->write();
+  // delete hempty; hempty = new TH2F("hempty", Form(";%s;Signal Efficiency", method.c_str()), 10, h1s["S_high"]->GetXaxis()->GetXmin(), h1s["S_high"]->GetXaxis()->GetXmax(), 10, 0, 1.1);
+  // xjjroot::sethempty(hempty);
+  // pdf->prepare();
+  // hempty->Draw("axis");  
+  // for (const auto& h : h1ys.at("effS")) {
+  //   auto* gr = coarse_bin(h);
+  //   gr->Draw("c same");
+  //   // rmva->hroc(".+_effS")->Draw("c same");
+  // }
+  // tex_label2->Draw();
+  // leg->Draw();
+  // xjjroot::drawCMS(xjjroot::CMS::internal, info.at("label"));
+  // pdf->write();
 
   // delete hempty; hempty = new TH2F("hempty", Form(";%s;Background Efficiency", method.c_str()), 10, h1s["S_high"]->GetXaxis()->GetXmin(), h1s["S_high"]->GetXaxis()->GetXmax(), 10, 0, 1.1);
   // xjjroot::sethempty(hempty);

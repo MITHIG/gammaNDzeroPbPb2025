@@ -24,7 +24,7 @@ int macro(std::string configfile) {
   auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
 
 #define SET_AND_PROJECT_HIST(q)                                         \
-  auto* h_qual_nhit##q = new TH2F("h_qual_nhit" #q, ";Number of Pixel Hits;Cluster-Vertex Compatibility", 200, 0, 20000, 50, 0, 10); \
+  auto* h_qual_nhit##q = new TH2F("h_qual_nhit" #q, ";Number of Pixel Hits;Cluster-Vertex Compatibility", 200, 0, 4500, 50, 0, 10); \
   std::cout<<cut##q<<std::endl;                                         \
   nt->Project(h_qual_nhit##q->GetName(), "clusComp_quality:clusComp_nPixHits", cut##q.c_str()); \
   xjjroot::writehist(h_qual_nhit##q);

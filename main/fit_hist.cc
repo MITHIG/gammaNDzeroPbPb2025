@@ -69,6 +69,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
   auto* df = new xjjroot::dfitter("S3");
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(input_data, { { "rootfiles/", "figspdf/" }, { ".root", ".pdf" }, { "savehist_", "fithist_" } }));
+  auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   for (int i=0; i<h1ys["data"].size(); i++) {
     const auto &h = h1ys.at("data").at(i),
       &hmc = h1ys.at("match").at(i), &hmcswap = h1ys.at("swap").at(i);
@@ -78,29 +79,29 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
     df->draw_leg();
     df->draw_result(0.25, 0.86-3*0.035*1.15, 0.035);
     xjjroot::drawCMS(xjjroot::CMS::internal, info_data.at("input_tex"));
-    pdf->write();
+    pdf->write(Form("%s_y-%d.pdf", name_png.c_str(), i));
 
     h1s["yield-y"]->SetBinContent(i+1, df->yield());
     h1s["yield-y"]->SetBinError(i+1, df->yieldErr());
     
     pdf->prepare();
     df->set_hist(hmc);
-    hmc->Draw("pe"); 
+    hmc->Draw("pe1"); 
     df->set_hist(hmcswap);
-    hmcswap->Draw("pe same");
+    hmcswap->Draw("pe1 same");
     df->draw_fmc();
     xjjroot::drawtexgroup(0.25, 0.86, { label_y(i), label_pt() }, 0.035, 13);
     df->draw_params(0.25, 0.86-2*0.035*1.15, 0.035);
     xjjroot::drawCMS(xjjroot::CMS::simulation, info_template.at("input_tex"));
-    pdf->write();
+    pdf->write(Form("%s_mc_y-%d.pdf", name_png.c_str(), i));
   }
 
   xjjroot::print_th(h1s.at("yield-y"));
-  xjjroot::sethempty(h1s.at("yield-y"));
+  xjjroot::sethempty(h1s.at("yield-y"), 0, 0.04);
   xjjroot::setthgrstyle(h1s.at("yield-y"), kBlack, 21, 1.5, kBlack, 1, 1);
   xjjana::sethminmax(h1s.at("yield-y"), 0, 1.5);
   pdf->prepare();
-  h1s.at("yield-y")->Draw("pe");
+  h1s.at("yield-y")->Draw("pe1");
   xjjroot::drawtexgroup(0.25, 0.86, { label_pt(), info_data.at("cut_tex") }, 0.035, 13);
   xjjroot::drawCMS(xjjroot::CMS::internal, info_data.at("input_tex"));
   pdf->write();

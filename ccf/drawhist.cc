@@ -11,8 +11,9 @@ int macro(std::string configfile) {
   xjjc::config conf(configfile);
   auto outputname = conf.has("Name") ? conf.get("Name") : xjjc::str_tag_from_file(configfile);
   auto* inf = TFile::Open(Form("rootfiles/%s.root", outputname.c_str()));
-  auto labels = conf.get_vec("Label_2");
+  auto labels = conf.get_vec("Label_2", "\\n");
   auto ismc = conf.has("isMC") ? conf.get<bool>("isMC") : false;
+  auto save_png = conf.has("Save_png") ? conf.get<bool>("Save_png") : false;
 
 #define GET_AND_DRAW(q)                                                 \
   auto* h_qual_nhit##q = xjjana::getobj<TH2F>(inf, "h_qual_nhit" #q);   \
@@ -27,10 +28,14 @@ int macro(std::string configfile) {
   xjjroot::adjust_margin(1, 3, 1, 0.7);
   TGaxis::SetMaxDigits(4);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
-
+  auto name_png = "figs/" + outputname ;
+  
   pdf->prepare();
   GET_AND_DRAW();
-  pdf->write();
+  if (save_png)
+    pdf->write(name_png + ".pdf");
+  else
+    pdf->write();
 
   // labels.push_back("CCF applied manually");
   // pdf->prepare();

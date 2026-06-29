@@ -61,9 +61,9 @@ int macro(std::string inputname) {
     // }
   };
 
-  make_eff("eff", "eff_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}");
-  make_eff("effreco", "reco_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}");
-  make_eff("effsel", "eff_num", "reco_num", xjjroot::CMS::D0 + "#scale[0.5]{ }#epsilon_{sel}");
+  make_eff("eff", "eff_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
+  make_eff("effreco", "reco_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#GT");
+  make_eff("effsel", "eff_num", "reco_num", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#epsilon_{sel}#GT");
 
   xjjroot::print_tab(h2s, 0);
   xjjroot::print_tab(h1s, 0);
@@ -123,7 +123,7 @@ int macro(std::string inputname) {
   for (auto& [name, h] : h1s) {
     auto is_data = xjjc::str_contains(name, "data");
     int color = is_data ? xjjroot::mycolor_satmiddle["red"] : kBlack;
-    xjjroot::setthgrstyle(h, color, is_data ? 20 : 21, 1.3, color, 1, 1);
+    xjjroot::setthgrstyle(h, color, is_data ? 20 : 21, 1.4, color, 1, 1);
     xjjroot::sethempty(h, 0, 0.3);
   }
   // for (auto& [_, hh] : h1ys) {
@@ -133,49 +133,60 @@ int macro(std::string inputname) {
   //   }
   // }
 
-  auto draw_global = [&h2s, &info]() {
+  auto draw_global = [&h2s, &info](bool drawpt = true) {
     xjjroot::drawCMS(xjjroot::CMS::internal, info.at("inputmc_tex"));
-    xjjroot::drawtexgroup(1-gStyle->GetPadRightMargin()-0.06, 0.85, {
-        xjjc::number_range_string(h2s.at("eff-y-pt")->GetYaxis()->GetXmin(), h2s.at("eff-y-pt")->GetYaxis()->GetXmax(), "p_{T}") + " GeV",
-      }, 0.038, 33);
+    if (drawpt)
+      xjjroot::drawtexgroup(1-gStyle->GetPadRightMargin()-0.06, 0.85, {
+          xjjc::number_range_string(h2s.at("eff-y-pt")->GetYaxis()->GetXmin(), h2s.at("eff-y-pt")->GetYaxis()->GetXmax(), "p_{T}") + " GeV",
+        }, 0.04, 33);
   };
   
   xjjroot::setgstyle(1, 2, xjjroot::Colz);
   auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(inputname, { { "saveeff", "calceff" }, { "rootfiles/", "figspdf/" }, { ".root", ".pdf" } }));
+  auto png_name = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
 
   for (std::string name : { "eff", "effreco", "effsel" } ) {
     pdf->prepare();
     h2s[name + "-y-pt"]->Draw("colz");
     xjjroot::drawtexgroup(0.18, 0.85, {
         h2s.at(name + "-y-pt")->GetZaxis()->GetTitle()
-      }, 0.038, 13);
-    draw_global();
-    pdf->write();
+      }, 0.04, 13);
+    draw_global(false);
+    pdf->write(png_name + "_" + name + "-pt-y.pdf");
   }
 
   xjjroot::setcstyle(pdf->getc(), 1, xjjroot::Standard);
   xjjroot::setgstyle(1, 2, xjjroot::Standard);
   
+  auto* leg = new TLegend(0.20, 0.3-2*0.042, 0.6, 0.3);
+  xjjroot::setleg(leg, 0.04);
+  leg->AddEntry(h1s["eff-y__rebin"], "Directly from MC", "p");
+  leg->AddEntry(h1s["effdata-y__rebin"], "MC eff + data signal region kinematics", "p");
+  
   pdf->prepare();
   gPad->Modified();
   gPad->Update();
-  xjjana::sethabsminmax(h1s["eff-y__rebin"], 0, .2);
+  // xjjana::sethabsminmax(h1s["eff-y__rebin"], 0, .2);
+  xjjana::sethminmax(h1s["eff-y__rebin"], 0, 1.4);
   h1s["eff-y__rebin"]->Draw("pe1");
   h1s["effdata-y__rebin"]->Draw("pe1 same");
+  leg->Draw();
   draw_global();
-  pdf->write();
+  pdf->write(png_name + "_eff.pdf");
 
   pdf->prepare();
-  xjjana::sethabsminmax(h1s["effreco-y__rebin"], 0, 1.);
+  // xjjana::sethabsminmax(h1s["effreco-y__rebin"], 0, 1.);
+  xjjana::sethminmax(h1s["effreco-y__rebin"], 0, 1.4);
   h1s["effreco-y__rebin"]->Draw("pe1");
   draw_global();
-  pdf->write();
+  pdf->write(png_name + "_effreco.pdf");
 
   pdf->prepare();
-  xjjana::sethabsminmax(h1s["effsel-y__rebin"], 0, .2);
+  // xjjana::sethabsminmax(h1s["effsel-y__rebin"], 0, .2);
+  xjjana::sethminmax(h1s["effsel-y__rebin"], 0, 1.4);
   h1s["effsel-y__rebin"]->Draw("pe1");
   draw_global();
-  pdf->write();
+  pdf->write(png_name + "_effsel.pdf");
 
   pdf->close();
 
