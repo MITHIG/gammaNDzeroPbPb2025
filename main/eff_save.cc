@@ -6,9 +6,7 @@
 #define __BINS_MULT__
 #include "../include/bins.h"
 
-int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, std::string output, std::string inputdatastr = "") {
-  std::cout<<std::endl;
-
+int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, std::string output, std::string inputdatastr = "null") {
   std::map<std::string, TChain*> trs;
   // parse inputmc
   auto inputmcs = xjjc::str_divide_trim(inputmcstr, ";");
@@ -19,16 +17,14 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
 
   auto inputdatas = xjjc::str_divide_trim(inputdatastr, ";");
   auto inputdata_tex = inputdatas.size() > 1 ? inputdatas[1] : "";
-  trs["data"] = nullptr;
-  if (!inputdatastr.empty()) {
-    trs.at("data") = xjjana::chain_files(xjjc::str_divide_trim(inputdatas[0], ","), "Tree");
-    if (!trs.at("data")) { __XJJLOG<<"!! bad inputdata file "<<inputdatas[0]<<std::endl; return 2; }
-    save::mask_branch(trs.at("data"));
+  trs["data"] = xjjana::chain_files(xjjc::str_divide_trim(inputdatas[0], ","), "Tree");
+  if (trs.at("data")) {
+    __XJJLOG << "?? no valid inputdata file: " << inputdatas[0] << ", only MC is used." << std::endl;
   }
-  
+
   // parse cut
   auto cutevts = xjjc::str_divide_trim(cutevtstr, ";");
-  auto cutevt = cutevts[0];
+  auto cutevt = cutevts[0], cutevt_mc = save::cut_adjust_to_mc(cutevt);
   auto cutds = xjjc::str_divide_trim(cutdstr, ";");
   auto cutd = cutds[0];
   
@@ -44,20 +40,24 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
                        );
     __XJJLOG << ">> "<<h3[key]->GetName()<<" ("<<vars<<") \e[2m"<<icut<<"\e[0m"<<std::endl;
     tr->Project(h3[key]->GetName(), vars.c_str(), icut.c_str());
+    std::cout << "Wait...\r" << std::flush;
     xjjroot::writehist(h3[key]);
     return icut;
   };
 
-  auto cut_eff_num = project(trs.at("mc"), "_eff_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt + " && Dgen==23333" + " && " + cutd);
+  auto cut_eff_num = project(trs.at("mc"), "_eff_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333" + " && " + cutd);
   t->Branch("cut_eff_num", &cut_eff_num);
-  auto cut_reco_num = project(trs.at("mc"), "_reco_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt + " && Dgen==23333");
+  auto cut_reco_num = project(trs.at("mc"), "_reco_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333");
   t->Branch("cut_reco_num", &cut_reco_num);
-  auto cut_eff_den = project(trs.at("mc"), "_eff_den", "nTrackInAcceptanceHP:Gpt:Gy", cutevt + " && GisSignalCalc");
+  auto cut_eff_den = project(trs.at("mc"), "_eff_den", "nTrackInAcceptanceHP:Gpt:Gy", cutevt_mc + " && GisSignalCalc");
   t->Branch("cut_eff_den", &cut_eff_den);
-  std::string cut_data_signalwin = cutevt + " && isL1ZDCOr && cscTightHalo2015Filter && " + cutd + " && fabs(Dmass-1.8648) < 0.03";
-  t->Branch("cut_data_signalwin", &cut_data_signalwin);
+  std::string cut_data_signalwin = cutevt + " && " + cutd + " && fabs(Dmass-1.8648) < 0.03",
+    cut_data_sideband = cutevt + " && " + cutd + " && fabs(Dmass-1.8648) > 0.09 && fabs(Dmass-1.8648) < 0.12";
   if (trs["data"]) {
+    t->Branch("cut_data_signalwin", &cut_data_signalwin);
+    t->Branch("cut_data_sideband", &cut_data_sideband);
     project(trs.at("data"), "_data_signalwin", "nTrackInAcceptanceHP:Dpt:Dy", cut_data_signalwin);
+    project(trs.at("data"), "_data_sideband", "nTrackInAcceptanceHP:Dpt:Dy", cut_data_sideband);
   }
   
   t->Branch("inputmc", &(inputmcs[0]));
@@ -67,6 +67,7 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
     t->Branch("inputdata_tex", &inputdata_tex);
   }
   t->Branch("cutevt", &cutevt);
+  t->Branch("cutevt_mc", &cutevt_mc);
   t->Branch("cutevt_tex", &(cutevts[1]));
   t->Branch("cutd", &cutd);
   t->Branch("cutd_tex", &(cutds[1]));

@@ -7,11 +7,10 @@
 namespace global {
   float BR_DtoKpi = 0.03936, err_BR_DtoKpi = 0.030*1.e-2;
 }
-
+// enum Event { gammaN, Ngamma, Other };
 int macro(const std::string& inputname_raw, const std::string& inputname_effd,
           const std::string& inputname_effevent = "null", const std::string inputname_fprompt = "null",
           float lumi = 1., const std::string& outputdir = "") { // nb-1
-  std::cout<<std::endl;
 
   __XJJLOG << ">> lumi: " << lumi << std::endl;
   std::map<std::string, TH1D*> h1s;
@@ -53,7 +52,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   get_h1s(inputname_effevent, "effevent", {  }, {  });
   get_h1s(inputname_fprompt, "fprompt", {  }, {  });
     
-
+  Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "#gammaN") ? Event::gammaN :
+    (xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "N#gamma") ? Event::Ngamma : Event::Other);
   // auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
   // __XJJLOG << "++ info" << std::endl;
   // xjjc::print_tab(info, -1);
@@ -86,12 +86,11 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf");
   }
 
-  
   xjjana::sethminmax(h1s.at("y_xsec"), 0, 2.5);
   xjjroot::setthgrstyle(h1s.at("y_xsec"), xjjroot::mycolor_satmiddle.at("red"), -1, -1, xjjroot::mycolor_satmiddle.at("red"));
   pdf->prepare();
   h1s.at("y_xsec")->Draw("axis");
-  auto* g_HIN_25_002 = HIN_25_002_gammaN::draw();
+  auto* g_HIN_25_002 = measurement::draw_HIN_25_002(event_is);
   h1s.at("y_xsec")->Draw("pe1 same");
   draw_global();
   auto* legvs23 = new TLegend(0.55, 0.75-2*0.042, 0.85, 0.75);

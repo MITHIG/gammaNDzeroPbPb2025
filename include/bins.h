@@ -2,9 +2,9 @@
 #define __BINS__
 
 namespace bins {
-  const std::vector<float> ybins = { -2., -1., 0., 1., 2. },
-    yinclbins = { -1., 1. },
-    ptbins = { 2., 3., 4., 5. };
+  // const std::vector<float> ybins = { -2., -1., 0., 1., 2. };
+  // const std::vector<float> yinclbins = { -1., 1. },
+  //   ptbins = { 2., 3., 4., 5. };
 
 #ifdef __BINS_PTY_EQ__
   const int ny = 4; const float miny = -2, maxy = 2;

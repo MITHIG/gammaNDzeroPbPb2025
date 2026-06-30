@@ -5,6 +5,9 @@
 #define __BINS_PTY_EQ__
 #include "../include/bins.h"
 
+namespace eff {
+  std::pair<TH1D*, TH1D*> sum_norm_byweight(TH2D* hreveff, TH2D* hweight, TH1D* hrefbin);
+}
 int macro(std::string inputname) {
   std::cout<<std::endl;
 
@@ -18,7 +21,6 @@ int macro(std::string inputname) {
   xjjc::print_vec_h(ybin_analysis);
   
   std::map<std::string, TH3D*> h3s;
-  // std::map<std::string, std::vector<TH1D*>> h1ys;
   std::map<std::string, TH1D*> h1s;
   std::map<std::string, TH2D*> h2s;
 
@@ -34,6 +36,7 @@ int macro(std::string inputname) {
                                        0, h3->GetZaxis()->GetNbins()+1, // overflow
                                        "e");
     h1s[name + "-y__rebin"] = (TH1D*)h1s[name + "-y"]->Rebin(ybin_analysis.size()-1, Form("%s__rebin", h1s[name + "-y"]->GetName()), ybin_analysis.data());
+    
     // h2s[name + "-y-pt__rebin"] = (TH2D*)h2s[name + "-y-pt"]->Rebin(ybin_analysis.size()-1, Form("%s__rebin", h2s[name + "-y-pt"]->GetName()), ybin_analysis.data());
     // for (int i=0; i<h2s.at(name+"-y-pt__rebin")->GetXaxis()->GetNbins(); i++) {
     //   auto* hpt = h2s.at(name + "-y-pt")->ProjectionY(Form("h1_pt_%s__rebin__y-%d", name.c_str(), i),
@@ -62,6 +65,7 @@ int macro(std::string inputname) {
   };
 
   make_eff("eff", "eff_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
+  make_eff("reveff", "eff_den", "eff_num", xjjroot::CMS::D0 + " 1 /#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
   make_eff("effreco", "reco_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#GT");
   make_eff("effsel", "eff_num", "reco_num", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#epsilon_{sel}#GT");
 
@@ -69,47 +73,23 @@ int macro(std::string inputname) {
   xjjroot::print_tab(h1s, 0);
   // xjjroot::print_tab(h1ys, 0);
 
-  if (h3s.find("data_signalwin") != h3s.end()) {
+  bool has_data = h3s.find("data_signalwin") != h3s.end() && h3s.find("data_sideband") != h3s.end();
+  if (has_data) {
     __XJJLOG << "++ data driven eff" << std::endl;
   
-    auto *heff = h2s.at("eff-y-pt"), *hdata = h2s.at("data_signalwin-y-pt");
+    auto *hreveff = h2s.at("eff-y-pt"), *hdata = h2s.at("data_signalwin-y-pt"), *hsideband = h2s.at("data_sideband-y-pt");
 
-    auto make_effdata = [&h1s, &heff, &hdata](std::string name_refbin) {
-      auto name_new = xjjc::str_replaceall(name_refbin, "eff", "effdata");
-      h1s[name_new] = (TH1D*)h1s.at(name_refbin)->Clone(xjjc::str_replaceall(h1s.at(name_refbin)->GetName(), "eff", "effdata").c_str());
-      h1s[name_new]->Reset();
-      std::vector<double> sum_y(h1s.at(name_new)->GetXaxis()->GetNbins(), 0), norm_y(sum_y.size(), 0);
-      for (int i=0; i<heff->GetXaxis()->GetNbins(); i++) {
-        for (int j=0; j<heff->GetYaxis()->GetNbins(); j++) {
-          auto eff = heff->GetBinContent(i+1, j+1),
-            eff_e = heff->GetBinError(i+1, j+1),
-            ndata = hdata->GetBinContent(i+1, j+1),
-            ndata_e = hdata->GetBinError(i+1, j+1);
-            
-          if (eff == 0) {
-            __XJJLOG << "!! eff is 0 for the bin (" << i+1 <<", " << j+1 << ")" << std::endl;
-            continue;
-          }
-          auto ybin = h1s.at(name_new)->FindBin(heff->GetXaxis()->GetBinCenter(i+1));
-          if (ybin < 1 || ybin > h1s.at(name_new)->GetXaxis()->GetNbins()) {
-            __XJJLOG << "?? bad FindBin (" << ybin << "). skip." << std::endl;
-            __XJJLOG << "   >> " << heff->GetXaxis()->GetBinCenter(i+1) << " -> " << ybin <<std::endl;
-            continue;
-          }
-          sum_y[ybin-1] += (1./eff)*ndata;
-          norm_y[ybin-1] += ndata;
-        }
-      }
+    auto make_effdata = [&h1s, &hreveff, &hdata, &hsideband](std::string name_refbin) {
+      auto* hrefbin = (TH1D*)h1s.at(name_refbin)->Clone("hrefbin"); hrefbin->Reset();
       
-      for (int i=0; i<h1s.at(name_new)->GetXaxis()->GetNbins(); i++) {
-        if (sum_y[i] == 0) {
-          __XJJLOG << "?? ndata is 0 for the bin (" << i+1 << "). skip." << std::endl;
-          continue;
-        }
-        
-        h1s.at(name_new)->SetBinContent(i+1, 1./(sum_y[i]/norm_y[i]));
-        h1s.at(name_new)->SetBinError(i+1, 0.001); // ! how to get the uncertainty ?
-      }
+      auto hdata_sum_norm = eff::sum_norm_byweight(hreveff, hdata, hrefbin);
+      auto hsideband_sum_norm = eff::sum_norm_byweight(hreveff, hsideband, hrefbin);
+      hdata_sum_norm.first->Add(hsideband_sum_norm.first, -1);
+      hdata_sum_norm.second->Add(hsideband_sum_norm.second, -1);
+
+      auto name_new = xjjc::str_replaceall(name_refbin, "eff", "effdata_sidebandsub");
+      h1s[name_new] = (TH1D*)hrefbin->Clone(xjjc::str_replaceall(h1s.at(name_refbin)->GetName(), "eff", "effdata_sidebandsub").c_str());
+      h1s[name_new]->Divide(hdata_sum_norm.first, hdata_sum_norm.second);
     };
 
     make_effdata("eff-y");
@@ -157,36 +137,32 @@ int macro(std::string inputname) {
 
   xjjroot::setcstyle(pdf->getc(), 1, xjjroot::Standard);
   xjjroot::setgstyle(1, 2, xjjroot::Standard);
-  
-  auto* leg = new TLegend(0.20, 0.3-2*0.042, 0.6, 0.3);
+
+  auto* leg = new TLegend(0.20, 0.3-(has_data?2:1)*0.042, 0.6, 0.3);
   xjjroot::setleg(leg, 0.04);
   leg->AddEntry(h1s["eff-y__rebin"], "Directly from MC", "p");
-  leg->AddEntry(h1s["effdata-y__rebin"], "MC eff + data signal region kinematics", "p");
+  if (has_data)
+    leg->AddEntry(h1s["effdata_sidebandsub-y__rebin"], "MC eff + data signal kinematics", "p");
   
   pdf->prepare();
   gPad->Modified();
   gPad->Update();
-  // xjjana::sethabsminmax(h1s["eff-y__rebin"], 0, .2);
-  xjjana::sethminmax(h1s["eff-y__rebin"], 0, 1.4);
-  h1s["eff-y__rebin"]->Draw("pe1");
-  h1s["effdata-y__rebin"]->Draw("pe1 same");
-  leg->Draw();
-  draw_global();
-  pdf->write(png_name + "_eff.pdf");
+  if (h1s.find("effdata_sidebandsub-y__rebin") != h1s.end()) {
+    xjjana::sethminmax(h1s["effdata_sidebandsub-y__rebin"], 0, 1.4);
+    h1s["effdata_sidebandsub-y__rebin"]->Draw("pe1");
+    h1s["eff-y__rebin"]->Draw("pe1 same");
+    leg->Draw();
+    draw_global();
+    pdf->write();
+  }
 
-  pdf->prepare();
-  // xjjana::sethabsminmax(h1s["effreco-y__rebin"], 0, 1.);
-  xjjana::sethminmax(h1s["effreco-y__rebin"], 0, 1.4);
-  h1s["effreco-y__rebin"]->Draw("pe1");
-  draw_global();
-  pdf->write(png_name + "_effreco.pdf");
-
-  pdf->prepare();
-  // xjjana::sethabsminmax(h1s["effsel-y__rebin"], 0, .2);
-  xjjana::sethminmax(h1s["effsel-y__rebin"], 0, 1.4);
-  h1s["effsel-y__rebin"]->Draw("pe1");
-  draw_global();
-  pdf->write(png_name + "_effsel.pdf");
+  for (auto& name : std::vector<std::string>{ "eff", "effreco", "effsel" }) {
+    pdf->prepare();
+    xjjana::sethminmax(h1s[name + "-y__rebin"], 0, 1.4);
+    h1s[name + "-y__rebin"]->Draw("pe1");
+    draw_global();
+    pdf->write(png_name + "_" + name + ".pdf");
+  }
 
   pdf->close();
 
@@ -211,3 +187,37 @@ int main(int argc, char* argv[]) {
   return 1;
 }
 
+std::pair<TH1D*, TH1D*> eff::sum_norm_byweight(TH2D* hreveff, TH2D* hweight, TH1D* hrefbin) {
+  auto nbinx = hrefbin->GetXaxis()->GetNbins();
+  std::vector<double> sum_y(nbinx, 0), norm_y(nbinx, 0);
+  auto* hsum = (TH1D*)hrefbin->Clone(Form("%s__sum", hweight->GetName()));
+  auto* hnorm = (TH1D*)hrefbin->Clone(Form("%s__norm", hweight->GetName()));
+  hsum->Reset(); hnorm->Reset();
+  for (int i=0; i<hreveff->GetXaxis()->GetNbins(); i++) {
+    auto ybin = hrefbin->FindBin(hreveff->GetXaxis()->GetBinCenter(i+1));
+    if (ybin < 1 || ybin > nbinx) {
+      __XJJLOG << "?? bad FindBin (" << ybin << "). skip." << std::endl;
+      __XJJLOG << "   >> " << hreveff->GetXaxis()->GetBinCenter(i+1) << " -> " << ybin <<std::endl;
+      continue;
+    }
+    for (int j=0; j<hreveff->GetYaxis()->GetNbins(); j++) {
+      auto reveff = hreveff->GetBinContent(i+1, j+1),
+        reveff_e = hreveff->GetBinError(i+1, j+1),
+        nweight = hweight->GetBinContent(i+1, j+1),
+        nweight_e = hweight->GetBinError(i+1, j+1);
+
+      if (reveff == 0) {
+        __XJJLOG << "!! reveff is 0 for the bin (" << i+1 <<", " << j+1 << ")" << std::endl;
+        continue;
+      }
+
+      double sume = hsum->GetBinError(ybin);
+      hsum->SetBinContent(ybin, hsum->GetBinContent(ybin) + reveff*nweight);
+      hsum->SetBinError(ybin, std::sqrt(sume*sume + std::pow(nweight * reveff_e, 2) + std::pow(reveff * nweight_e, 2)));
+      double norme = hnorm->GetBinError(ybin);
+      hnorm->SetBinContent(ybin, hnorm->GetBinContent(ybin) + nweight);
+      hnorm->SetBinError(ybin, std::sqrt(norme*norme + nweight_e*nweight_e));
+    }
+  }
+  return std::pair<TH1D*, TH1D*>{ hsum, hnorm };
+}

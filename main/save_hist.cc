@@ -7,11 +7,8 @@
 #include "../include/bins.h"
 
 int macro(std::string inputstr, std::string cutstr, std::string output, int isdata = 1) {
-  std::cout<<std::endl;
-
   // parse input
   auto inputs = xjjc::str_divide_trim(inputstr, ";");
-  auto input_tex = inputs.size() > 1 ? inputs[1] : "";
   auto* trs = xjjana::chain_files(xjjc::str_divide_trim(inputs[0], ","), "Tree");
   if (!trs) { __XJJLOG<<"!! bad input file "<<inputs[0]<<std::endl; return 2; }
   save::mask_branch(trs);
@@ -19,7 +16,7 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
   // parse cut
   auto cuts = xjjc::str_divide_trim(cutstr, ";");
   auto cut = cuts[0];
-  if (isdata) cut += " && isL1ZDCOr && cscTightHalo2015Filter";
+  if (!isdata) cut = save::cut_adjust_to_mc(cut);
   
   auto* outf = xjjroot::newfile("rootfiles/" + output + ".root");
   
@@ -30,6 +27,7 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
                        bins::nmass, bins::minmass, bins::maxmass,
                        bins::npt, bins::minpt, bins::maxpt);
     __XJJLOG << ">> "<<h3[key]->GetName()<<" \e[2m"<<icut<<"\e[0m"<<std::endl;
+    std::cout << "Wait...\r" << std::flush;
     trs->Project(h3[key]->GetName(), "Dpt:Dmass:Dy", icut.c_str());
     xjjroot::writehist(h3[key]);
   };
@@ -42,9 +40,15 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
   
   auto* t = new TTree("info", "");
   t->Branch("input", &(inputs[0]));
+  auto input_tex = inputs.size() > 1 ? inputs[1] : "";
   t->Branch("input_tex", &input_tex);
+  auto input_tag = inputs.size() > 2 ? inputs[2] : "";
+  t->Branch("input_tag", &input_tag);
   t->Branch("cut", &cut);
-  t->Branch("cut_tex", &(cuts[1]));
+  auto cut_tex = cuts.size() > 1 ? cuts[1] : "";
+  t->Branch("cut_tex", &cut_tex);
+  auto cut_tag = cuts.size() > 2 ? cuts[2] : "";
+  t->Branch("cut_tag", &cut_tag);
   t->Fill();
   t->Write();
   outf->cd();
