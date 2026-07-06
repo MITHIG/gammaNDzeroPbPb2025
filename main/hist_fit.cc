@@ -33,7 +33,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
       h1ys[name].reserve(ny); 
       for (int i=0; i<ny; i++) { 
         auto* h1_mass = h3->ProjectionY(Form("h1_mass_%s__y-%d", name.c_str(), i), 
-                                        i+1, i+1, 
+                                        i+1, i+1, // y bin
                                         1, h3->GetZaxis()->GetNbins(), // pt: only in analysis range
                                         "e"); 
         h1ys[name].push_back(h1_mass); 
@@ -74,7 +74,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
   auto label_pt = [&h3_dump](int i = -1) {
     const auto ptmin = (i>=0 ? h3_dump->GetZaxis()->GetBinLowEdge(i+1) : h3_dump->GetZaxis()->GetBinLowEdge(1)),
       ptmax = (i>=0 ? h3_dump->GetZaxis()->GetBinUpEdge(i+1) : h3_dump->GetZaxis()->GetBinUpEdge(h3_dump->GetZaxis()->GetNbins()));
-    return xjjc::number_range_string(ptmin, ptmax, "p_{T}") + " GeV";
+    return xjjc::number_range_string(ptmin, ptmax, "#it{p}_{T}") + " GeV";
   };
 
   auto* df = new xjjroot::dfitter("S3");

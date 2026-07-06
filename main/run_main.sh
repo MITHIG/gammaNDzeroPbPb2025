@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IVER="" ; BINNING='{ -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2. }' ;
+IVER="" ; BINNING='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ;
 # IVER="-extendy" ; BINNING='{ -2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4 }' ;
 # IVER="-coarse" ; BINNING='{ -2., -1., 0., 1., 2. }' ;
 
@@ -36,12 +36,7 @@ CUTDS=(
 echo "usage: ./run_main.sh [template] [save hist] [fit hist] [save eff] [calc eff] [calc xsec]"
 echo "                         [1]        [2]        [3]         [4]        [5]         [6]"
 
-make hist_fit.exe xsec_calc.exe || exit 1
-sed "s|__BINNING_TO_DEFINE__|$BINNING|g" ../include/bins.h > bins_tmp.h
-make eff_save.exe || exit 1
-[[ ${1:-0} -eq 1 || ${1:-0} -eq 1 || $# == 0 ]] && { make hist_save.exe || exit 1 ; }
-[[ ${5:-0} -eq 1 || ${5:-0} -eq 1 || $# == 0 ]] && { make eff_calc.exe || exit 1 ; }
-rm bins_tmp.h
+make hist_save.exe hist_fit.exe eff_save.exe eff_calc.exe xsec_calc.exe || exit 1
 
 for cutevtstr in "${CUTEVTS[@]}" ; do
     IFS=';' ; cutevttags=($cutevtstr) ; unset IFS ; cutevt="${cutevttags[0]}" ; cutevt_tex="${cutevttags[1]}" ; cutevt_tag="${cutevttags[2]}"
@@ -78,12 +73,12 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             itag_template=$cut_tag"/mass_templates"$IVER #
             if [[ ${1:-0} -eq 1 ]] ; then
                 echo "    -> generate mass templates from MC"
-                ./hist_save.exe "$input_template" "$cutstr" $itag_template 0
+                ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING" 0
                 # ./hist_save.exe "$INPUT_MASS_TEMPLATE" "${CUT_BASE};D precut;Dpre" $itag_template 0
-            elif [[ ${1:-0} -eq 2 ]] ; then # copy an existing file as mass templates to save time
+            elif [[ ${1:-0} -eq 2 ]] ; then 
                 echo "    -> copy existing mass templates to save time"
-                template_dump=gammaN-0nXn-25_Dbdt-gammaN/mass_templates
-                [[ $template_tag == *BeamB* ]] && { template_dump=Ngamma-0nXn-25_Dbdt-gammaN/mass_templates ; }
+                template_dump="gammaN-0nXn-25_Dbdt-gammaN/mass_templates"$IVER
+                [[ $template_tag == *BeamB* ]] && { template_dump="Ngamma-0nXn-25_Dbdt-Ngamma/mass_templates"$IVER ; }
 
                 template_dir="rootfiles/"$itag_template".root"
                 template_dir=${template_dir%/*}
@@ -103,7 +98,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 itag_data=$cut_tag"/savehist_"$data_tag$IVER
                 [[ ${2:-0} -eq 1 ]] && {
                     echo "    -> fill data mass"
-                    ./hist_save.exe "$input_data" "$cutstr" $itag_data 
+                    ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING"
                 }
 
                 ####################
@@ -132,7 +127,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                         ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff null
                     }
                     [[ ${5:-0} -eq 1 ]] && {
-                        ./eff_calc.exe "rootfiles/"$itag_deff".root"
+                        ./eff_calc.exe "rootfiles/"$itag_deff".root" "$BINNING"
                     }
                     itag_deff=$cut_tag"/calceff_"$mc_tag"_"$data_tag$IVER ##
                     

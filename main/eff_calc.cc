@@ -3,7 +3,7 @@
 #include "xjjmypdf.h"
 
 #define __BINS_PTY_ANA__
-#include "bins_tmp.h"
+#include "../include/bins.h"
 
 namespace eff {
   std::pair<TH1D*, TH1D*> sum_norm_byweight(TH2D* hreveff, TH2D* hweight, TH1D* hrefbin);
@@ -34,8 +34,8 @@ int macro(std::string inputname) {
     h2s[name + "-y-pt"] = (TH2D*)h3->Project3D("yx");
     h2s[name + "-y-pt"]->SetName(Form("h2_y-pt_%s", name.c_str()));
     h1s[name + "-y"] = h3->ProjectionX(Form("h1_y_%s", name.c_str()),
-                                       1, h3->GetYaxis()->GetNbins(),
-                                       0, h3->GetZaxis()->GetNbins()+1, // overflow
+                                       1, h3->GetYaxis()->GetNbins(), // pt only in analysis range
+                                       0, h3->GetZaxis()->GetNbins()+1, // multiplicity overflow
                                        "e");
     h1s[name + "-y__rebin"] = (TH1D*)h1s[name + "-y"]->Rebin(ybin_analysis.size()-1, Form("%s__rebin", h1s[name + "-y"]->GetName()), ybin_analysis.data());
     
@@ -119,7 +119,7 @@ int macro(std::string inputname) {
     xjjroot::drawCMS(xjjroot::CMS::internal, info.at("inputmc_tex"));
     if (drawpt)
       xjjroot::drawtexgroup(1-gStyle->GetPadRightMargin()-0.06, 0.85, {
-          xjjc::number_range_string(h2s.at("eff-y-pt")->GetYaxis()->GetXmin(), h2s.at("eff-y-pt")->GetYaxis()->GetXmax(), "p_{T}") + " GeV",
+          xjjc::number_range_string(h2s.at("eff-y-pt")->GetYaxis()->GetXmin(), h2s.at("eff-y-pt")->GetYaxis()->GetXmax(), "#it{p}_{T}") + " GeV",
         }, 0.04, 33);
   };
   
@@ -183,7 +183,8 @@ int macro(std::string inputname) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 2) {
+  if (argc == 3) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[2], ",");
     return macro(argv[1]);
   }
   return 1;

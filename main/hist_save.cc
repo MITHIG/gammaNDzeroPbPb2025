@@ -4,7 +4,7 @@
 #include "../include/save.h"
 #define __BINS_PTY_ANA__
 #define __BINS_MASS__
-#include "bins_tmp.h"
+#include "../include/bins.h"
 
 int macro(std::string inputstr, std::string cutstr, std::string output, int isdata = 1) {
   // parse input
@@ -65,10 +65,12 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 5) {
-    return macro(argv[1], argv[2], argv[3], atoi(argv[4]));
+  if (argc == 6) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
+    return macro(argv[1], argv[2], argv[3], atoi(argv[5]));
   }
-  if (argc == 4) {
+  if (argc == 5) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
     return macro(argv[1], argv[2], argv[3]);
   }
   return 1;
