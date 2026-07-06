@@ -47,7 +47,7 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
 
   auto cut_eff_num = project(trs.at("mc"), "_eff_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333" + " && " + cutd);
   t->Branch("cut_eff_num", &cut_eff_num);
-  auto cut_reco_num = project(trs.at("mc"), "_reco_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333");
+  auto cut_reco_num = project(trs.at("mc"), "_reco_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333 && fabs(Dtrk1Eta) < 2.4 && fabs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5");
   t->Branch("cut_reco_num", &cut_reco_num);
   auto cut_eff_den = project(trs.at("mc"), "_eff_den", "nTrackInAcceptanceHP:Gpt:Gy", cutevt_mc + " && GisSignalCalc");
   t->Branch("cut_eff_den", &cut_eff_den);
