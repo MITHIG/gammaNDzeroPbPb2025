@@ -2,9 +2,9 @@
 #include "xjjanauti.h"
 
 #include "../include/save.h"
-#define __BINS_PTY_EQ__
+#define __BINS_PTY_ANA__
 #define __BINS_MASS__
-#include "../include/bins.h"
+#include "bins_tmp.h"
 
 int macro(std::string inputstr, std::string cutstr, std::string output, int isdata = 1) {
   // parse input
@@ -17,17 +17,23 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
   auto cuts = xjjc::str_divide_trim(cutstr, ";");
   auto cut = cuts[0];
   if (!isdata) cut = save::cut_adjust_to_mc(cut);
-  
+
+  // parse binning
+  __XJJLOG << ">> current y binning:" << std::endl;
+  xjjc::print_vec_h(bins::ybins, 0);
+  auto massbins = xjjc::fixedbin_to_edges(bins::nmass, bins::minmass, bins::maxmass),
+    ptbins = xjjc::fixedbin_to_edges(bins::npt, bins::minpt, bins::maxpt);      
+
   auto* outf = xjjroot::newfile("rootfiles/" + output + ".root");
   
   std::map<std::string, TH3D*> h3;
-  auto project = [&trs, &h3](std::string key, std::string icut) {
+  auto project = [&trs, &h3, &massbins, &ptbins](std::string key, std::string icut) {
     h3[key] = new TH3D(Form("h3%s", key.c_str()), ";y;m_{K#pi} [GeV];p_{T} [GeV]",
-                       bins::ny, bins::miny, bins::maxy,
-                       bins::nmass, bins::minmass, bins::maxmass,
-                       bins::npt, bins::minpt, bins::maxpt);
+                       bins::ybins.size()-1, bins::ybins.data(),
+                       massbins.size()-1, massbins.data(),
+                       ptbins.size()-1, ptbins.data());
     __XJJLOG << ">> "<<h3[key]->GetName()<<" \e[2m"<<icut<<"\e[0m"<<std::endl;
-    std::cout << "Wait...\r" << std::flush;
+    xjjc::saywait();
     trs->Project(h3[key]->GetName(), "Dpt:Dmass:Dy", icut.c_str());
     xjjroot::writehist(h3[key]);
   };

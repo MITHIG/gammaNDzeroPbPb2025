@@ -34,14 +34,13 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
       for (int i=0; i<ny; i++) { 
         auto* h1_mass = h3->ProjectionY(Form("h1_mass_%s__y-%d", name.c_str(), i), 
                                         i+1, i+1, 
-                                        1, h3->GetZaxis()->GetNbins(), 
+                                        1, h3->GetZaxis()->GetNbins(), // pt: only in analysis range
                                         "e"); 
         h1ys[name].push_back(h1_mass); 
       } 
-      if (h3s.empty()) { 
-        h1s["yield-y"] = h3->ProjectionX(Form("h1_y_yield"), 0, -1, 0, -1); // get binning of y
-        h1s["yield-y"]->Reset();
-        h1s["yield-y"]->GetYaxis()->SetTitle("Raw Yield");
+      if (h1s.find("dump-y") == h1s.end()) { 
+        h1s["dump-y"] = h3->ProjectionX(Form("h1_y_dump"), 0, -1, 0, -1); // get binning of y
+        h1s["dump-y"]->Reset();
       } 
       h3s[name] = h3; 
     }
@@ -51,19 +50,31 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
   if (read_hists(inf_data)) { return 3; }
   if (read_hists(inf_template)) { return 3; }
 
+  // prepare TH1
+  auto make_h1_y = [&h1s](const std::string& name, const std::string& ytitle) {
+    // h1_y_yield
+    h1s[name + "-y"] = (TH1D*)h1s.at("dump-y")->Clone(Form("h1_y_%s", name.c_str()));
+    h1s[name + "-y"]->Reset();
+    h1s[name + "-y"]->GetYaxis()->SetTitle(ytitle.c_str());
+  };
+  make_h1_y("yield", "Raw Yield");
+  make_h1_y("width68mc", "Signal Effective#scale[0.5]{ }#sigma in MC [GeV]");
+  make_h1_y("width95mc", "Signal Effective 2#sigma in MC [GeV]");
+    
   xjjroot::print_tab(h3s, 0);
   xjjroot::print_tab(h1ys, 0);
   xjjroot::print_tab(h1s, 0);
 
   auto* h3_dump = static_cast<TH3D*>(h3s.at("data")->Clone("h3_dump")); h3_dump->Reset();
   auto label_y = [&h3_dump](int i) {
-    const auto ymin = h3_dump->GetXaxis()->GetBinLowEdge(i+1), ymax = h3_dump->GetXaxis()->GetBinUpEdge(i+1);
+    const auto ymin = (i>=0 ? h3_dump->GetXaxis()->GetBinLowEdge(i+1) : h3_dump->GetXaxis()->GetBinLowEdge(1)),
+      ymax = (i>=0 ? h3_dump->GetXaxis()->GetBinUpEdge(i+1) : h3_dump->GetXaxis()->GetBinUpEdge(h3_dump->GetXaxis()->GetNbins()));
     return xjjc::number_range_string(ymin, ymax, "y", -1.e1);
   };
   auto label_pt = [&h3_dump](int i = -1) {
-    const auto ymin = (i>=0 ? h3_dump->GetZaxis()->GetBinLowEdge(i+1) : h3_dump->GetZaxis()->GetBinLowEdge(1)),
-      ymax = (i>=0 ? h3_dump->GetZaxis()->GetBinUpEdge(i+1) : h3_dump->GetZaxis()->GetBinUpEdge(h3_dump->GetZaxis()->GetNbins()));
-    return xjjc::number_range_string(ymin, ymax, "p_{T}") + " GeV";
+    const auto ptmin = (i>=0 ? h3_dump->GetZaxis()->GetBinLowEdge(i+1) : h3_dump->GetZaxis()->GetBinLowEdge(1)),
+      ptmax = (i>=0 ? h3_dump->GetZaxis()->GetBinUpEdge(i+1) : h3_dump->GetZaxis()->GetBinUpEdge(h3_dump->GetZaxis()->GetNbins()));
+    return xjjc::number_range_string(ptmin, ptmax, "p_{T}") + " GeV";
   };
 
   auto* df = new xjjroot::dfitter("S3");
@@ -83,6 +94,12 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
 
     h1s["yield-y"]->SetBinContent(i+1, df->yield());
     h1s["yield-y"]->SetBinError(i+1, df->yieldErr());
+    auto w68mc = df->width_mc_mass(xjjana::frac_1sigma),
+      w95mc = df->width_mc_mass(xjjana::frac_2sigma);
+    h1s["width68mc-y"]->SetBinContent(i+1, w68mc.first);
+    h1s["width68mc-y"]->SetBinError(i+1, w68mc.second);
+    h1s["width95mc-y"]->SetBinContent(i+1, w95mc.first);
+    h1s["width95mc-y"]->SetBinError(i+1, w95mc.second);
     
     pdf->prepare();
     df->set_hist(hmc);
@@ -97,14 +114,17 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
   }
 
   xjjroot::print_th(h1s.at("yield-y"));
-  xjjroot::sethempty(h1s.at("yield-y"), 0, 0.04);
-  xjjroot::setthgrstyle(h1s.at("yield-y"), kBlack, 21, 1.5, kBlack, 1, 1);
-  xjjana::sethminmax(h1s.at("yield-y"), 0, 1.5);
-  pdf->prepare();
-  h1s.at("yield-y")->Draw("pe1");
-  xjjroot::drawtexgroup(0.25, 0.86, { label_pt(), info_data.at("cut_tex") }, 0.035, 13);
-  xjjroot::drawCMS(xjjroot::CMS::internal, info_data.at("input_tex"));
-  pdf->write();
+
+  for (const std::string& p : { "yield-y", "width68mc-y", "width95mc-y" }) {
+    xjjroot::sethempty(h1s.at(p), 0, 0.1);
+    xjjroot::setthgrstyle(h1s.at(p), kBlack, 21, 1.5, kBlack, 1, 1);
+    xjjana::sethminmax(h1s.at(p), 0, 1.5);
+    pdf->prepare();
+    h1s.at(p)->Draw("pe1");
+    xjjroot::drawtexgroup(0.25, 0.86, { label_pt(), info_data.at("cut_tex") }, 0.035, 13, 42, 1.25);
+    xjjroot::drawCMS(xjjc::str_contains(p, "mc") ? xjjroot::CMS::simulation : xjjroot::CMS::internal, info_data.at("input_tex"));
+    pdf->write();
+  }
   
   pdf->draw_cover( {
       "#bf{Data} " + info_data.at("input"),
@@ -114,7 +134,8 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
     }, 0.03);
 
   pdf->close();
-
+  
+  h1s.erase("dump-y");
   auto* outf = xjjroot::newfile(xjjc::str_replaceall(input_data, { { "savehist_", "fithist_" } }));
 
   for (const auto& [_, h] : h1s) xjjroot::writehist(h);

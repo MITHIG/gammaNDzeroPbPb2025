@@ -2,12 +2,13 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
-#define __BINS_PTY_EQ__
-#include "../include/bins.h"
+#define __BINS_PTY_ANA__
+#include "bins_tmp.h"
 
 namespace eff {
   std::pair<TH1D*, TH1D*> sum_norm_byweight(TH2D* hreveff, TH2D* hweight, TH1D* hrefbin);
 }
+
 int macro(std::string inputname) {
   std::cout<<std::endl;
 
@@ -16,7 +17,8 @@ int macro(std::string inputname) {
   __XJJLOG << "++ info" << std::endl;
   xjjc::print_tab(info, -1);
 
-  auto ybin_analysis = xjjc::fixedbin_to_edges(bins::ny, bins::miny, bins::maxy);
+  // auto ybin_analysis = xjjc::fixedbin_to_edges(bins::ny, bins::miny, bins::maxy);
+  auto ybin_analysis = bins::ybins;
   __XJJLOG << "++ analysis binning" << std::endl;
   xjjc::print_vec_h(ybin_analysis);
   

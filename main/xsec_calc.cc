@@ -7,12 +7,12 @@
 namespace global {
   float BR_DtoKpi = 0.03936, err_BR_DtoKpi = 0.030*1.e-2;
 }
-// enum Event { gammaN, Ngamma, Other };
+
 int macro(const std::string& inputname_raw, const std::string& inputname_effd,
           const std::string& inputname_effevent = "null", const std::string inputname_fprompt = "null",
-          float lumi = 1., const std::string& outputdir = "") { // nb-1
+          float lumi = 1., const std::string& outputdir = "") {
 
-  __XJJLOG << ">> lumi: " << lumi << std::endl;
+  __XJJLOG << ">> lumi: " << lumi << " nb-1" << std::endl;
   std::map<std::string, TH1D*> h1s;
   std::map<std::string, std::map<std::string, std::string>> infos;
   std::string tag;
@@ -22,14 +22,14 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     auto* inf = TFile::Open(inputname.c_str());
     tag += ((tag.empty() ? "" : "_") + xjjc::str_tag_from_file(inputname));
     if (!inf) {
-      __XJJLOG << "!! no " << category << " input file: " << inputname << ", skip." << std::endl;
+      __XJJLOG << "?? no " << category << " input file: " << inputname << ", skip." << std::endl;
       return 2;
     }
     // TH1D
     for (auto& name : h1names) {
       auto* h = xjjana::getobj<TH1D>(inf, name);
       if (!h) {
-        __XJJLOG << "!! TH1D " << name << " not found, skip." << std::endl;
+        __XJJLOG << "?? TH1D " << name << " not found, skip." << std::endl;
         continue;
       }
       xjjroot::sethempty(h, 0, 0.4);
@@ -75,8 +75,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" }});
 
   auto draw_global = [&infos, &lumi]() {
-    xjjroot::drawCMS(xjjroot::CMS::internal, xjjc::str_replaceall(infos.at("raw_data").at("input_tex"), ")", Form(", %.1f nb^{-1})", lumi*1.e3)));
-    xjjroot::drawtexgroup(0.24, 0.86, { "2 < p_{T} < 5 GeV", infos.at("raw_data").at("cut_tex") }, 0.04, 13);
+    xjjroot::drawCMS(xjjroot::CMS::internal, xjjc::str_replaceall(infos.at("raw_data").at("input_tex"), ")", Form(", %.1f#scale[0.3]{ }#mub^{-1})", lumi*1.e3)));
+    xjjroot::drawtexgroup(0.24, 0.86, { xjjc::number_range_string((double)2., (double)5., "#it{p}_{T}") + " GeV", infos.at("raw_data").at("cut_tex") }, 0.04, 13, 42, 1.25);
   };
   
   for (auto& t : { "y_yield", "y_corr", "y_xsec" }) {
@@ -86,8 +86,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf");
   }
 
-  xjjana::sethminmax(h1s.at("y_xsec"), 0, 2.5);
-  xjjroot::setthgrstyle(h1s.at("y_xsec"), xjjroot::mycolor_satmiddle.at("red"), -1, -1, xjjroot::mycolor_satmiddle.at("red"));
+  xjjana::sethminmax(h1s.at("y_xsec"), 0, 2.);
+  xjjroot::setthgrstyle(h1s.at("y_xsec"), xjjroot::mycolor_satmiddle2.at("red"), -1, -1, xjjroot::mycolor_satmiddle2.at("red"));
   pdf->prepare();
   h1s.at("y_xsec")->Draw("axis");
   auto* g_HIN_25_002 = measurement::draw_HIN_25_002(event_is);

@@ -39,8 +39,8 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
                        bins::nmult, bins::minmult, bins::maxmult
                        );
     __XJJLOG << ">> "<<h3[key]->GetName()<<" ("<<vars<<") \e[2m"<<icut<<"\e[0m"<<std::endl;
+    xjjc::saywait();
     tr->Project(h3[key]->GetName(), vars.c_str(), icut.c_str());
-    std::cout << "Wait...\r" << std::flush;
     xjjroot::writehist(h3[key]);
     return icut;
   };
