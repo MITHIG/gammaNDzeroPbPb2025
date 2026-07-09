@@ -1,0 +1,233 @@
+#include "RooArgSet.h"
+#include "RooDataSet.h"
+#include "RooRealVar.h"
+
+#include "xjjanauti.h"
+
+#define __VARIABLES_ROOINCL__
+#include "variables.h"
+
+#include "../include/util.h"
+
+struct Flatten {
+  std::vector<float> *br;
+  RooRealVar *roov;
+};
+
+enum class ECutPreset { None = 0, gammaN = 1, Ngamma = 2 };
+std::vector<std::string> ecut_name = { "None", "gammaN", "Ngamma" }
+
+std::unique_ptr<RooDataSet> make_dataset(TTree* tree, int v_Dgen, std::string name, ECutPreset ecut) {
+
+  // TTreeReader reader(tree);
+  // RooRealVar mass("Dmass", "m_{K#pi} (GeV)", massMin, massMax);
+  // RooRealVar pt("Dpt", "p_{T} [GeV]", 0.0, 100.0);
+  tree->SetBranchStatus("*", 0);
+
+  __XJJLOG << "++ register variables" << std::endl;
+  
+  RooArgSet observables; // a set of RooRealVar
+  std::map<std::string, Flatten> vars;
+  for (auto& v : variables) {
+    __XJJLOG << "   >> " << v.var << std::endl;
+    vars[v.varname].br = nullptr;
+    tree->SetBranchStatus(v.var.c_str(), 1);
+    tree->SetBranchAddress(v.var.c_str(), &(vars[v.varname].br));
+    vars[v.varname].roov = new RooRealVar(v.varname.c_str(), v.vartex.c_str(), v.varmin, v.varmax);
+    observables.add(*(vars[v.varname].roov));
+  }
+  // complicated roorealvar
+
+  // branches to use 
+#define SET_BRANCH_BOOL(q, t, d)                \
+  t q = d;                                      \
+  if (tree->GetBranch( #q )) {                  \
+    tree->SetBranchStatus( #q , 1);             \
+    tree->SetBranchAddress( #q , &q);           \
+  }
+
+  SET_BRANCH_BOOL(Run, int, 0);
+  SET_BRANCH_BOOL(isL1ZDCOr, bool, true);
+  SET_BRANCH_BOOL(cscTightHalo2015Filter, bool, true);
+  SET_BRANCH_BOOL(selectedVtxFilter, bool, true);
+  SET_BRANCH_BOOL(ZDCgammaN, bool, true);
+  SET_BRANCH_BOOL(ZDCNgamma, bool, true);
+  SET_BRANCH_BOOL(HFEMaxPlus_eta5, float, 0.);
+  SET_BRANCH_BOOL(HFEMaxMinus_eta5, float, 0.);
+
+  int Dsize; tree->SetBranchAddress("Dsize", &Dsize);
+  std::vector<int> *Dgen = nullptr;
+  if (tree->GetBranch("Dgen")) tree->SetBranchAddress("Dgen", &Dgen);
+
+  // TTreeReaderValue<std::vector<float>> dmass(reader, "Dmass");
+  // TTreeReaderValue<std::vector<float>> dmvaBdt(reader, "Dmva_BDT");
+  // std::unique_ptr<TTreeReaderValue<std::vector<float>>> dpt;
+  // if (pt) {
+  //   dpt = std::make_unique<TTreeReaderValue<std::vector<float>>>(reader, "Dpt");
+  // }
+  // std::unique_ptr<TTreeReaderValue<std::vector<int>>> dgen;
+  // if (requireDgen) {
+  //   dgen = std::make_unique<TTreeReaderValue<std::vector<int>>>(reader, "Dgen");
+  // }
+
+  // RooArgSet observables(mass);
+  // if (pt) observables.add(*pt);
+
+  auto data = std::make_unique<RooDataSet>("name", "", observables);
+
+  auto nentries = tree->GetEntries();
+  for (long long int i=0; i<nentries; i++) {
+    xjjc::progressslide(i, nentries, 10000);
+    tree->GetEntry(i);
+
+    if (!selectedVtxFilter) continue;
+    if (Run > 10 && !(isL1ZDCOr && cscTightHalo2015Filter)) continue;
+    if (ecut == ECutPreset::gammaN && !(ZDCgammaN && HFEMaxPlus_eta5 < 16)) continue;
+    if (ecut == ECutPreset::Ngamma && !(ZDCNgamma && HFEMaxMinus_eta5 < 16)) continue;
+
+#define VAL(q) vars[ #q ].br->at(j)
+    
+    for (int j=0; j<Dsize; j++) {
+      // cut
+      if (VAL(Dpt) < 2. || VAL(Dpt) > 5. || VAL(Dy) < -2. || VAL(Dy) > 2.) continue;
+      
+      if (v_Dgen >= 0 && Dgen && Dgen->at(j) != v_Dgen) continue;
+      if (!( std::abs(VAL(Dtrk1PtErr)/VAL(Dtrk1Pt)) < 0.1 && std::abs(VAL(Dtrk2PtErr)/VAL(Dtrk2Pt)) < 0.1 &&
+             std::abs(VAL(Dtrk1Eta)) < 2.4 && std::abs(VAL(Dtrk2Eta)) < 2.4 &&
+             VAL(Dtrk1Pt) > 0.5 && VAL(Dtrk2Pt) > 0.5 &&
+             VAL(Dchi2cl) > 0.05 && (VAL(DsvpvDistance)/VAL(DsvpvDisErr)) > 1. )) continue;
+
+      if (ecut == ECutPreset::gammaN &&
+          !((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098))) continue;
+      if (ecut == ECutPreset::Ngamma &&
+          !((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098))) continue;
+      
+      for (auto& [_, v] : vars) {
+        v.roov->setVal( v.br->at(j) );
+      }
+      // !! add complicated variables
+      data->add(observables);
+    }
+  }
+  xjjc::progressbar_summary(nentries);
+
+  __XJJLOG << ">> " << data << ": " << data->numEntries() << std::endl;
+
+  return data;
+
+  // while (reader.Next()) {
+  //   const auto &masses = *dmass;
+  //   const auto &bdts = *dmvaBdt;
+  //   if (masses.size() != bdts.size()) {
+  //     throw std::runtime_error(
+  //                              Form("Dmass and Dmva_BDT sizes differ in %s", fileName));
+  //   }
+
+  //   const std::vector<float> *pts = nullptr;
+  //   if (pt) {
+  //     pts = &(**dpt);
+  //     if (masses.size() != pts->size()) {
+  //       throw std::runtime_error(
+  //                                Form("Dmass and Dpt sizes differ in %s", fileName));
+  //     }
+  //   }
+
+  //   if (requireDgen) {
+  //     const auto &gens = **dgen;
+  //     if (masses.size() != gens.size()) {
+  //       throw std::runtime_error(
+  //                                Form("Dmass and Dgen sizes differ in %s", fileName));
+  //     }
+
+  //     for (std::size_t i = 0; i < masses.size(); ++i) {
+  //       if (gens[i] != dgenCode) continue;
+  //       if (bdts[i] <= minBdt) continue;
+  //       if (masses[i] < massMin || masses[i] > massMax) continue;
+  //       mass.setVal(masses[i]);
+  //       if (pt) pt->setVal((*pts)[i]);
+  //       data->add(observables);
+  //     }
+  //   } else {
+  //     for (std::size_t i = 0; i < masses.size(); ++i) {
+  //       const float value = masses[i];
+  //       if (bdts[i] <= minBdt) continue;
+  //       if (value < massMin || value > massMax) continue;
+  //       mass.setVal(value);
+  //       if (pt) pt->setVal((*pts)[i]);
+  //       data->add(observables);
+  //     }
+  //   }
+  // }
+
+  // return data;
+}
+
+// int makeDmassDatasets(const char *dataFile = "skim_HiForest_2025PbPbUPC_1.root",
+//                       const char *mcFile = "skim_HiForestMiniAOD_MC_3.root",
+//                       const char *outFile = "DmassDatasets.root",
+//                       double massMin = 1.70,
+//                       double massMax = 2.05,
+//                       double minBdt = -1.0e9) {
+int macro(std::string inputname_data, std::string inputname_mc, std::string outputname,
+          ECutPreset ecut) {
+
+  __XJJLOG << ">> event selection category: " << ecut_name[ecut] << std::endl;
+  
+  auto get_tree = [](std::string inputname) {
+    TTree* tr = nullptr;
+    const auto inputp = util::parse_input(inputname);
+    auto* inf = TFile::Open(inputp.file.c_str());
+    if (!inf || inf->IsZombie()) {
+      __XJJLOG << "!! bad file: " << inputp.file << ", abort." << std::endl;
+      return tr;
+    }
+    tr = dynamic_cast<TTree*>(inf->Get("Tree"));
+    if (!tr) {
+      __XJJLOG << "!! bad tree: Tree, abort." << std::endl;
+    }
+    return tr;
+  };
+  std::map<std::string, TTree*> trs;
+  trs["data"] = get_tree(inputname_data);
+  if (!trs.at("data")) return 2;
+  trs["mc"] = get_tree(inputname_mc);
+  if (!trs.at("mc")) return 2;
+
+  // std::unique_ptr<RooDataSet> make_dataset(TTree* tree, int v_Dgen, std::string name/*, cut*/) {
+  auto data = make_dataset(trs.at("data"), -1, "data", ecut);
+  // auto mc_match = make_dataset(trs.at("mc"), 23333, "mc_match");
+  // auto mc_swap = make_dataset(trs.at("mc"), 23344, "mc_swap");
+
+  // std::cout << "Created datasets in mass window [" << massMin << ", "
+  //           << massMax << "]\n"
+  //           << "  data candidates:             " << data->numEntries() << "\n"
+  //           << "  MC signal Dgen==23333:       " << mcSignal->numEntries() << "\n"
+  //           << "  MC swap   Dgen==23344:       " << mcSwap->numEntries() << "\n";
+  // if (minBdt <= -1.0e8) {
+  //   std::cout << "  selection: no Dmva_BDT cut\n";
+  // } else {
+  //   std::cout << "  selection: Dmva_BDT > " << minBdt << "\n";
+  // }
+
+  auto* outf = xjjroot::newfile(outputname + ".root");
+  data->Write("data");
+  outf->Close();
+
+  // TFile output(outFile, "RECREATE");
+  // data->Write("dataDataset");
+  // mcSignal->Write("mcSignalDataset");
+  // mcSwap->Write("mcSwapDataset");
+  // TNamed config("datasetConfig",
+  //               Form("tree=%s; massMin=%g; massMax=%g; minBdt=%g",
+  //                    treeName, massMin, massMax, minBdt));
+  // config.Write();
+  // output.Close();
+
+  return 0;
+}
+
+int main(int argc, char* argv[]) {
+  if (argc == 5) {
+    return macro(argv[1], argv[2], argv[3], static_cast<ECutPreset>(std::atoi(argv[4])));
+  }
+}
