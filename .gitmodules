@@ -1,0 +1,3 @@
+[submodule "include/csetup"]
+	path = include/csetup
+	url = https://github.com/boundino/csetup.git
