@@ -8,10 +8,11 @@ namespace measurement {
       x.push_back((xbins[i+1] + xbins[i]) / 2.);
       xerr.push_back((xbins[i+1] - xbins[i]) / 2.);
     }
+    auto color = kGray+3;
     auto* gstat = new TGraphErrors(xbins.size()-1, x.data(), y.data(), xerr.data(), ystat.data());
-    xjjroot::setthgrstyle(gstat, kBlack, 20, 1.6, kBlack, 1, 1);
+    xjjroot::setthgrstyle(gstat, color, 20, 1.6, color, 1, 1);
     auto* gsyst = new TGraphErrors(xbins.size()-1, x.data(), y.data(), xerr.data(), ysyst.data());
-    xjjroot::setthgrstyle(gsyst, kBlack, 20, 1.6, 0, 0, 0, kBlack, 0.9, 3004);
+    xjjroot::setthgrstyle(gsyst, color, 20, 1.6, 0, 0, 0, color, 0.9, 3004);
 
     gsyst->Draw("2 same");
     gstat->Draw("pe1 same");

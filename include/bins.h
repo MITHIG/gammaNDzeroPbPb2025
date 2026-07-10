@@ -2,17 +2,14 @@
 #define __BINS__
 
 namespace bins {
-  // const std::vector<float> ybins = { -2., -1., 0., 1., 2. };
-  // const std::vector<float> yinclbins = { -1., 1. },
-  //   ptbins = { 2., 3., 4., 5. };
 
-#ifdef __BINS_PTY_EQ__
-  const int ny = 4; const float miny = -2, maxy = 2;
-  const int npt = 1; const float minpt = 2, maxpt = 5;
+#ifdef __BINS_PTY_ANA__
+  std::vector<double> ybins; // to be defined in .cc
+  const int npt = 1; const double minpt = 2, maxpt = 5;
 #endif
 
 #ifdef __BINS_PTY_EFF__
-  const int ny = 16; const float miny = -2, maxy = 2;
+  const int ny = 48; const float miny = -2.4, maxy = 2.4;
   const int npt = 30; const float minpt = 2, maxpt = 5;
 #endif
 
@@ -29,6 +26,10 @@ namespace bins {
   const int nmass = 80; const float minmass = 1.66, maxmass = 2.06;
 #endif
 
+#ifdef __BINS_PTY_EQ__
+  const int ny = 4; const float miny = -2, maxy = 2;
+  const int npt = 1; const float minpt = 2, maxpt = 5;
+#endif
   
 }
 
