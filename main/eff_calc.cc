@@ -9,7 +9,7 @@ namespace eff {
   std::pair<TH1D*, TH1D*> sum_norm_byweight(TH2D* hreveff, TH2D* hweight, TH1D* hrefbin);
 }
 
-int macro(std::string inputname) {
+int macro(std::string inputname, int save_png = 1) {
   std::cout<<std::endl;
 
   auto* inf = TFile::Open(inputname.c_str());
@@ -66,10 +66,10 @@ int macro(std::string inputname) {
     // }
   };
 
-  make_eff("eff", "eff_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
-  make_eff("reveff", "eff_den", "eff_num", xjjroot::CMS::D0 + " 1 /#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
-  make_eff("effreco", "reco_num", "eff_den", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#GT");
-  make_eff("effsel", "eff_num", "reco_num", xjjroot::CMS::D0 + "#scale[0.5]{ }#LT#epsilon_{sel}#GT");
+  make_eff("eff", "eff_num", "eff_den", xjjroot::CMS::DzDzbar + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
+  make_eff("reveff", "eff_den", "eff_num", xjjroot::CMS::DzDzbar + " 1 /#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{sel}#GT");
+  make_eff("effreco", "reco_num", "eff_den", xjjroot::CMS::DzDzbar + "#scale[0.5]{ }#LT#alpha#scale[0.5]{ }#times#scale[0.5]{ }#epsilon_{reco}#GT");
+  make_eff("effsel", "eff_num", "reco_num", xjjroot::CMS::DzDzbar + "#scale[0.5]{ }#LT#epsilon_{sel}#GT");
 
   xjjroot::print_tab(h2s, 0);
   xjjroot::print_tab(h1s, 0);
@@ -134,7 +134,7 @@ int macro(std::string inputname) {
         h2s.at(name + "-y-pt")->GetZaxis()->GetTitle()
       }, 0.04, 13);
     draw_global(false);
-    pdf->write(png_name + "_" + name + "-pt-y.pdf");
+    pdf->write(png_name + "_" + name + "-pt-y.pdf", save_png ? "" : "X");
   }
 
   xjjroot::setcstyle(pdf->getc(), 1, xjjroot::Standard);
@@ -163,7 +163,7 @@ int macro(std::string inputname) {
     xjjana::sethminmax(h1s[name + "-y__rebin"], 0, 1.4);
     h1s[name + "-y__rebin"]->Draw("pe1");
     draw_global();
-    pdf->write(png_name + "_" + name + ".pdf");
+    pdf->write(png_name + "_" + name + ".pdf", save_png ? "" : "X");
   }
 
   pdf->close();
@@ -183,6 +183,10 @@ int macro(std::string inputname) {
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 4) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[2], ",");
+    return macro(argv[1], atoi(argv[3]));
+  }
   if (argc == 3) {
     bins::ybins = xjjc::str_convert_vector<double>(argv[2], ",");
     return macro(argv[1]);

@@ -74,31 +74,32 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputdir + "/" + tag + ".pdf");
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" }});
 
-  auto draw_global = [&infos, &lumi]() {
+  auto draw_global = [&infos, &lumi](bool divide2) {
     xjjroot::drawCMS(xjjroot::CMS::internal, xjjc::str_replaceall(infos.at("raw_data").at("input_tex"), ")", Form(", %.1f#scale[0.3]{ }#mub^{-1})", lumi*1.e3)));
     xjjroot::drawtexgroup(0.24, 0.86, { xjjc::number_range_string((double)2., (double)5., "#it{p}_{T}") + " GeV", infos.at("raw_data").at("cut_tex") }, 0.04, 13, 42, 1.25);
+    xjjroot::drawtexgroup(0.88, 0.87, { divide2 ? xjjroot::CMS::DzDzbar2 : xjjroot::CMS::DznDzbar }, 0.043, 33, 42, 1.25);
   };
   
-  for (auto& t : { "y_yield", "y_corr", "y_xsec" }) {
-    pdf->prepare();
-    h1s.at(t)->Draw("pe1");
-    draw_global();
-    pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf");
-  }
-
   xjjana::sethminmax(h1s.at("y_xsec"), 0, 2.);
   xjjroot::setthgrstyle(h1s.at("y_xsec"), xjjroot::mycolor_satmiddle2.at("red"), -1, -1, xjjroot::mycolor_satmiddle2.at("red"));
   pdf->prepare();
   h1s.at("y_xsec")->Draw("axis");
   auto* g_HIN_25_002 = measurement::draw_HIN_25_002(event_is);
   h1s.at("y_xsec")->Draw("pe1 same");
-  draw_global();
+  draw_global(true);
   auto* legvs23 = new TLegend(0.55, 0.75-2*0.042, 0.85, 0.75);
   xjjroot::setleg(legvs23, 0.04);
   legvs23->AddEntry(h1s.at("y_xsec"), "This analysis", "p");
   legvs23->AddEntry(g_HIN_25_002, "PAS-HIN-25-002", "pf");
   legvs23->Draw();
   pdf->write(name_png + "_xsec_vs23.pdf");
+
+  for (auto& t : { "y_yield", "y_eff__rebin", "y_corr", "y_xsec" }) {
+    pdf->prepare();
+    h1s.at(t)->Draw("pe1");
+    draw_global(xjjc::str_contains(t, "xsec"));
+    pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf");
+  }
 
   pdf->close();
 

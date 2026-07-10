@@ -5,7 +5,7 @@
 
 #include "../include/dfitter.h"
 
-int macro(std::string input_data, std::string input_template, int fit_type = 0) {
+int macro(std::string input_data, std::string input_template, int fit_type = 0, int save_png = 1) {
   std::cout<<std::endl;
 
 #define READ_FILE(q)                                                    \
@@ -90,7 +90,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
     df->draw_leg();
     df->draw_result(0.25, 0.86-3*0.035*1.15, 0.035);
     xjjroot::drawCMS(xjjroot::CMS::internal, info_data.at("input_tex"));
-    pdf->write(Form("%s_y-%d.pdf", name_png.c_str(), i));
+    pdf->write(Form("%s_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
 
     h1s["yield-y"]->SetBinContent(i+1, df->yield());
     h1s["yield-y"]->SetBinError(i+1, df->yieldErr());
@@ -110,7 +110,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
     xjjroot::drawtexgroup(0.25, 0.86, { label_y(i), label_pt() }, 0.035, 13);
     df->draw_params(0.25, 0.86-2*0.035*1.15, 0.035);
     xjjroot::drawCMS(xjjroot::CMS::simulation, info_template.at("input_tex"));
-    pdf->write(Form("%s_mc_y-%d.pdf", name_png.c_str(), i));
+    pdf->write(Form("%s_mc_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
   }
 
   xjjroot::print_th(h1s.at("yield-y"));
@@ -167,6 +167,12 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0) 
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 5) {
+    return macro(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+  }
+  if (argc == 4) {
+    return macro(argv[1], argv[2], atoi(argv[3]));
+  }
   if (argc == 3) {
     return macro(argv[1], argv[2]);
   }
