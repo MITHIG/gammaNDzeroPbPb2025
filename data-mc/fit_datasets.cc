@@ -2,6 +2,7 @@
 #include "RooPlot.h"
 #include "RooRealVar.h"
 // #include "RooStats/SPlot.h"
+#include "RooHist.h"
 
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
@@ -67,27 +68,32 @@ int macro(std::string inputname, std::string outputname) {
   // RooRealVar Dmass("Dmass", v_by_name("Dmass").vartex.c_str(), bins::minmass, bins::maxmass);
   // Dmass.setBins(bins::nmass); // did anything?
   // Dmass.setRange("range_fit", bins::minmass, bins::maxmass);
+  auto Dmass = dynamic_cast<RooRealVar*>(datas.at("data_main")->get()->find("Dmass"));
+  // Dmass->setBins(bins::nmass);
 
-  auto* fitter = new droofitter(datas.at("data_main"), datas.at("mc_match"), datas.at("mc_swap"));
+  auto* fitter = new droofitter(datas.at("data_main"), datas.at("mc_match"), datas.at("mc_swap"), *Dmass);
   fitter->fit(bins::minmass, bins::maxmass);
   
-  // xjjroot::setgstyle(1);
-  // auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+  xjjroot::setgstyle(1);
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+
+  pdf->prepare();
+  auto* frame_mc = fitter->draw_mc_swap(bins::nmass);
+  fitter->draw_mc_sig(bins::nmass, frame_mc);
+  frame_mc->Draw();
+  
+  pdf->write();
 
   // pdf->prepare();
-  // auto *frame_sig = Dmass.frame();
-  // xjjroot::sethempty(frame_sig);
-  // datas.at("mc_match")->plotOn(frame_sig, RooFit::Binning(bins::nmass));
-  // pdf_sig.plotOn(frame_sig, RooFit::LineColor(kRed + 1));
-  // pdf_sig.plotOn(frame_sig, RooFit::Components(pdf_sig_g1), RooFit::LineStyle(kDashed),
-  //                RooFit::LineColor(kBlue + 1));
-  // pdf_sig.plotOn(frame_sig, RooFit::Components(pdf_sig_g2), RooFit::LineStyle(kDashed),
-  //                RooFit::LineColor(kGreen + 2));
-  // pdf_sig.plotOn(frame_sig, RooFit::Components(pdf_sig_g3), RooFit::LineStyle(kDashed),
-  //                RooFit::LineColor(kMagenta + 1));
-  // // frame_save(frame_sig, Form("%s_signal", outPrefix));
-  // frame_sig->Draw();
+  // auto* frame_swap = fitter->draw_mc_swap(bins::nmass);
+  // frame_swap->Draw();  
   // pdf->write();
+
+  pdf->prepare();
+  auto* frame_data = fitter->draw_data(bins::nmass);
+  frame_data->Draw();
+  
+  pdf->write();
 
   // pdf->prepare();
   // auto *frame_swap = Dmass.frame();
@@ -169,7 +175,7 @@ int macro(std::string inputname, std::string outputname) {
   // hSigSwapDpt.Write("hSigSwapDpt");
   // output.Close();
 
-  // pdf->close();
+  pdf->close();
   
   return 0;
 }

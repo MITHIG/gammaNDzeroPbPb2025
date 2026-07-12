@@ -420,7 +420,7 @@ TF1* xjjroot::dfitter::clone_fun(const TF1* fun, const std::string& name) const 
 }
 
 void xjjroot::dfitter::set_hist(TH1* h) {
-  h->SetXTitle("m_{#piK} (GeV/c^{2})");
+  h->SetXTitle("m_{#piK} [GeV/c^{2}]");
   h->SetYTitle(Form("Entries / (%.0f MeV/c^{2})", h->GetBinWidth(1)*1.e+3));
   xjjroot::sethempty(h, 0., 0.04);
   xjjroot::setthgrstyle(h, fstyle.at("h"));
