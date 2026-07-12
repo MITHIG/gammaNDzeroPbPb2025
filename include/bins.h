@@ -13,6 +13,11 @@ namespace bins {
   const int npt = 30; const float minpt = 2, maxpt = 5;
 #endif
 
+#ifdef __BINS_PTY_FPROMPT__
+  std::vector<double> ybins = { -2., -1., 0., 1., 2. }; // can be redefined in .cc
+  const int npt = 1; const float minpt = 2, maxpt = 5;
+#endif
+
 #ifdef __BINS_MULT__
   const int nmult = 50; const float minmult = 0, maxmult = 50;
 #endif
@@ -26,6 +31,7 @@ namespace bins {
   const int nmass = 80; const float minmass = 1.66, maxmass = 2.06;
 #endif
 
+  // used in comparison/savehist.cc -> to update
 #ifdef __BINS_PTY_EQ__
   const int ny = 4; const float miny = -2, maxy = 2;
   const int npt = 1; const float minpt = 2, maxpt = 5;

@@ -25,9 +25,10 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   __XJJLOG << ">> event selection category: " << ecut_name[static_cast<int>(ecut)] << std::endl;
   __XJJLOG << ">> gen-match       category: " << gcut_name[static_cast<int>(gcut)] << std::endl;  
 
-  // TTreeReader reader(tree);
-  // RooRealVar mass("Dmass", "m_{K#pi} (GeV)", massMin, massMax);
-  // RooRealVar pt("Dpt", "p_{T} [GeV]", 0.0, 100.0);
+  // tree->SetAlias("Dsig", "DsvpvDistance/DsvpvDisErr");
+  // RooRealVar Dsig("Dsig", "Dsig", 0, 100);
+  // RooDataSet ds("ds", "ds", tree, RooArgSet(Dsig), "DsvpvDistance/DsvpvDisErr > 3");
+  
   tree->SetBranchStatus("*", 0);
 
   __XJJLOG << "++ register variables" << std::endl;
@@ -73,20 +74,6 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   }
 
   SET_BRANCH_VECTOR(Dgen, int);
-
-  // TTreeReaderValue<std::vector<float>> dmass(reader, "Dmass");
-  // TTreeReaderValue<std::vector<float>> dmvaBdt(reader, "Dmva_BDT");
-  // std::unique_ptr<TTreeReaderValue<std::vector<float>>> dpt;
-  // if (pt) {
-  //   dpt = std::make_unique<TTreeReaderValue<std::vector<float>>>(reader, "Dpt");
-  // }
-  // std::unique_ptr<TTreeReaderValue<std::vector<int>>> dgen;
-  // if (requireDgen) {
-  //   dgen = std::make_unique<TTreeReaderValue<std::vector<int>>>(reader, "Dgen");
-  // }
-
-  // RooArgSet observables(mass);
-  // if (pt) observables.add(*pt);
 
   auto data = std::make_unique<RooDataSet>(name, "", observables);
   auto nentries = tree->GetEntries();
@@ -137,10 +124,10 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
 
 int macro(std::string inputname, std::string outputname, ECutPreset ecut, int ismcref) {
 
-  const auto inputp = util::parse_input(inputname);
-  auto* inf = TFile::Open(inputp.file.c_str());
+  const auto infname = util::parse_input(inputname).content;
+  auto* inf = TFile::Open(infname.c_str());
   if (!inf || inf->IsZombie()) {
-    __XJJLOG << "!! bad file: " << inputp.file << ", abort." << std::endl;
+    __XJJLOG << "!! bad file: " << infname << ", abort." << std::endl;
     return 2;
   }
   auto* tree = dynamic_cast<TTree*>(inf->Get("Tree"));
@@ -161,16 +148,6 @@ int macro(std::string inputname, std::string outputname, ECutPreset ecut, int is
   for (auto& d : datasets)
     d->Write(d->GetName());
   outf->Close();
-
-  // TFile output(outFile, "RECREATE");
-  // data->Write("dataDataset");
-  // mcSignal->Write("mcSignalDataset");
-  // mcSwap->Write("mcSwapDataset");
-  // TNamed config("datasetConfig",
-  //               Form("tree=%s; massMin=%g; massMax=%g; minBdt=%g",
-  //                    treeName, massMin, massMax, minBdt));
-  // config.Write();
-  // output.Close();
 
   return 0;
 }

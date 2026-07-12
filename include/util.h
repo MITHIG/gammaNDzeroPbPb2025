@@ -2,7 +2,7 @@
 
 namespace util {
   struct Inputpar {
-    std::string file;
+    std::string content;
     std::string tex;
     std::string tag;
     std::vector<std::string> parse;
@@ -12,10 +12,10 @@ namespace util {
 }
 
 util::Inputpar util::parse_input(std::string inputname) {
-  Inputpar p = { .file = "", .tex = "", .tag = "",
+  Inputpar p = { .content = "", .tex = "", .tag = "",
     .parse = xjjc::str_divide_trim(inputname, ";") };
   if (p.parse.size() > 0)
-    p.file = p.parse[0];
+    p.content = p.parse[0];
   if (p.parse.size() > 1)
     p.tex = p.parse[1];
   if (p.parse.size() > 2)

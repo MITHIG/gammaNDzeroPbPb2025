@@ -15,6 +15,11 @@ namespace save {
       tr->SetBranchStatus(m.first.c_str(), m.second);
   }
 
+  void mask_branch(TTree* tr) {
+    for (const auto& m : globals::mask_br)
+      tr->SetBranchStatus(m.first.c_str(), m.second);
+  }
+
   std::string cut_adjust_to_mc(const std::string& cut_data) {
     auto cut_r = cut_data;
     for (auto& cut : std::vector<std::string>{ "isL1ZDCOr", "cscTightHalo2015Filter" }) {
