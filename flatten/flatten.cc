@@ -20,79 +20,81 @@
 #include <string>
 #include <vector>
 
+#include "../include/xjjcuti.h"
+
 namespace {
 
-struct VectorColumn {
-  enum class Kind { Float, Double, Int, Bool };
+  struct VectorColumn {
+    enum class Kind { Float, Double, Int, Bool };
 
-  std::string name;
-  Kind kind;
-  std::vector<float>* vf = nullptr;
-  std::vector<double>* vd = nullptr;
-  std::vector<int>* vi = nullptr;
-  std::vector<bool>* vb = nullptr;
-  float f = 0.f;
-  double d = 0.;
-  int i = 0;
-  bool b = false;
+    std::string name;
+    Kind kind;
+    std::vector<float>* vf = nullptr;
+    std::vector<double>* vd = nullptr;
+    std::vector<int>* vi = nullptr;
+    std::vector<bool>* vb = nullptr;
+    float f = 0.f;
+    double d = 0.;
+    int i = 0;
+    bool b = false;
 
-  void bind(TTree* tree) {
-    switch (kind) {
+    void bind(TTree* tree) {
+      switch (kind) {
       case Kind::Float:  tree->SetBranchAddress(name.c_str(), &vf); break;
       case Kind::Double: tree->SetBranchAddress(name.c_str(), &vd); break;
       case Kind::Int:    tree->SetBranchAddress(name.c_str(), &vi); break;
       case Kind::Bool:   tree->SetBranchAddress(name.c_str(), &vb); break;
+      }
     }
-  }
 
-  void makeBranch(TTree* tree) {
-    switch (kind) {
+    void makeBranch(TTree* tree) {
+      switch (kind) {
       case Kind::Float:  tree->Branch(name.c_str(), &f, (name + "/F").c_str()); break;
       case Kind::Double: tree->Branch(name.c_str(), &d, (name + "/D").c_str()); break;
       case Kind::Int:    tree->Branch(name.c_str(), &i, (name + "/I").c_str()); break;
       case Kind::Bool:   tree->Branch(name.c_str(), &b, (name + "/O").c_str()); break;
+      }
     }
-  }
 
-  std::size_t size() const {
-    switch (kind) {
+    std::size_t size() const {
+      switch (kind) {
       case Kind::Float:  return vf ? vf->size() : 0;
       case Kind::Double: return vd ? vd->size() : 0;
       case Kind::Int:    return vi ? vi->size() : 0;
       case Kind::Bool:   return vb ? vb->size() : 0;
+      }
+      return 0;
     }
-    return 0;
-  }
 
-  void set(std::size_t index) {
-    switch (kind) {
+    void set(std::size_t index) {
+      switch (kind) {
       case Kind::Float:  f = (*vf)[index]; break;
       case Kind::Double: d = (*vd)[index]; break;
       case Kind::Int:    i = (*vi)[index]; break;
       case Kind::Bool:   b = (*vb)[index]; break;
+      }
     }
+  };
+
+  std::string normalizeType(std::string type) {
+    const std::string prefix = "std::";
+    while (type.compare(0, prefix.size(), prefix) == 0)
+      type.erase(0, prefix.size());
+    type.erase(0, type.find_first_not_of(" \t"));
+    type.erase(type.find_last_not_of(" \t") + 1);
+    return type;
   }
-};
 
-std::string normalizeType(std::string type) {
-  const std::string prefix = "std::";
-  while (type.compare(0, prefix.size(), prefix) == 0)
-    type.erase(0, prefix.size());
-  type.erase(0, type.find_first_not_of(" \t"));
-  type.erase(type.find_last_not_of(" \t") + 1);
-  return type;
-}
-
-bool isVectorType(const std::string& type) {
-  const std::string t = normalizeType(type);
-  return t.rfind("vector<", 0) == 0;
-}
+  bool isVectorType(const std::string& type) {
+    const std::string t = normalizeType(type);
+    return t.rfind("vector<", 0) == 0;
+  }
 
 } // namespace
 
 void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
              const char* output = "skim_HiForest_2025PbPbUPC_1_flattened.root") {
-  std::unique_ptr<TFile> in(TFile::Open(input, "READ"));
+  std::unique_ptr<TFile> in(new TFile(input, "READ"));
   if (!in || in->IsZombie()) {
     std::cerr << "Cannot open input file: " << input << std::endl;
     return;
@@ -107,6 +109,7 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
   // Keep a separate reader tree.  CloneTree(0) can alter branch state on its
   // source tree, so using a second handle makes the input addresses stable.
   std::unique_ptr<TFile> readFile(TFile::Open(input, "READ"));
+  // std::unique_ptr<TFile> readFile(new TFile(input, "READ"));
   auto* readTree = readFile ? dynamic_cast<TTree*>(readFile->Get("Tree")) : nullptr;
   if (!readTree) {
     std::cerr << "Cannot create a second reader for Tree" << std::endl;
@@ -150,7 +153,45 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
     columns.push_back(std::move(column));
   }
 
+  // First scan the complete input. A D* branch is retained only if its
+  // vector length is exactly Dsize for every event.
+  int dsize = 0;
+  if (!readTree->GetBranch("Dsize")) {
+    std::cerr << "Input tree does not contain the required Dsize branch"
+              << std::endl;
+    return;
+  }
+  readTree->SetBranchAddress("Dsize", &dsize);
+  for (const auto& column : columns)
+    column->bind(readTree);
+
+  __XJJLOG << "++ find bad D* branches whose size are not Dsize" << std::endl;
+  std::vector<bool> bad(columns.size(), false);
+  for (Long64_t entry = 0; entry < readTree->GetEntries(); ++entry) {
+    xjjc::progressslide(entry, readTree->GetEntries(), 100000);
+    readTree->GetEntry(entry);
+    for (std::size_t icolumn = 0; icolumn < columns.size(); ++icolumn) {
+      if (static_cast<Long64_t>(columns[icolumn]->size()) != dsize)
+        bad[icolumn] = true;
+    }
+  }
+  xjjc::progressbar_summary(readTree->GetEntries());
+
+  std::vector<std::string> deletedBranches;
+  for (std::size_t icolumn = 0; icolumn < columns.size(); ++icolumn) {
+    if (bad[icolumn])
+      deletedBranches.push_back(columns[icolumn]->name);
+  }
+  std::size_t badIndex = 0;
+  columns.erase(std::remove_if(columns.begin(), columns.end(),
+                               [&bad, &badIndex](const auto&) {
+                                 return bad[badIndex++];
+                               }),
+                columns.end());
+  xjjc::print_vec_v(deletedBranches, 0);
+
   std::unique_ptr<TFile> out(TFile::Open(output, "RECREATE"));
+  // std::unique_ptr<TFile> out(new TFile(output, "RECREATE"));
   if (!out || out->IsZombie()) {
     std::cerr << "Cannot create output file: " << output << std::endl;
     return;
@@ -171,36 +212,20 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
     // The cloned scalar branches remain attached to tree, while D vectors
     // are attached to readTree.  Advance both so each output candidate gets
     // the event-level values from its source event.
+    xjjc::progressslide(entry, entries, 10000);
     tree->GetEntry(entry);
     readTree->GetEntry(entry);
-    std::size_t nCandidates = columns.empty() ? 0 : columns.front()->size();
-    bool sameSize = true;
-    for (const auto& column : columns) {
-      const std::size_t columnSize = column->size();
-      if (columnSize != nCandidates) {
-        sameSize = false;
-        nCandidates = std::max(nCandidates, columnSize);
-      }
-    }
-    if (!sameSize) {
-      std::cerr << "Warning: D* vector sizes differ at input entry " << entry
-                << "; flattening " << nCandidates
-                << " candidates and using default values where needed."
-                << std::endl;
-      break;
-    }
+    const std::size_t nCandidates = dsize < 0 ? 0 : dsize;
 
     for (std::size_t candidate = 0; candidate < nCandidates; ++candidate) {
       for (const auto& column : columns) {
-        // D vectors should have the same length.  Leave a default value if a
-        // malformed event contains a shorter vector rather than crashing.
-        if (candidate < column->size())
-          column->set(candidate);
+        column->set(candidate);
       }
       flat->Fill();
       ++outputEntries;
     }
   }
+  xjjc::progressbar_summary(entries);
 
   // Preserve the auxiliary metadata tree, if present.
   if (auto* info = dynamic_cast<TTree*>(in->Get("InfoTree")))
@@ -208,6 +233,25 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
 
   flat->Write();
   out->Write();
+  out->Close();
+  
   std::cout << "Wrote " << outputEntries << " flattened entries to "
             << output << std::endl;
+  std::cout << "Deleted D* branches with a size mismatch:" << std::endl;
+  if (deletedBranches.empty())
+    std::cout << "  (none)" << std::endl;
+  else
+    for (const auto& name : deletedBranches)
+      std::cout << "  " << name << std::endl;
+
+  
+}
+
+
+int main(int argc, char* argv[]) {
+  if (argc == 3) {
+    flatten(argv[1], argv[2]);
+    return 0;
+  }
+  return 1;
 }
