@@ -9,6 +9,7 @@
 #include "RooGaussian.h"
 #include "RooPlot.h"
 #include "RooRealVar.h"
+#include <RooWorkspace.h>
 
 class droofitter
 {
@@ -20,10 +21,13 @@ public:
   RooPlot* draw_mc_swap(int nmass, RooPlot *frame = nullptr);
   RooPlot* draw_data(int nmass, RooPlot *frame = nullptr);
   static void draw_ds(RooDataSet*, RooPlot*);
+  TLegend* leg() { return leg_; }
+  RooWorkspace* make_ws(std::string name);
+  
 private:
   RooRealVar Dmass;
   RooDataSet *ds_data_main, *ds_mc_match, *ds_mc_swap;
-  std::unique_ptr<RooFitResult> fitr_sig, fitr_swap, fitr_data;
+  std::unique_ptr<RooFitResult> fitr_sig, fitr_swap, fitr_total;
   std::unique_ptr<RooAddPdf> pdf_total, pdf_sig, pdf_sigswap;
   std::unique_ptr<RooGaussian> pdf_sig_g1, pdf_sig_g2, pdf_sig_g3, pdf_swap;
   std::unique_ptr<RooChebychev> pdf_bkg;
@@ -32,6 +36,7 @@ private:
     par_swap_sigma1, par_sigswap_frac,
     par_bkg_c1, par_bkg_c2, par_bkg_c3,
     n_sigswap, n_bkg;
+  TLegend* leg_;
   void set_list_constant(RooArgList vars, bool constant = true) {
     for (int i = 0; i < vars.getSize(); ++i) {
       auto *var = dynamic_cast<RooRealVar *>(vars.at(i));
@@ -42,7 +47,8 @@ private:
 
 droofitter::droofitter(RooDataSet* data_main, RooDataSet* mc_match, RooDataSet* mc_swap)
   : Dmass(*dynamic_cast<RooRealVar*>(data_main->get()->find("Dmass"))),
-    ds_data_main(data_main), ds_mc_match(mc_match), ds_mc_swap(mc_swap) {
+    ds_data_main(data_main), ds_mc_match(mc_match), ds_mc_swap(mc_swap),
+    leg_(nullptr) {
   // Dmass = dynamic_cast<RooRealVar*>(ds_data_main->get()->find("Dmass"));
 }
 
@@ -52,7 +58,6 @@ droofitter::droofitter(RooDataSet* data_main, RooDataSet* mc_match, RooDataSet* 
 
 void droofitter::fit(float minmass, float maxmass) {
   Dmass.setRange("range_fit", minmass, maxmass);
-  // Dmass.setBins(nmass);
 
   par_mean = std::make_unique<RooRealVar>("par_mean", "mean", 1.865, 1.82, 1.91);
   par_sig_sigma1 = std::make_unique<RooRealVar>("par_sig_sigma1", "signal core width", 0.006, 0.001, 0.060);
@@ -68,7 +73,7 @@ void droofitter::fit(float minmass, float maxmass) {
                                         RooArgList(*par_sig_frac1, *par_sig_frac2), true);
   // fit signal
   fitr_sig = std::unique_ptr<RooFitResult>(pdf_sig->fitTo(*ds_mc_match, RooFit::Save(true), RooFit::PrintLevel(-1), RooFit::Strategy(1), RooFit::Range("range_fit")));
-
+  
   par_swap_sigma1 = std::make_unique<RooRealVar>("par_swap_sigma1", "swap width", 0.035, 0.002, 0.200);
   // pdf_swap_g1 = std::make_unique<RooGaussian>("pdf_swap_g1", "swap Gaussian 1", Dmass, *par_mean, *par_swap_sigma1);
   pdf_swap = std::make_unique<RooGaussian>("pdf_swap", "swap Gaussian", Dmass, *par_mean, *par_swap_sigma1);
@@ -77,8 +82,9 @@ void droofitter::fit(float minmass, float maxmass) {
   fitr_swap = std::unique_ptr<RooFitResult>(pdf_swap->fitTo(*ds_mc_swap, RooFit::Save(true), RooFit::PrintLevel(-1), RooFit::Strategy(1), RooFit::Range("range_fit")));
 
   // prepare to fit data
-  set_list_constant(RooArgList(*par_mean, *par_sig_sigma1, *par_sig_sigma2, *par_sig_sigma3, *par_sig_frac1, *par_sig_frac2,
+  set_list_constant(RooArgList(*par_sig_sigma1, *par_sig_sigma2, *par_sig_sigma3, *par_sig_frac1, *par_sig_frac2,
                                *par_swap_sigma1));
+  par_mean->setConstant(false);
 
   const double signalFractionValue = ds_mc_match->numEntries()*1. / (ds_mc_match->numEntries() + ds_mc_swap->numEntries()), // in fitting range
     swapFractionValue = 1.0 - signalFractionValue;
@@ -102,21 +108,20 @@ void droofitter::fit(float minmass, float maxmass) {
                                           RooArgList(*pdf_sigswap, *pdf_bkg),
                                           RooArgList(*n_sigswap, *n_bkg));
 
-  fitr_data = std::unique_ptr<RooFitResult>(pdf_total->fitTo(*ds_data_main, RooFit::Extended(true), // Extended(true) tells RooFit to fit both the shape and the total number of events, instead of only the shape
-                                                             RooFit::Save(true), RooFit::PrintLevel(-1), RooFit::Strategy(1), RooFit::Range("range_fit")));
+  fitr_total = std::unique_ptr<RooFitResult>(pdf_total->fitTo(*ds_data_main, RooFit::Extended(true), // Extended(true) tells RooFit to fit both the shape and the total number of events, instead of only the shape
+                                                              RooFit::Save(true), RooFit::PrintLevel(-1), RooFit::Strategy(1), RooFit::Range("range_fit")));
 
   __XJJLOG << "++ sig fit:" << std::endl;
   fitr_sig->Print("v");
   __XJJLOG << "++ swap fit:" << std::endl;
   fitr_swap->Print("v");
   __XJJLOG << "++ data fit:" << std::endl;
-  fitr_data->Print("v");
+  fitr_total->Print("v");
 }
 
 void droofitter::draw_ds(RooDataSet* ds, RooPlot* frame) {
-  xjjroot::sethempty(frame, 0, 0.1);
-  // ds->plotOn(frame, RooFit::Binning(nmass), RooFit::MarkerStyle(20), RooFit::MarkerSize(1.3), RooFit::XErrorSize(0));
-  ds->plotOn(frame, RooFit::MarkerStyle(20), RooFit::MarkerSize(1.3), RooFit::XErrorSize(0));
+  xjjroot::sethempty(frame, 0, 0.5);
+  ds->plotOn(frame, RooFit::MarkerStyle(20), RooFit::MarkerSize(1.3), RooFit::XErrorSize(0), RooFit::Name("h_data_main")); // RooFit::Binning(nmass)
   frame->SetMinimum(0);
   frame->SetMaximum(xjjana::gethmaximum(frame->getHist())*1.4*1.2);
   auto* x = frame->getPlotVar();
@@ -133,13 +138,12 @@ RooPlot* droofitter::draw_mc_sig(int nmass, RooPlot *frame) {
     frame = Dmass.frame();
   }
   draw_ds(ds_mc_match, frame);
-  pdf_sig->plotOn(frame, RooFit::LineColor(kRed + 1));
-  pdf_sig->plotOn(frame, RooFit::Components(*pdf_sig_g1), RooFit::LineStyle(kDashed),
-                  RooFit::LineColor(kBlue + 1));
-  pdf_sig->plotOn(frame, RooFit::Components(*pdf_sig_g2), RooFit::LineStyle(kDashed),
-                  RooFit::LineColor(kGreen + 2));
-  pdf_sig->plotOn(frame, RooFit::Components(*pdf_sig_g3), RooFit::LineStyle(kDashed),
-                  RooFit::LineColor(kMagenta + 1));
+  pdf_sig->getParameters(ds_data_main)->assignValueOnly(fitr_sig->floatParsFinal()); // restore params in MC
+  pdf_sig->plotOn(frame, RooFit::LineColor(kOrange-3), RooFit::LineWidth(3), RooFit::FillColor(kOrange-3), RooFit::FillStyle(3004), RooFit::DrawOption("FL"));
+  pdf_sig->plotOn(frame, RooFit::Components(*pdf_sig_g1), RooFit::LineColor(kOrange-3), RooFit::LineWidth(3), RooFit::LineStyle(kDashed));
+  pdf_sig->plotOn(frame, RooFit::Components(*pdf_sig_g2), RooFit::LineColor(kOrange-3), RooFit::LineWidth(3), RooFit::LineStyle(kDashed));
+  pdf_sig->plotOn(frame, RooFit::Components(*pdf_sig_g3), RooFit::LineColor(kOrange-3), RooFit::LineWidth(3), RooFit::LineStyle(kDashed));
+
   return frame;
 }
 
@@ -149,7 +153,8 @@ RooPlot* droofitter::draw_mc_swap(int nmass, RooPlot *frame) {
     frame = Dmass.frame();
   }
   draw_ds(ds_mc_swap, frame);
-  pdf_swap->plotOn(frame, RooFit::LineColor(kRed + 1));
+  pdf_swap->getParameters(ds_data_main)->assignValueOnly(fitr_swap->floatParsFinal()); // restore params in MC
+  pdf_swap->plotOn(frame, RooFit::LineColor(kGreen+4), RooFit::LineWidth(3), RooFit::FillColor(kGreen+4), RooFit::FillStyle(3005), RooFit::DrawOption("FL"));
   return frame;
 }
 
@@ -159,18 +164,32 @@ RooPlot* droofitter::draw_data(int nmass, RooPlot *frame) {
     frame = Dmass.frame();
   }
   draw_ds(ds_data_main, frame);
-  pdf_total->plotOn(frame, RooFit::LineColor(kRed + 1));
-  pdf_total->plotOn(frame, RooFit::Components("pdf_sig"), RooFit::LineColor(kBlue + 1),
-                    RooFit::LineStyle(kDashed));
-  pdf_total->plotOn(frame, RooFit::Components("pdf_swap"), RooFit::LineColor(kGreen + 2),
-                    RooFit::LineStyle(kDashed));
-  pdf_total->plotOn(frame, RooFit::Components("pdf_bkg"), RooFit::LineColor(kMagenta + 1),
-                    RooFit::LineStyle(kDashed));
-  // pdf_total->paramOn(frame, RooFit::Layout(0.58, 0.88, 0.88));
-  // pdf_total->paramOn(frame, RooFit::Layout(0.58, 0.88, 0.88),
-  //                   RooFit::Parameters(RooArgSet(n_sigswap, n_bkg, par_sigswap_frac, par_mean,
-  //                                                par_sig_sigma1, par_sig_sigma2, par_sig_sigma3, par_swap_sigma,
-  //                                                par_bkg_c1, par_bkg_c2, par_bkg_c3)));
-  // frame->Draw();
+  pdf_total->getParameters(ds_data_main)->assignValueOnly(fitr_total->floatParsFinal());
+  pdf_total->plotOn(frame, RooFit::LineColor(kRed), RooFit::Name("c_pdf_total"));
+  pdf_total->plotOn(frame, RooFit::Components("pdf_swap"), RooFit::LineColor(kGreen+4), RooFit::LineWidth(3), RooFit::FillColor(kGreen+4), RooFit::FillStyle(3005), RooFit::DrawOption("FL"), RooFit::Name("c_pdf_swap"));
+  pdf_total->plotOn(frame, RooFit::Components("pdf_sig"), RooFit::LineColor(kOrange-3), RooFit::LineStyle(kDashed), RooFit::LineWidth(3), RooFit::FillColor(kOrange-3), RooFit::FillStyle(3344), RooFit::DrawOption("FL"), RooFit::Name("c_pdf_sig"));
+  pdf_total->plotOn(frame, RooFit::Components("pdf_bkg"), RooFit::LineColor(kBlue+1), RooFit::LineStyle(kDashed), RooFit::LineWidth(3), RooFit::Name("c_pdf_bkg"));
+
+  float tsize = 0.035;
+  leg_ = new TLegend(0.6, 0.86-tsize*1.25*5, 0.85, 0.86);
+  xjjroot::setleg(leg_, 0.04);
+  leg_->AddEntry(frame->findObject("h_data_main"), "Data", "pe");
+  leg_->AddEntry(frame->findObject("c_pdf_total"), "Fit", "l");
+  leg_->AddEntry(frame->findObject("c_pdf_sig"), Form("%s +#scale[0.5]{ }%s Signal", xjjroot::CMS::Dz.c_str(), xjjroot::CMS::Dzbar.c_str()), "f");
+  leg_->AddEntry(frame->findObject("c_pdf_swap"), "K-#pi swapped", "f");
+  leg_->AddEntry(frame->findObject("c_pdf_bkg"), "Combinatorial", "l");
+  
   return frame;
+}
+
+RooWorkspace* droofitter::make_ws(std::string name) {
+  auto* ws = new RooWorkspace(name.c_str());
+
+  ws->import(*pdf_total);
+  // ws->import(*fitr_sig);
+  // ws->import(*fitr_swap);
+  ws->import(*fitr_total);
+  ws->import(*ds_data_main);
+
+  return ws;
 }

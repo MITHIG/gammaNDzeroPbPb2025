@@ -3,17 +3,18 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
+#include "../include/util.h"
+
 #define __VARIABLES_ROOINCL__
 #include "variables.h"
-
 #define __BINS_PTY_FPROMPT__
 #include "../include/bins.h"
-#include "../include/util.h"
 
 int macro(std::string inputname_data, std::string inputname_template, std::string outputname) {
 
   std::map<std::string, RooDataSet*> datas;
-  auto read_file = [&datas](std::string inputname, std::string dname) {
+  std::map<std::string, xjjc::info> infos;
+  auto read_file = [&datas, &infos](std::string inputname, std::string dname, std::string iname) {
     const auto inputfile = util::parse_input(inputname).content;
     auto* inf = TFile::Open(inputfile.c_str());
     if (!inf || inf->IsZombie()) {
@@ -34,17 +35,19 @@ int macro(std::string inputname_data, std::string inputname_template, std::strin
     if (dataset->numEntries() == 0) return 2;
     
     datas[dname] = dataset;
+    if (infos.find(iname) == infos.end())
+      infos[iname] = xjjana::getval_regexp((TTree*)inf->Get("info"));
     return 0;
   };
   
-  if (read_file(inputname_data, "data_main")) return 2;
-  if (read_file(inputname_template, "mc_match")) return 2;
-  if (read_file(inputname_template, "mc_swap")) return 2;
+  if (read_file(inputname_data, "data_main", "data")) return 2;
+  if (read_file(inputname_template, "mc_match", "template")) return 2;
+  if (read_file(inputname_template, "mc_swap", "template")) return 2;
 
   xjjroot::print_tab(datas, 0);
   
   // parse binning
-  auto* h1_bins = new TH2D("h1_bins", ";y;#it{p}_{T}",
+  auto* h2_bins = new TH2D("h2_bins_y-pt", ";y;#it{p}_{T}",
                            bins::ybins.size()-1, bins::ybins.data(),
                            bins::npt, xjjc::fixedbin_to_edges(bins::npt, bins::minpt, bins::maxpt).data());
   xjjc::print_vec_h(bins::ybins, 0);
@@ -63,13 +66,22 @@ int macro(std::string inputname_data, std::string inputname_template, std::strin
   }
   
   auto* outf = xjjroot::newfile(outputname + ".root");
-  xjjroot::writehist(h1_bins);
-  for (auto& [_, ds] : datas)
-    xjjroot::writehist(ds);
+  xjjroot::writehist(h2_bins);
   for (auto& [_, vds] : datays)
     for (auto& ds : vds)
       xjjroot::writehist(ds);
 
+  for (auto& [iname, info] : infos) {
+    outf->mkdir(iname.c_str())->cd();
+    auto* t_data = new TTree("info", "");
+    for (auto& [key, content] : info) {
+      t_data->Branch(key.c_str(), &content);
+    }
+    t_data->Fill();
+    t_data->Write();
+    outf->cd();
+  }
+  
   outf->Close();
   
   return 0;

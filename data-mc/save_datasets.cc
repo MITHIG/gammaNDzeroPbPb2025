@@ -36,7 +36,7 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   RooArgSet observables; // a set of RooRealVar
   std::map<std::string, Flatten> vars;
   for (auto& v : variables) {
-    __XJJLOG << "   >> " << v.var << (v.isbranch ? " (to set branch)" : "") << std::endl;
+    __XJJLOG << "   >> " << v.varname << " // " << v.var << (v.isbranch ? " (to set branch)" : "") << std::endl;
     // create roorealvar
     vars[v.varname].roov = new RooRealVar(v.varname.c_str(), v.vartex.c_str(), v.varmin, v.varmax);
     observables.add(*(vars[v.varname].roov));
@@ -106,12 +106,16 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
           !((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098))) continue;
       if (ecut == ECutPreset::Ngamma &&
           !((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098))) continue;
-      
+
+      // set dataset values
       for (auto& [_, v] : vars) {
         if (v.br)
           v.roov->setVal( v.br->at(j) );
       }
       // !! add complicated variables
+      vars.at("Ddls").roov->setVal(VAL(DsvpvDistance) / VAL(DsvpvDisErr));
+      vars.at("Dip3Dsig").roov->setVal(VAL(Dip3D) / VAL(Dip3derr));
+
       data->add(observables);
     }
   }
@@ -122,9 +126,14 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   return data;
 }
 
-int macro(std::string inputname, std::string outputname, ECutPreset ecut, int ismcref) {
+int macro(std::string inputstr, std::string outputname, std::string ecutstr, int ismcref) {
+  // parse cut
+  auto ecuts = util::parse_input(ecutstr);
+  auto ecut = static_cast<ECutPreset>(std::atoi(ecuts.content.c_str()));
 
-  const auto infname = util::parse_input(inputname).content;
+  // parse inputs
+  auto inputs = util::parse_input(inputstr);
+  const auto infname = inputs.content;
   auto* inf = TFile::Open(infname.c_str());
   if (!inf || inf->IsZombie()) {
     __XJJLOG << "!! bad file: " << infname << ", abort." << std::endl;
@@ -147,6 +156,15 @@ int macro(std::string inputname, std::string outputname, ECutPreset ecut, int is
   auto* outf = xjjroot::newfile(outputname + ".root");
   for (auto& d : datasets)
     d->Write(d->GetName());
+  auto* t = new TTree("info", "");
+  t->Branch("input", &inputs.content);
+  t->Branch("input_tex", &inputs.tex);
+  t->Branch("input_tag", &inputs.tag);
+  t->Branch("ecut", &ecuts.content);
+  t->Branch("ecut_tex", &ecuts.tex);
+  t->Branch("ecut_tag", &ecuts.tag);
+  t->Fill();
+  t->Write();
   outf->Close();
 
   return 0;
@@ -154,6 +172,6 @@ int macro(std::string inputname, std::string outputname, ECutPreset ecut, int is
 
 int main(int argc, char* argv[]) {
   if (argc == 5) {
-    return macro(argv[1], argv[2], static_cast<ECutPreset>(std::atoi(argv[3])), std::atoi(argv[4]));
+    return macro(argv[1], argv[2], argv[3], std::atoi(argv[4]));
   }
 }

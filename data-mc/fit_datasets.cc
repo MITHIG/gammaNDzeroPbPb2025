@@ -7,40 +7,47 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
-// #define __VARIABLES_ROOINCL__
-// #include "variables.h"
 #define __BINS_MASS__
 #include "../include/bins.h"
 
 #include "../include/util.h"
 #include "../include/droofitter.h"
+#include "../include/draw.h"
 
 int macro(std::string inputname, std::string outputname) {
-
-  std::map<std::string, RooDataSet*> datas;
+  const auto inputfile = util::parse_input(inputname).content;
+  auto* inf = TFile::Open(inputfile.c_str());
+  if (!inf || inf->IsZombie()) {
+    __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
+    return 2;
+  }
+  std::map<std::string, xjjc::info> infos;
+  for (std::string tr : { "data/info", "template/info" }) {
+    auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
+    infos[xjjc::str_eraseall(tr, "/info")] = info;
+  }
+  for (auto& [key, info] : infos) {
+    __XJJLOG << "++ infos [" << key << "]" << std::endl;
+    xjjc::print_tab<std::string, std::string>(info, -1);
+  }
+  // return 0;
+  // std::map<std::string, RooDataSet*> datas;
   std::map<std::string, std::vector<RooDataSet*>> datays;
   TH2D* h2_bins = nullptr;
-  auto read_file = [&datas, &datays, &h2_bins](std::string inputname, std::string dname) {
-    if (datas.find(dname) != datas.end()) {
-      __XJJLOG << "!! repleated keyname: " << dname << ", abort." << std::endl;
-      return 2;
-    }
-    const auto inputfile = util::parse_input(inputname).content;
-    auto* inf = TFile::Open(inputfile.c_str());
-    if (!inf || inf->IsZombie()) {
-      __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
-      return 2;
-    }
-
-    auto* ds = dynamic_cast<RooDataSet*>(inf->Get(dname.c_str()));
-    if (!ds) {
-      __XJJLOG << "!! no RooDataSet: " << dname << ", abort." << std::endl;
-      // throw std::runtime_error(Form("Could not find RooDataSet %s", name));
-      return 2;
-    }
-    xjjroot::print_obj(ds);
-    if (ds->numEntries() == 0) return 2;
-    datas[dname] = ds;
+  auto read_file = [&inf, &datays, &h2_bins](std::string dname) {
+    // if (datas.find(dname) != datas.end()) {
+    //   __XJJLOG << "!! repleated keyname: " << dname << ", abort." << std::endl;
+    //   return 2;
+    // }
+    // auto* ds = dynamic_cast<RooDataSet*>(inf->Get(dname.c_str()));
+    // if (!ds) {
+    //   __XJJLOG << "!! no RooDataSet: " << dname << ", abort." << std::endl;
+    //   // throw std::runtime_error(Form("Could not find RooDataSet %s", name));
+    //   return 2;
+    // }
+    // xjjroot::print_obj(ds);
+    // if (ds->numEntries() == 0) return 2;
+    // datas[dname] = ds;
 
     auto dsy = xjjana::getobj_regexp<RooDataSet>(inf, dname + "__y-.+");
     if (dsy.empty()) {
@@ -49,80 +56,94 @@ int macro(std::string inputname, std::string outputname) {
     }
     datays[dname] = dsy;
 
-    if (!h2_bins) h2_bins = xjjana::getobj<TH2D>(inf, "h1_bins");
+    if (!h2_bins) h2_bins = xjjana::getobj<TH2D>(inf, "h2_bins_y-pt");
     
     return 0;
   };
   
-  if (read_file(inputname, "data_main")) return 2;
-  if (read_file(inputname, "mc_match")) return 2;
-  if (read_file(inputname, "mc_swap")) return 2;
+  if (read_file("data_main")) return 2;
+  if (read_file("mc_match")) return 2;
+  if (read_file("mc_swap")) return 2;
     
-  // auto v_by_name = [](std::string name) {
-  //   for (const auto& v : variables) {
-  //     if (v.varname == name) return v;
-  //   }
-  //   throw std::runtime_error(Form("bad varname %s", name.c_str()));
-  // };
- 
   // RooRealVar Dmass("Dmass", v_by_name("Dmass").vartex.c_str(), bins::minmass, bins::maxmass);
   // Dmass.setBins(bins::nmass); // did anything?
   // Dmass.setRange("range_fit", bins::minmass, bins::maxmass);
-  auto Dmass = dynamic_cast<RooRealVar*>(datas.at("data_main")->get()->find("Dmass"));
-  // Dmass->setBins(bins::nmass);
+  auto Dmass = dynamic_cast<RooRealVar*>(datays.at("data_main").front()->get()->find("Dmass"));
 
-  auto* fitter = new droofitter(datas.at("data_main"), datas.at("mc_match"), datas.at("mc_swap"), *Dmass);
-  fitter->fit(bins::minmass, bins::maxmass);
+  // auto* fitter = new droofitter(datas.at("data_main"), datas.at("mc_match"), datas.at("mc_swap"), *Dmass);
+  // fitter->fit(bins::minmass, bins::maxmass);
+
+  std::vector<droofitter*> fitterys;
+  for (int i=0; i<datays.at("data_main").size(); i++) {
+    auto* ft = new droofitter(datays.at("data_main")[i], datays.at("mc_match")[i], datays.at("mc_swap")[i], *Dmass); 
+    ft->fit(bins::minmass, bins::maxmass);
+    fitterys.push_back(ft);
+  }
+
+  draw::bintex btex(h2_bins, 0, 1);
   
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
 
-  pdf->prepare();
-  auto* frame_mc = fitter->draw_mc_swap(bins::nmass);
-  fitter->draw_mc_sig(bins::nmass, frame_mc);
-  frame_mc->Draw();
-  
-  pdf->write();
+  for (int i=0; i<fitterys.size(); i++) {
+    pdf->prepare();
+    auto* frame_data_y = fitterys[i]->draw_data(bins::nmass);
+    frame_data_y->Draw();
+    fitterys[i]->leg()->Draw();
+    xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos.at("data").at("ecut_tex") }, 0.035, 13);
+    xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex"));
+    pdf->write();
+
+    pdf->prepare();
+    auto* frame_mc_y = fitterys[i]->draw_mc_swap(bins::nmass);
+    fitterys[i]->draw_mc_sig(bins::nmass, frame_mc_y);
+    frame_mc_y->Draw();
+    xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt() }, 0.035, 13);
+    xjjroot::drawCMS(xjjroot::CMS::simulation, infos.at("template").at("input_tex"));
+    pdf->write();
+  }
 
   // pdf->prepare();
-  // auto* frame_swap = fitter->draw_mc_swap(bins::nmass);
-  // frame_swap->Draw();  
+  // auto* frame_mc = fitter->draw_mc_swap(bins::nmass);
+  // fitter->draw_mc_sig(bins::nmass, frame_mc);
+  // frame_mc->Draw();
+  // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(), btex.label_pt() }, 0.035, 13);
+  // xjjroot::drawCMS(xjjroot::CMS::simulation, "");
   // pdf->write();
 
-  pdf->prepare();
-  auto* frame_data = fitter->draw_data(bins::nmass);
-  frame_data->Draw();
-  
-  pdf->write();
-
   // pdf->prepare();
-  // auto *frame_swap = Dmass.frame();
-  // xjjroot::sethempty(frame_swap);
-  // datas.at("mc_swap")->plotOn(frame_swap, RooFit::Binning(bins::nmass));
-  // pdf_swap.plotOn(frame_swap, RooFit::LineColor(kRed + 1));
-  // // frame_save(frame_swap, Form("%s_swap", outPrefix));
-  // frame_swap->Draw();
-  // pdf->write();
-  
-  // pdf->prepare();
-  // auto *frame_data = Dmass.frame();
-  // xjjroot::sethempty(frame_sig);
-  // datas.at("data_main")->plotOn(frame_data, RooFit::Binning(bins::nmass));
-  // pdf_total.plotOn(frame_data, RooFit::LineColor(kRed + 1));
-  // pdf_total.plotOn(frame_data, RooFit::Components(pdf_sig), RooFit::LineColor(kBlue + 1),
-  //                  RooFit::LineStyle(kDashed));
-  // pdf_total.plotOn(frame_data, RooFit::Components(pdf_swap), RooFit::LineColor(kGreen + 2),
-  //                  RooFit::LineStyle(kDashed));
-  // pdf_total.plotOn(frame_data, RooFit::Components(pdf_bkg), RooFit::LineColor(kMagenta + 1),
-  //                  RooFit::LineStyle(kDashed));
-  // pdf_total.paramOn(frame_data, RooFit::Layout(0.58, 0.88, 0.88),
-  //                   RooFit::Parameters(RooArgSet(n_sigswap, n_bkg, frac_sig, par_mean,
-  //                                                par_sig_sigma1, par_sig_sigma2, par_sig_sigma3, par_swap_sigma,
-  //                                                par_bkg_c1, par_bkg_c2, par_bkg_c3)));
-  // // frame_save(frame_data, Form("%s_data", outPrefix));
+  // auto* frame_data = fitter->draw_data(bins::nmass);
   // frame_data->Draw();
+  // fitter->leg()->Draw();
+  // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(), btex.label_pt() }, 0.035, 13);
+  // xjjroot::drawCMS(xjjroot::CMS::simulation, "");  
   // pdf->write();
 
+  pdf->close();
+
+  auto* h3_bins = new TH3D("h3_bins_y-mass-pt", ";y;m_{#piK} [GeV/c^{2}];#it{p}_{T}",
+                           h2_bins->GetXaxis()->GetNbins(), h2_bins->GetXaxis()->GetXbins()->GetArray(), // y 
+                           bins::nmass, xjjc::fixedbin_to_edges(bins::nmass, bins::minmass, bins::maxmass).data(), // mass 
+                           h2_bins->GetYaxis()->GetNbins(), h2_bins->GetYaxis()->GetXbins()->GetArray()); // pt
+  
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
+  xjjroot::writehist(h3_bins);
+  for (int i=0; i<fitterys.size(); i++) {
+    auto* ws = fitterys[i]->make_ws(Form("ws__y-%d", i));
+    ws->Write();
+  }
+  for (auto& [iname, info] : infos) {
+    outf->mkdir(iname.c_str())->cd();
+    auto* t_data = new TTree("info", "");
+    for (auto& [key, content] : info) {
+      t_data->Branch(key.c_str(), &content);
+    }
+    t_data->Fill();
+    t_data->Write();
+    outf->cd();
+  }
+  outf->Close();
+  
   // RooStats::SPlot sData("sData", "sData", *datas.at("data_main"), &pdf_total,
   //                       RooArgList(n_sigswap, n_bkg));
 
@@ -175,8 +196,6 @@ int macro(std::string inputname, std::string outputname) {
   // hSigSwapDpt.Write("hSigSwapDpt");
   // output.Close();
 
-  pdf->close();
-  
   return 0;
 }
 

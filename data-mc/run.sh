@@ -15,7 +15,7 @@ INPUTS_MC=(
 make save_datasets.exe cook_datasets.exe fit_datasets.exe || exit 1
 
 for cutevtstr in "${CUTEVTS[@]}" ; do
-    IFS=';' ; cutevttags=($cutevtstr) ; unset IFS ; cutevt="${cutevttags[0]}" ; cutevt_tex="${cutevttags[1]}" ; cutevt_tag="${cutevttags[2]}" ;
+    IFS=';' ; cutevttags=($cutevtstr) ; unset IFS ; cutevt_tag="${cutevttags[2]}" ;
     cut_tag=$cutevt_tag
     echo -e "\033[33m"$cut_tag"\033[0m"
 
@@ -27,7 +27,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
         
         itag_dataset_data="rootfiles/"$cut_tag"/dataset_"$data_tag
         [[ ${1:-0} -eq 1 ]] && {
-            ./save_datasets.exe "$input_data" $itag_dataset_data $cutevt 0
+            ./save_datasets.exe "$input_data" $itag_dataset_data "$cutevtstr" 0
         }
 
         ## Loop MC
@@ -38,8 +38,8 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
 
             itag_dataset_mc="rootfiles/"$cut_tag"/dataset_"$mc_tag
             [[ ${2:-0} -eq 1 ]] && {
-                ./save_datasets.exe "$input_mc" $itag_dataset_mc $cutevt 1
-            }            
+                ./save_datasets.exe "$input_mc" $itag_dataset_mc "$cutevtstr" 1
+            }
 
             itag_cook="rootfiles/"$cut_tag"/dataset-cook_"$data_tag"_"$mc_tag
             [[ ${3:-0} -eq 1 ]] && {
