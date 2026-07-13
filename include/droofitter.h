@@ -190,6 +190,7 @@ RooWorkspace* droofitter::make_ws(std::string name) {
   // ws->import(*fitr_swap);
   ws->import(*fitr_total);
   ws->import(*ds_data_main);
+  ws->import(*ds_mc_match);
 
   return ws;
 }

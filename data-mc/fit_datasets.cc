@@ -30,25 +30,10 @@ int macro(std::string inputname, std::string outputname) {
     __XJJLOG << "++ infos [" << key << "]" << std::endl;
     xjjc::print_tab<std::string, std::string>(info, -1);
   }
-  // return 0;
-  // std::map<std::string, RooDataSet*> datas;
+
   std::map<std::string, std::vector<RooDataSet*>> datays;
   TH2D* h2_bins = nullptr;
   auto read_file = [&inf, &datays, &h2_bins](std::string dname) {
-    // if (datas.find(dname) != datas.end()) {
-    //   __XJJLOG << "!! repleated keyname: " << dname << ", abort." << std::endl;
-    //   return 2;
-    // }
-    // auto* ds = dynamic_cast<RooDataSet*>(inf->Get(dname.c_str()));
-    // if (!ds) {
-    //   __XJJLOG << "!! no RooDataSet: " << dname << ", abort." << std::endl;
-    //   // throw std::runtime_error(Form("Could not find RooDataSet %s", name));
-    //   return 2;
-    // }
-    // xjjroot::print_obj(ds);
-    // if (ds->numEntries() == 0) return 2;
-    // datas[dname] = ds;
-
     auto dsy = xjjana::getobj_regexp<RooDataSet>(inf, dname + "__y-.+");
     if (dsy.empty()) {
       __XJJLOG << "!! no RooDataSet: " << dname << "__y*, abort." << std::endl;
@@ -66,12 +51,7 @@ int macro(std::string inputname, std::string outputname) {
   if (read_file("mc_swap")) return 2;
     
   // RooRealVar Dmass("Dmass", v_by_name("Dmass").vartex.c_str(), bins::minmass, bins::maxmass);
-  // Dmass.setBins(bins::nmass); // did anything?
-  // Dmass.setRange("range_fit", bins::minmass, bins::maxmass);
   auto Dmass = dynamic_cast<RooRealVar*>(datays.at("data_main").front()->get()->find("Dmass"));
-
-  // auto* fitter = new droofitter(datas.at("data_main"), datas.at("mc_match"), datas.at("mc_swap"), *Dmass);
-  // fitter->fit(bins::minmass, bins::maxmass);
 
   std::vector<droofitter*> fitterys;
   for (int i=0; i<datays.at("data_main").size(); i++) {
@@ -102,22 +82,6 @@ int macro(std::string inputname, std::string outputname) {
     xjjroot::drawCMS(xjjroot::CMS::simulation, infos.at("template").at("input_tex"));
     pdf->write();
   }
-
-  // pdf->prepare();
-  // auto* frame_mc = fitter->draw_mc_swap(bins::nmass);
-  // fitter->draw_mc_sig(bins::nmass, frame_mc);
-  // frame_mc->Draw();
-  // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(), btex.label_pt() }, 0.035, 13);
-  // xjjroot::drawCMS(xjjroot::CMS::simulation, "");
-  // pdf->write();
-
-  // pdf->prepare();
-  // auto* frame_data = fitter->draw_data(bins::nmass);
-  // frame_data->Draw();
-  // fitter->leg()->Draw();
-  // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(), btex.label_pt() }, 0.035, 13);
-  // xjjroot::drawCMS(xjjroot::CMS::simulation, "");  
-  // pdf->write();
 
   pdf->close();
 

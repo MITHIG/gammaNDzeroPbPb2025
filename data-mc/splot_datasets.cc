@@ -1,0 +1,278 @@
+#include "RooDataSet.h"
+#include "RooPlot.h"
+#include "RooRealVar.h"
+#include "RooStats/SPlot.h"
+#include "RooHist.h"
+#include "RooWorkspace.h"
+#include "RooAbsPdf.h"
+
+#include "xjjanauti.h"
+#include "xjjmypdf.h"
+
+#include "../include/util.h"
+#include "../include/draw.h"
+#define __VARIABLES_ROOINCL__
+#include "variables.h"
+
+double signal_effective_sigma(RooWorkspace *ws, double area_frac);
+std::vector<std::pair<RooRealVar*, bool>> fix_shape_parameters(RooAbsPdf* pdf, RooAbsData* data, const std::vector<std::string> &floating_yields);
+void restore_parameter_states(const std::vector<std::pair<RooRealVar*, bool>> &old_states);
+
+int macro(std::string inputname, std::string outputname) {
+  const auto inputfile = util::parse_input(inputname).content;
+  auto* inf = TFile::Open(inputfile.c_str());
+  if (!inf || inf->IsZombie()) {
+    __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
+    return 2;
+  }
+  std::map<std::string, xjjc::info> infos;
+  for (std::string tr : { "data/info", "template/info" }) {
+    auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
+    infos[xjjc::str_eraseall(tr, "/info")] = info;
+  }
+  for (auto& [key, info] : infos) {
+    __XJJLOG << "++ infos [" << key << "]" << std::endl;
+    xjjc::print_tab<std::string, std::string>(info, -1);
+  }
+
+  auto wsys = xjjana::getobj_regexp<RooWorkspace>(inf, "ws__y-.+");
+  auto* h3_bins = xjjana::getobj<TH2D>(inf, "h3_bins_y-mass-pt");
+  if (wsys.size() != h3_bins->GetXaxis()->GetNbins()) {
+    __XJJLOG << "!! inconsistent bin number: " << "ws__y-* vs h3_bins, abort." << std::endl;
+    return 2;
+  }
+  draw::bintex btex(h3_bins, 0, 2);
+  
+  xjjroot::setgstyle(1);
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+
+  // std::map<std::string, std::vector<TH1D*>> h1ys;
+  std::vector<std::map<std::string, TH1D*>> h1ys; 
+  for (int i=0; i<wsys.size(); i++) {
+    // main pdf and dataset
+    auto* ws = wsys.at(i);
+    auto* pdf_total = ws->pdf("pdf_total"); // RooAbsPdf*
+    auto* ds_data = (RooDataSet*)ws->data(Form("data_main__y-%d", i));
+    auto* ds_mc_match = (RooDataSet*)ws->data(Form("mc_match__y-%d", i));
+
+    // yield variables
+    auto* Dmass = ws->var("Dmass");
+    RooArgSet mass_obs(*Dmass); // used for get pdf_sig, pdf_swap value
+    auto* n_sigswap = ws->var("n_sigswap"); // RooRealVar*
+    auto* n_bkg = ws->var("n_bkg");
+
+    // to calculate splitting of sig and swap
+    auto* pdf_sig = ws->pdf("pdf_sig");
+    auto* pdf_swap = ws->pdf("pdf_swap");
+    const auto val_frac_sig = ws->var("par_sigswap_frac")->getVal();
+
+    // calculate signal region
+    const auto val_mean = ws->var("par_mean")->getVal();
+    const auto eff_sigma = signal_effective_sigma(ws, xjjana::frac_2sigma);
+    const auto mass_low = val_mean - eff_sigma;
+    const auto mass_high = val_mean + eff_sigma;
+
+    // make splot
+    auto* ds_data_sigswap = dynamic_cast<RooDataSet*>(ds_data->Clone(Form("%s_splot_sigswap", ds_data->GetName())));
+    auto old_states = fix_shape_parameters(pdf_total, ds_data_sigswap, { "n_sigswap", "n_bkg" });
+    auto* splot_sigswap = new RooStats::SPlot("splot_sigswap", "sPlot for signal+swap",
+                                              *ds_data_sigswap, pdf_total,
+                                              RooArgList(*n_sigswap, *n_bkg));
+    restore_parameter_states(old_states);
+    
+    std::map<std::string, TH1D*> h1s, h1s_mc_match;
+    const RooArgSet* columns = ds_data->get();
+    for (RooAbsArg* arg : *columns) {
+      auto *var = dynamic_cast<RooRealVar*>(arg);
+      if (!var) continue;
+      const std::string name = var->GetName();
+      if (name.empty() || name[0] != 'D') continue;
+
+      const auto the_var = var_by_name(name);
+      if (the_var.varname.empty()) continue;
+      const auto* hname = Form("h1_%s_data_sig__y-%d", name.c_str(), i);
+      if (!the_var.bins.empty()) {
+        h1s[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.bins.size()-1, the_var.bins.data());
+      } else {
+        h1s[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.nbin, the_var.varmin, the_var.varmax);
+      }
+      h1s[name]->Sumw2();
+      xjjroot::sethempty(h1s[name], 0, 0.4);
+      xjjroot::setthgrstyle(h1s[name], kBlack, 21, 1.3, kBlack, 1, 1);
+      h1s_mc_match[name] = (TH1D*)h1s[name]->Clone(xjjc::str_replaceall(h1s[name]->GetName(), "data_sig", "mc_match").c_str());
+      // h1s_mc_match[name]->Sumw2();
+      xjjroot::sethempty(h1s_mc_match[name], 0, 0.4);
+      xjjroot::setthgrstyle(h1s_mc_match[name], kBlue, 21, 1.3, kBlue, 1, 1);
+    }
+    
+    // double weight_norm = 0, weight_min = 1.e10, weight_max = 1.e10; int count_norm = 0;
+    for (int i = 0; i < ds_data_sigswap->numEntries(); ++i) {
+      const RooArgSet* row_data = ds_data_sigswap->get(i);
+      const RooArgSet* row_mc = ds_mc_match->get(i);
+
+      // only fill signal region
+      const auto mass = row_data->getRealValue("Dmass");
+      if (mass < mass_low || mass > mass_high) continue;
+
+      // get weights
+      const auto weight_sigswap = row_data->getRealValue("n_sigswap_sw");
+      Dmass->setVal(mass);
+      const double density_sig = pdf_sig->getVal(&mass_obs) * val_frac_sig,
+        density_swap = pdf_swap->getVal(&mass_obs) * (1 - val_frac_sig),
+        density_sigswap = density_sig + density_swap,
+        absfrac_sig = (density_sigswap > 0.) ? density_sig/density_sigswap : 0.;
+      const double weight_sig = weight_sigswap * absfrac_sig;
+
+      for (auto& [name, h1] : h1s) {
+        const auto value_data = row_data->getRealValue(name.c_str());
+        // h1->Fill(value_data, weight_sigswap);
+        h1->Fill(value_data, weight_sig);
+        const auto value_mc = row_mc->getRealValue(name.c_str());
+        h1s_mc_match.at(name)->Fill(value_mc);
+      }      
+    }
+
+    pdf->draw_cover({ "#bf{" + btex.label_y(i) + "}" }, 0.05);
+
+    for (auto& [name, h1] : h1s) {
+      const auto the_var = var_by_name(name);
+      if (the_var.varname.empty()) continue;
+
+      h1->Scale(1./h1->Integral(), "width");
+      h1s_mc_match.at(name)->Scale(1./h1s_mc_match.at(name)->Integral(), "width");
+
+      h1->SetMinimum(the_var.logy ? (0.5 * xjjana::gethnonzerominimum(h1)) : 0.);
+      h1->SetMaximum((the_var.logy ? 5. : 1.5) * xjjana::gethmaximum(h1));
+      h1s_mc_match.at(name)->SetMinimum(the_var.logy ? (0.5 * xjjana::gethnonzerominimum(h1s_mc_match.at(name))) : 0.);
+      h1s_mc_match.at(name)->SetMaximum((the_var.logy ? 5. : 1.5) * xjjana::gethmaximum(h1s_mc_match.at(name)));
+
+      pdf->prepare();
+      pdf->getc()->SetLogy(0);
+      if (the_var.logy)
+        pdf->getc()->SetLogy();
+      h1s_mc_match.at(name)->Draw("hist");
+      h1->Draw("pe1 same");
+      pdf->write();
+    }
+    // // Get the weighted dataset
+    // RooDataSet *weighted_ds = splot->GetSDataSet();
+    // if (!weighted_ds) {
+    //   std::cerr << "Failed to get weighted dataset" << std::endl;
+    //   return;
+    // }
+  } // loop y 
+  
+  pdf->close();
+
+  // auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
+  // xjjroot::writehist(h3_bins);
+  // for (int i=0; i<fitterys.size(); i++) {
+  //   auto* ws = fitterys[i]->make_ws(Form("ws__y-%d", i));
+  //   ws->Write();
+  // }
+  // for (auto& [iname, info] : infos) {
+  //   outf->mkdir(iname.c_str())->cd();
+  //   auto* t_data = new TTree("info", "");
+  //   for (auto& [key, content] : info) {
+  //     t_data->Branch(key.c_str(), &content);
+  //   }
+  //   t_data->Fill();
+  //   t_data->Write();
+  //   outf->cd();
+  // }
+  // outf->Close();
+  
+  return 0;
+}
+
+int main(int argc, char* argv[]) {
+  if (argc == 3) {
+    return macro(argv[1], argv[2]);
+  }
+  return 1;
+}
+
+double signal_effective_sigma(RooWorkspace *ws, double area_frac) {
+  auto *pdf_sig = ws->pdf("pdf_sig");
+  auto *Dmass = ws->var("Dmass");
+  auto *mean = ws->var("par_mean");
+  if (!pdf_sig || !Dmass || !mean) return -1.;
+  if (area_frac <= 0. || area_frac >= 1.) return -1.;
+
+  RooArgSet mass_obs(*Dmass);
+  const double original_mass = Dmass->getVal();
+  const double mass_min = Dmass->getMin();
+  const double mass_max = Dmass->getMax();
+  const double mass_mean = mean->getVal();
+
+  auto integrate = [&](double xmin, double xmax) {
+    if (xmax <= xmin) return 0.;
+
+    constexpr int nsteps = 4000;
+    const double step = (xmax - xmin) / nsteps;
+    double area = 0.;
+
+    for (int i = 0; i <= nsteps; ++i) {
+      const double x = xmin + i * step;
+      Dmass->setVal(x);
+      const double y = pdf_sig->getVal(&mass_obs);
+      const double coeff = (i == 0 || i == nsteps) ? 0.5 : 1.0;
+      area += coeff * y;
+    }
+
+    return area * step;
+  };
+
+  const double total_area = integrate(mass_min, mass_max);
+  if (total_area <= 0.) {
+    Dmass->setVal(original_mass);
+    return -1.;
+  }
+
+  double low = 0.;
+  double high = std::min(mass_mean - mass_min, mass_max - mass_mean);
+
+  for (int iter = 0; iter < 80; ++iter) {
+    const double mid = 0.5 * (low + high);
+    const double area = integrate(mass_mean - mid, mass_mean + mid);
+    const double frac = area / total_area;
+
+    if (frac < area_frac) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  Dmass->setVal(original_mass);
+  return 0.5 * (low + high);
+}
+
+std::vector<std::pair<RooRealVar*, bool>> fix_shape_parameters(RooAbsPdf* pdf, RooAbsData* data, const std::vector<std::string> &floating_yields) {
+  std::vector<std::pair<RooRealVar*, bool>> old_states;
+  std::unique_ptr<RooArgSet> pars(pdf->getParameters(*data)); // why need a dataset?
+  for (RooAbsArg *arg : *pars) {
+    auto *var = dynamic_cast<RooRealVar*>(arg);
+    if (!var) continue;
+    
+    bool is_yield = false;
+    for (const auto &name : floating_yields) {
+      if (name == var->GetName()) {
+        is_yield = true;
+        break;
+      }
+    }
+    if (is_yield) continue;
+
+    __XJJLOG << ">> " << var->GetName() << (var->isConstant() ? " : Constant" : "") << std::endl;
+    old_states.emplace_back(var, var->isConstant());
+    var->setConstant(true);
+  }
+  return old_states;
+}
+
+void restore_parameter_states(const std::vector<std::pair<RooRealVar*, bool>> &old_states) {
+  for (const auto& [var, was_constant] : old_states) {
+    var->setConstant(was_constant);
+  }
+}

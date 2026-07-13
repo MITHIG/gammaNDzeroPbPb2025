@@ -1,6 +1,6 @@
 CXX = g++
 # CXXFLAGS += -O2 -Wall -Werror -Wextra
-ROOTFLAGS := `root-config --cflags --libs` -lRooFitCore -lRooFit -lEG -I../include/
+ROOTFLAGS := `root-config --cflags --libs` -lRooFitCore -lRooFit -lRooStats -lEG -I../include/
 
 BUILDDIR = ./build
 

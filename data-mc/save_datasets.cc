@@ -114,6 +114,7 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
       }
       // !! add complicated variables
       vars.at("Ddls").roov->setVal(VAL(DsvpvDistance) / VAL(DsvpvDisErr));
+      vars.at("Ddls_2D").roov->setVal(VAL(DsvpvDistance_2D) / VAL(DsvpvDisErr_2D));
       vars.at("Dip3Dsig").roov->setVal(VAL(Dip3D) / VAL(Dip3derr));
 
       data->add(observables);
