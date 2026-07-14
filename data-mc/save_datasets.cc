@@ -4,7 +4,7 @@
 
 #include "xjjanauti.h"
 
-#define __VARIABLES_ROOINCL__
+#define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 #define __BINS_MASS__
 #include "../include/bins.h"
@@ -25,10 +25,6 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   __XJJLOG << ">> event selection category: " << ecut_name[static_cast<int>(ecut)] << std::endl;
   __XJJLOG << ">> gen-match       category: " << gcut_name[static_cast<int>(gcut)] << std::endl;  
 
-  // tree->SetAlias("Dsig", "DsvpvDistance/DsvpvDisErr");
-  // RooRealVar Dsig("Dsig", "Dsig", 0, 100);
-  // RooDataSet ds("ds", "ds", tree, RooArgSet(Dsig), "DsvpvDistance/DsvpvDisErr > 3");
-  
   tree->SetBranchStatus("*", 0);
 
   __XJJLOG << "++ register variables" << std::endl;
@@ -36,6 +32,8 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   RooArgSet observables; // a set of RooRealVar
   std::map<std::string, Flatten> vars;
   for (auto& v : variables) {
+    if (v.isbranch < 0) continue;
+
     __XJJLOG << "   >> " << v.varname << " // " << v.var << (v.isbranch ? " (to set branch)" : "") << std::endl;
     // create roorealvar
     vars[v.varname].roov = new RooRealVar(v.varname.c_str(), v.vartex.c_str(), v.varmin, v.varmax);
@@ -86,10 +84,17 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
     if (ecut == ECutPreset::gammaN && !(ZDCgammaN && HFEMaxPlus_eta5 < 16)) continue;
     if (ecut == ECutPreset::Ngamma && !(ZDCNgamma && HFEMaxMinus_eta5 < 16)) continue;
 
-#define VAL(q) vars[ #q ].br->at(j)
+    // std::cout<<Dsize<<std::endl;
     
+#define VAL(q) vars[ #q ].br->at(j)
     for (int j=0; j<Dsize; j++) {
       // cut
+      // for (auto& [_, v] : vars) {
+      //   if (v.br) {
+      //     std::cout<<"   "<<j<<"  "<<v.roov->GetName() << " (" << v.br->size() << ")" << std::endl;
+      //   }
+      // }
+
       if (VAL(Dpt) < 2. || VAL(Dpt) > 5. || VAL(Dy) < -2. || VAL(Dy) > 2.) continue;
       
       if (gcut == GCutPreset::match && Dgen->at(j) != 23333) continue;
@@ -109,9 +114,12 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
 
       // set dataset values
       for (auto& [_, v] : vars) {
-        if (v.br)
+        if (v.br) {
+          // std::cout<<"   "<<j<<"  "<<v.roov->GetName() << " (" << v.br->size() << ")" << std::endl;
           v.roov->setVal( v.br->at(j) );
+        }
       }
+
       // !! add complicated variables
       vars.at("Ddls").roov->setVal(VAL(DsvpvDistance) / VAL(DsvpvDisErr));
       vars.at("Ddls_2D").roov->setVal(VAL(DsvpvDistance_2D) / VAL(DsvpvDisErr_2D));
@@ -161,9 +169,9 @@ int macro(std::string inputstr, std::string outputname, std::string ecutstr, int
   t->Branch("input", &inputs.content);
   t->Branch("input_tex", &inputs.tex);
   t->Branch("input_tag", &inputs.tag);
-  t->Branch("ecut", &ecuts.content);
-  t->Branch("ecut_tex", &ecuts.tex);
-  t->Branch("ecut_tag", &ecuts.tag);
+  t->Branch("cut", &ecuts.content);
+  t->Branch("cut_tex", &ecuts.tex);
+  t->Branch("cut_tag", &ecuts.tag);
   t->Fill();
   t->Write();
   outf->Close();

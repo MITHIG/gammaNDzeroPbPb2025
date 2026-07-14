@@ -5,7 +5,7 @@
 
 #include "../include/util.h"
 
-#define __VARIABLES_ROOINCL__
+#define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 #define __BINS_PTY_FPROMPT__
 #include "../include/bins.h"

@@ -1,19 +1,19 @@
 #!/bin/bash
 
 INPUTS_DATA=( # lumi is nb-1 - directly from brilcalc
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);mcBeamA" # !! to replace by the one without gmatch filter
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb;2025PbPb" # 2025
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN;BeamAclose" # !! to replace by the one without gmatch filter
 )
 CUTEVTS=(
     "1;#gammaN (Xn0n);gammaN-0nXn-25"
     # "2;N#gamma (0nXn);Ngamma-0nXn-25"
 )
 INPUTS_MC=(
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);BeamA"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);BeamB"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN;BeamA"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN;BeamB"
 )
 
-make save_datasets.exe cook_datasets.exe fit_datasets.exe splot_datasets.exe || exit 1
+make save_datasets.exe cook_datasets.exe fit_datasets.exe splot_datasets.exe draw_datasets.exe || exit 1
 
 for cutevtstr in "${CUTEVTS[@]}" ; do
     IFS=';' ; cutevttags=($cutevtstr) ; unset IFS ; cutevt_tag="${cutevttags[2]}" ;
@@ -53,9 +53,8 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             }
 
             itag_splot=$cut_tag"/splot_"$data_tag"_"$mc_tag
-            [[ ${5:-0} -eq 1 ]] && {
-                ./splot_datasets.exe "rootfiles/"$itag_fit".root" $itag_splot
-            }
+            [[ ${5:-0} -gt 1 ]] && ./splot_datasets.exe "rootfiles/"$itag_fit".root" $itag_splot
+            [[ ${5:-0} -gt 0 ]] && ./draw_datasets.exe "rootfiles/"$itag_splot".root" $itag_splot
 
         done
 

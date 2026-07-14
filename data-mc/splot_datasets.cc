@@ -11,7 +11,7 @@
 
 #include "../include/util.h"
 #include "../include/draw.h"
-#define __VARIABLES_ROOINCL__
+#define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 
 double signal_effective_sigma(RooWorkspace *ws, double area_frac);
@@ -41,10 +41,12 @@ int macro(std::string inputname, std::string outputname) {
     __XJJLOG << "!! inconsistent bin number: " << "ws__y-* vs h3_bins, abort." << std::endl;
     return 2;
   }
-  draw::bintex btex(h3_bins, 0, 2);
+  // draw::bintex btex(h3_bins, 0, 2);
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
+  xjjroot::writehist(h3_bins);
   
-  xjjroot::setgstyle(1);
-  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+  // xjjroot::setgstyle(1);
+  // auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
 
   // std::map<std::string, std::vector<TH1D*>> h1ys;
   std::vector<std::map<std::string, TH1D*>> h1ys; 
@@ -68,119 +70,132 @@ int macro(std::string inputname, std::string outputname) {
 
     // calculate signal region
     const auto val_mean = ws->var("par_mean")->getVal();
-    const auto eff_sigma = signal_effective_sigma(ws, xjjana::frac_2sigma);
-    const auto mass_low = val_mean - eff_sigma;
-    const auto mass_high = val_mean + eff_sigma;
+    const auto eff_sigma = signal_effective_sigma(ws, xjjana::frac_1sigma);
+    const auto width_signal = eff_sigma*2;
+    double mass_signal_low = val_mean - width_signal,
+      mass_signal_high = val_mean + width_signal;
+    double deltamass_sideband_low = width_signal;
+    __XJJLOG << "-- try to set sideband to 2sigma - 7*sigma" << std::endl;
+    const auto width_try = 7*eff_sigma;
+    double deltamass_sideband_high = std::min(width_try, val_mean - Dmass->getMin());
+    deltamass_sideband_high = std::min(deltamass_sideband_high, Dmass->getMax() - val_mean);
+    if (val_mean-width_try < Dmass->getMin() || val_mean+width_try > Dmass->getMax()) {
+      __XJJLOG << "?? side band range too wide, adjusted to Dmass range: " << std::endl;
+    }
+    std::cout << "    [ " << val_mean-deltamass_sideband_high << " - " << val_mean-deltamass_sideband_low << " ] , "
+              << "[ " << val_mean+deltamass_sideband_low << " - " << val_mean+deltamass_sideband_high << " ]"
+              << std::endl;
 
     // make splot
     auto* ds_data_sigswap = dynamic_cast<RooDataSet*>(ds_data->Clone(Form("%s_splot_sigswap", ds_data->GetName())));
     auto old_states = fix_shape_parameters(pdf_total, ds_data_sigswap, { "n_sigswap", "n_bkg" });
+    __XJJLOG << "++ make splot" << std::endl;
     auto* splot_sigswap = new RooStats::SPlot("splot_sigswap", "sPlot for signal+swap",
                                               *ds_data_sigswap, pdf_total,
                                               RooArgList(*n_sigswap, *n_bkg));
     restore_parameter_states(old_states);
     
-    std::map<std::string, TH1D*> h1s, h1s_mc_match;
+    __XJJLOG << "++ loop variables" << std::endl;
+    std::map<std::string, TH1D*> h1s_data_main, h1s_data_sig, h1s_data_sideband, h1s_mc_match;
     const RooArgSet* columns = ds_data->get();
     for (RooAbsArg* arg : *columns) {
       auto *var = dynamic_cast<RooRealVar*>(arg);
       if (!var) continue;
       const std::string name = var->GetName();
       if (name.empty() || name[0] != 'D') continue;
-
       const auto the_var = var_by_name(name);
       if (the_var.varname.empty()) continue;
-      const auto* hname = Form("h1_%s_data_sig__y-%d", name.c_str(), i);
+      
+      const auto* hname = Form("h1_%s_data_main__y-%d", name.c_str(), i);
       if (!the_var.bins.empty()) {
-        h1s[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.bins.size()-1, the_var.bins.data());
+        h1s_data_main[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.bins.size()-1, the_var.bins.data());
       } else {
-        h1s[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.nbin, the_var.varmin, the_var.varmax);
+        h1s_data_main[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.nbin, the_var.varmin, the_var.varmax);
       }
-      h1s[name]->Sumw2();
-      xjjroot::sethempty(h1s[name], 0, 0.4);
-      xjjroot::setthgrstyle(h1s[name], kBlack, 21, 1.3, kBlack, 1, 1);
-      h1s_mc_match[name] = (TH1D*)h1s[name]->Clone(xjjc::str_replaceall(h1s[name]->GetName(), "data_sig", "mc_match").c_str());
+      h1s_data_main[name]->Sumw2();
+      h1s_data_sig[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sig").c_str());
+      h1s_data_sideband[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sideband").c_str());
+      h1s_mc_match[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "mc_match").c_str());
       // h1s_mc_match[name]->Sumw2();
-      xjjroot::sethempty(h1s_mc_match[name], 0, 0.4);
-      xjjroot::setthgrstyle(h1s_mc_match[name], kBlue, 21, 1.3, kBlue, 1, 1);
+      __XJJLOG << "     >> " << name << std::endl;
     }
     
     // double weight_norm = 0, weight_min = 1.e10, weight_max = 1.e10; int count_norm = 0;
-    for (int i = 0; i < ds_data_sigswap->numEntries(); ++i) {
+    const auto nentries = ds_data_sigswap->numEntries();
+    for (int i = 0; i < nentries; ++i) {
+      xjjc::progressslide(i, nentries);
+
       const RooArgSet* row_data = ds_data_sigswap->get(i);
-      const RooArgSet* row_mc = ds_mc_match->get(i);
-
-      // only fill signal region
       const auto mass = row_data->getRealValue("Dmass");
-      if (mass < mass_low || mass > mass_high) continue;
 
-      // get weights
+      // get weights(mass)
       const auto weight_sigswap = row_data->getRealValue("n_sigswap_sw");
       Dmass->setVal(mass);
       const double density_sig = pdf_sig->getVal(&mass_obs) * val_frac_sig,
         density_swap = pdf_swap->getVal(&mass_obs) * (1 - val_frac_sig),
         density_sigswap = density_sig + density_swap,
         absfrac_sig = (density_sigswap > 0.) ? density_sig/density_sigswap : 0.;
-      const double weight_sig = weight_sigswap * absfrac_sig;
+      const double weight_sig = weight_sigswap * absfrac_sig; // !
 
-      for (auto& [name, h1] : h1s) {
-        const auto value_data = row_data->getRealValue(name.c_str());
-        // h1->Fill(value_data, weight_sigswap);
-        h1->Fill(value_data, weight_sig);
-        const auto value_mc = row_mc->getRealValue(name.c_str());
-        h1s_mc_match.at(name)->Fill(value_mc);
+      for (auto& [name, _] : h1s_data_main) {
+        const auto value = row_data->getRealValue(name.c_str());
+        // fill signal region
+        if (mass > mass_signal_low && mass < mass_signal_high) {
+          h1s_data_main.at(name)->Fill(value);
+          h1s_data_sig.at(name)->Fill(value, weight_sig);
+          // h1->Fill(value, weight_sigswap);
+        }
+        // fill side band
+        if (std::abs(mass - val_mean) > deltamass_sideband_low &&
+            std::abs(mass - val_mean) < deltamass_sideband_high) {
+          h1s_data_sideband.at(name)->Fill(value);
+        }
+      }
+    }
+    xjjc::progressbar_summary(nentries);
+
+    const auto nentries_mc = ds_mc_match->numEntries();
+    for (int i = 0; i < nentries_mc; ++i) {
+      xjjc::progressslide(i, nentries_mc);
+
+      const RooArgSet* row_mc = ds_mc_match->get(i);
+
+      for (auto& [name, h1] : h1s_mc_match) {
+        const auto value = row_mc->getRealValue(name.c_str());
+        h1s_mc_match.at(name)->Fill(value);
       }      
     }
+    xjjc::progressbar_summary(nentries_mc);
 
-    pdf->draw_cover({ "#bf{" + btex.label_y(i) + "}" }, 0.05);
-
-    for (auto& [name, h1] : h1s) {
-      const auto the_var = var_by_name(name);
-      if (the_var.varname.empty()) continue;
-
-      h1->Scale(1./h1->Integral(), "width");
-      h1s_mc_match.at(name)->Scale(1./h1s_mc_match.at(name)->Integral(), "width");
-
-      h1->SetMinimum(the_var.logy ? (0.5 * xjjana::gethnonzerominimum(h1)) : 0.);
-      h1->SetMaximum((the_var.logy ? 5. : 1.5) * xjjana::gethmaximum(h1));
-      h1s_mc_match.at(name)->SetMinimum(the_var.logy ? (0.5 * xjjana::gethnonzerominimum(h1s_mc_match.at(name))) : 0.);
-      h1s_mc_match.at(name)->SetMaximum((the_var.logy ? 5. : 1.5) * xjjana::gethmaximum(h1s_mc_match.at(name)));
-
-      pdf->prepare();
-      pdf->getc()->SetLogy(0);
-      if (the_var.logy)
-        pdf->getc()->SetLogy();
-      h1s_mc_match.at(name)->Draw("hist");
-      h1->Draw("pe1 same");
-      pdf->write();
-    }
-    // // Get the weighted dataset
-    // RooDataSet *weighted_ds = splot->GetSDataSet();
-    // if (!weighted_ds) {
-    //   std::cerr << "Failed to get weighted dataset" << std::endl;
-    //   return;
-    // }
+    outf->cd();
+    outf->mkdir(Form("dir__y-%d", i))->cd();
+    auto* t_mass = new TTree("mass_range", "");
+    t_mass->Branch("mass_signal_low", &mass_signal_low, "mass_signal_low/D");
+    t_mass->Branch("mass_signal_high", &mass_signal_high, "mass_signal_high/D");
+    t_mass->Branch("deltamass_sideband_low", &deltamass_sideband_low, "deltamass_sideband_low/D");
+    t_mass->Branch("deltamass_sideband_high", &deltamass_sideband_high, "deltamass_sideband_high/D");
+    t_mass->Fill();
+    t_mass->Write();
+    for (auto& [_, h] : h1s_data_main) xjjroot::writehist(h);
+    for (auto& [_, h] : h1s_data_sideband) xjjroot::writehist(h);
+    for (auto& [_, h] : h1s_data_sig) xjjroot::writehist(h);
+    for (auto& [_, h] : h1s_mc_match) xjjroot::writehist(h);
+    outf->cd();
   } // loop y 
   
-  pdf->close();
-
-  // auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
-  // xjjroot::writehist(h3_bins);
-  // for (int i=0; i<fitterys.size(); i++) {
-  //   auto* ws = fitterys[i]->make_ws(Form("ws__y-%d", i));
-  //   ws->Write();
-  // }
-  // for (auto& [iname, info] : infos) {
-  //   outf->mkdir(iname.c_str())->cd();
-  //   auto* t_data = new TTree("info", "");
-  //   for (auto& [key, content] : info) {
-  //     t_data->Branch(key.c_str(), &content);
-  //   }
-  //   t_data->Fill();
-  //   t_data->Write();
-  //   outf->cd();
-  // }
-  // outf->Close();
+  // pdf->close();
+  outf->cd();
+  for (auto& [iname, info] : infos) {
+    outf->mkdir(iname.c_str())->cd();
+    auto* t_data = new TTree("info", "");
+    for (auto& [key, content] : info) {
+      t_data->Branch(key.c_str(), &content);
+    }
+    t_data->Fill();
+    t_data->Write();
+    outf->cd();
+  }
+  outf->Close();
   
   return 0;
 }
