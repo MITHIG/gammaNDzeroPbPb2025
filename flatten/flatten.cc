@@ -94,12 +94,16 @@ namespace {
 
 void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
              const char* output = "skim_HiForest_2025PbPbUPC_1_flattened.root") {
+
+  __XJJLOG << ">> Input: " << input << std::endl;
   std::unique_ptr<TFile> in(new TFile(input, "READ"));
   if (!in || in->IsZombie()) {
     std::cerr << "Cannot open input file: " << input << std::endl;
     return;
   }
 
+  TTree::SetMaxTreeSize(1LL * 1024 * 1024 * 1024 * 1024);
+  
   auto* tree = dynamic_cast<TTree*>(in->Get("Tree"));
   if (!tree) {
     std::cerr << "Input file does not contain a TTree named Tree" << std::endl;
@@ -131,7 +135,7 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
     if (!isVectorType(type))
       continue;
 
-    tree->SetBranchStatus(name.c_str(), 0);
+    tree->SetBranchStatus(name.c_str(), 0); // disable vector branches in tree->
     if (name.empty() || name[0] != 'D')
       continue;
 
@@ -179,8 +183,12 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
 
   std::vector<std::string> deletedBranches;
   for (std::size_t icolumn = 0; icolumn < columns.size(); ++icolumn) {
-    if (bad[icolumn])
+    if (bad[icolumn]) {
       deletedBranches.push_back(columns[icolumn]->name);
+      // This branch still has an address pointing into its VectorColumn.
+      // Disable it before destroying that VectorColumn below.
+      readTree->SetBranchStatus(columns[icolumn]->name.c_str(), 0);
+    }
   }
   std::size_t badIndex = 0;
   columns.erase(std::remove_if(columns.begin(), columns.end(),
@@ -200,8 +208,17 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
   auto* flat = tree->CloneTree(0);
   flat->SetName("Tree");
   flat->SetTitle("Flattened D-candidate tree");
+  // Do not let TFile own the output tree.  This avoids a ROOT directory-list
+  // destruction issue seen when closing files read from EOS.
+  // flat->SetDirectory(nullptr);
+  // flat->SetBit(TTree::kOnlyFlushAtCluster);
+  // flat->SetAutoFlush(10000);
+  // flat->SetAutoSave(0);
+  readTree->SetBranchStatus("*", 0);
+  readTree->SetBranchStatus("Dsize", 1);
   for (const auto& column : columns) {
-    readTree->SetBranchStatus(column->name.c_str(), 1);
+    // std::cout<<column->name<<std::endl;
+    readTree->SetBranchStatus(column->name.c_str(), 1); // turn on vector branches in readTree->
     column->bind(readTree);
     column->makeBranch(flat);
   }
@@ -216,7 +233,6 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
     tree->GetEntry(entry);
     readTree->GetEntry(entry);
     const std::size_t nCandidates = dsize < 0 ? 0 : dsize;
-
     for (std::size_t candidate = 0; candidate < nCandidates; ++candidate) {
       for (const auto& column : columns) {
         column->set(candidate);
@@ -227,23 +243,37 @@ void flatten(const char* input = "skim_HiForest_2025PbPbUPC_1.root",
   }
   xjjc::progressbar_summary(entries);
 
-  // Preserve the auxiliary metadata tree, if present.
-  if (auto* info = dynamic_cast<TTree*>(in->Get("InfoTree")))
-    info->CloneTree(-1, "fast")->Write();
+  // Preserve the auxiliary metadata tree, if present, without giving the
+  // output file ownership of the cloned object.
+  // TTree* infoFlat = nullptr;
+  // if (auto* info = dynamic_cast<TTree*>(in->Get("InfoTree"))) {
+  //   infoFlat = info->CloneTree(-1, "fast");
+  //   infoFlat->SetDirectory(nullptr);
+  // }
 
+  out->cd();
   flat->Write();
-  out->Write();
-  out->Close();
+  // if (infoFlat)
+  //   infoFlat->Write();
+
+  // All input branch addresses have been consumed. Close the EOS input
+  // handles before closing the output file, so XRootD cleanup cannot overlap
+  // ROOT's output-directory cleanup.
+  // readFile->Close();
+  // in->Close();
+  // out->Close();
+
+  // delete infoFlat;
+  // delete flat;
   
   std::cout << "Wrote " << outputEntries << " flattened entries to "
             << output << std::endl;
-  std::cout << "Deleted D* branches with a size mismatch:" << std::endl;
-  if (deletedBranches.empty())
-    std::cout << "  (none)" << std::endl;
-  else
-    for (const auto& name : deletedBranches)
-      std::cout << "  " << name << std::endl;
-
+  // std::cout << "Deleted D* branches with a size mismatch:" << std::endl;
+  // if (deletedBranches.empty())
+  //   std::cout << "  (none)" << std::endl;
+  // else
+  //   for (const auto& name : deletedBranches)
+  //     std::cout << "  " << name << std::endl;a
   
 }
 
