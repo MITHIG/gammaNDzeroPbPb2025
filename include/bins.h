@@ -13,7 +13,7 @@ namespace bins {
   const int npt = 30; const float minpt = 2, maxpt = 5;
 #endif
 
-#ifdef __BINS_PTY_FPROMPT__
+#ifdef __BINS_PTY_DATAMCCOMP__
   std::vector<double> ybins = { -2., -1., 0., 1., 2. }; // can be redefined in .cc
   const int npt = 1; const float minpt = 2, maxpt = 5;
 #endif
