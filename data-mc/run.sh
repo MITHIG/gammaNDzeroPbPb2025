@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TAG_BIN="-yincl" ; BINNING='-2,2' ;
+
 INPUTS_DATA=( # lumi is nb-1 - directly from brilcalc
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb;2025PbPb" # 2025
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN;BeamAclose" # !! to replace by the one without gmatch filter
@@ -7,6 +9,7 @@ INPUTS_DATA=( # lumi is nb-1 - directly from brilcalc
 CUTEVTS=(
     "1;#gammaN (Xn0n);gammaN-0nXn-25"
     # "2;N#gamma (0nXn);Ngamma-0nXn-25"
+    # "3;0nXn + Xn0n;twodirs-0nXn-25" # have not add y reflection
 )
 INPUTS_MC=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN;BeamA"
@@ -42,19 +45,19 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 ./save_datasets.exe "$input_mc" $itag_dataset_mc "$cutevtstr" 1
             }
 
-            itag_cook="rootfiles/"$cut_tag"/dataset-cook_"$data_tag"_"$mc_tag
+            itag_cook="rootfiles/"$cut_tag"/dataset-cook_"$data_tag"_"$mc_tag$TAG_BIN
             [[ ${3:-0} -eq 1 ]] && {
-                ./cook_datasets.exe $itag_dataset_data".root" $itag_dataset_mc".root" $itag_cook
+                ./cook_datasets.exe $itag_dataset_data".root" $itag_dataset_mc".root" $itag_cook "$BINNING"
             }
 
-            itag_fit=$cut_tag"/roofit_"$data_tag"_"$mc_tag
+            itag_fit=$cut_tag"/roofit_"$data_tag"_"$mc_tag$TAG_BIN
             [[ ${4:-0} -eq 1 ]] && {
                 ./fit_datasets.exe $itag_cook".root" $itag_fit
             }
 
-            itag_splot=$cut_tag"/splot_"$data_tag"_"$mc_tag
+            itag_splot=$cut_tag"/splot_"$data_tag"_"$mc_tag$TAG_BIN
             [[ ${5:-0} -gt 1 ]] && ./splot_datasets.exe "rootfiles/"$itag_fit".root" $itag_splot
-            itag_draw=$cut_tag"/draw_"$data_tag"_"$mc_tag
+            itag_draw=$cut_tag"/draw_"$data_tag"_"$mc_tag$TAG_BIN
             [[ ${5:-0} -gt 0 && ${5:-0} -lt 3 ]] && ./draw_datasets.exe "rootfiles/"$itag_splot".root" $itag_draw
 
         done

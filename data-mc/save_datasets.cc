@@ -15,8 +15,8 @@ struct Flatten {
   RooRealVar *roov;
 };
 
-enum class ECutPreset { none = 0, gammaN = 1, Ngamma = 2 };
-std::vector<std::string> ecut_name = { "none", "gammaN", "Ngamma" };
+enum class ECutPreset { none = 0, gammaN = 1, Ngamma = 2, twoDirs = 3 };
+std::vector<std::string> ecut_name = { "none", "gammaN", "Ngamma", "gammaN + Ngamma" }; // only for display
 enum class GCutPreset { none = 0, match = 1, swap = 2 };
 std::vector<std::string> gcut_name = { "none", "match", "swap" };
 
@@ -34,7 +34,7 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   for (auto& v : variables) {
     if (v.isbranch < 0) continue;
 
-    __XJJLOG << "   >> " << v.varname << " // " << v.var << (v.isbranch ? " (to set branch)" : "") << std::endl;
+    __XJJLOG << "   >> " << v.varname << " // " << v.var << (v.isbranch ? "" : " \e[33m(no branch, need to calculate later)\e[0m") << std::endl;
     // create roorealvar
     vars[v.varname].roov = new RooRealVar(v.varname.c_str(), v.vartex.c_str(), v.varmin, v.varmax);
     observables.add(*(vars[v.varname].roov));
@@ -76,41 +76,40 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   auto data = std::make_unique<RooDataSet>(name, "", observables);
   auto nentries = tree->GetEntries();
   for (long long int i=0; i<nentries; i++) {
-    xjjc::progressslide(i, nentries, 10000);
+    xjjc::progressslide(i, nentries, 100000);
     tree->GetEntry(i);
 
     if (!selectedVtxFilter) continue;
     if (Run > 10 && !(isL1ZDCOr && cscTightHalo2015Filter)) continue;
-    if (ecut == ECutPreset::gammaN && !(ZDCgammaN && HFEMaxPlus_eta5 < 16)) continue;
-    if (ecut == ECutPreset::Ngamma && !(ZDCNgamma && HFEMaxMinus_eta5 < 16)) continue;
+    bool pass_gammaN = ZDCgammaN && HFEMaxPlus_eta5 < 16;
+    bool pass_Ngamma = ZDCNgamma && HFEMaxMinus_eta5 < 16;
+    if (ecut == ECutPreset::gammaN && !pass_gammaN) continue;
+    if (ecut == ECutPreset::Ngamma && !pass_Ngamma) continue;
+    if (ecut == ECutPreset::twoDirs && !(pass_gammaN || pass_Ngamma)) continue;
 
     // std::cout<<Dsize<<std::endl;
     
 #define VAL(q) vars[ #q ].br->at(j)
     for (int j=0; j<Dsize; j++) {
       // cut
-      // for (auto& [_, v] : vars) {
-      //   if (v.br) {
-      //     std::cout<<"   "<<j<<"  "<<v.roov->GetName() << " (" << v.br->size() << ")" << std::endl;
-      //   }
-      // }
-
       if (VAL(Dpt) < 2. || VAL(Dpt) > 5. || VAL(Dy) < -2. || VAL(Dy) > 2.) continue;
       
       if (gcut == GCutPreset::match && Dgen->at(j) != 23333) continue;
       if (gcut == GCutPreset::swap && Dgen->at(j) != 23344) continue;
 
-      if (VAL(Dmass) < bins::minmass || VAL(Dmass) > bins::maxmass) continue; // can be reduced
+      if (VAL(Dmass) < bins::minmass || VAL(Dmass) > bins::maxmass) continue; // can be reduced?
 
       if (!( std::abs(VAL(Dtrk1PtErr)/VAL(Dtrk1Pt)) < 0.1 && std::abs(VAL(Dtrk2PtErr)/VAL(Dtrk2Pt)) < 0.1 &&
              std::abs(VAL(Dtrk1Eta)) < 2.4 && std::abs(VAL(Dtrk2Eta)) < 2.4 &&
              VAL(Dtrk1Pt) > 0.5 && VAL(Dtrk2Pt) > 0.5 &&
              VAL(Dchi2cl) > 0.05 && (VAL(DsvpvDistance)/VAL(DsvpvDisErr)) > 1. )) continue;
 
-      if (ecut == ECutPreset::gammaN &&
-          !((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098))) continue;
-      if (ecut == ECutPreset::Ngamma &&
-          !((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098))) continue;
+      bool pass_BDT_gammaN = ZDCgammaN && ((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098));
+      bool pass_BDT_Ngamma = ZDCNgamma && ((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098));
+      
+      if (ecut == ECutPreset::gammaN && !pass_BDT_gammaN) continue;
+      if (ecut == ECutPreset::Ngamma && !pass_BDT_Ngamma) continue;
+      if (ecut == ECutPreset::twoDirs && !(pass_BDT_gammaN || pass_BDT_Ngamma)) continue;
 
       // set dataset values
       for (auto& [_, v] : vars) {

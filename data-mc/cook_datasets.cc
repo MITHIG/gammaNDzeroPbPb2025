@@ -7,7 +7,7 @@
 
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
-#define __BINS_PTY_FPROMPT__
+#define __BINS_PTY_DATAMCCOMP__
 #include "../include/bins.h"
 
 int macro(std::string inputname_data, std::string inputname_template, std::string outputname) {
@@ -47,10 +47,10 @@ int macro(std::string inputname_data, std::string inputname_template, std::strin
   xjjroot::print_tab(datas, 0);
   
   // parse binning
+  xjjc::print_vec_h(bins::ybins, 0);
   auto* h2_bins = new TH2D("h2_bins_y-pt", ";y;#it{p}_{T}",
                            bins::ybins.size()-1, bins::ybins.data(),
                            bins::npt, xjjc::fixedbin_to_edges(bins::npt, bins::minpt, bins::maxpt).data());
-  xjjc::print_vec_h(bins::ybins, 0);
 
   __XJJLOG << "++ split y bins" << std::endl;
   std::map<std::string, std::vector<RooDataSet*>> datays;
@@ -88,6 +88,13 @@ int macro(std::string inputname_data, std::string inputname_template, std::strin
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 5) {
+    __XJJLOG << ">> argv[4] (y binning) : " << argv[4] << std::endl;
+    auto overwrite_bins = xjjc::str_convert_vector<double>(argv[4], ",");
+    if (overwrite_bins.size() > 1)
+      bins::ybins = overwrite_bins;
+    return macro(argv[1], argv[2], argv[3]);
+  }
   if (argc == 4) {
     return macro(argv[1], argv[2], argv[3]);
   }

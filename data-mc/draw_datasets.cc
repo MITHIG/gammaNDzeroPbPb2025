@@ -208,6 +208,26 @@ int macro(std::string inputname, std::string outputname) {
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
       pdf->write();
     }
+    
+    if (name == "Dy") { // overlay Dy
+      auto* leg_norm_Dy = init_leg(4);
+      leg_norm_Dy->AddEntry(h1ys_norm_data_sideband.at(name).front(), "Data in sideband", "f");
+      leg_norm_Dy->AddEntry(h1ys_norm_mc_match.at(name).front(), "Gen-matched MC", "f");
+      leg_norm_Dy->AddEntry(h1ys_norm_data_sigswap.at(name).front(), "sPlot signal + swap", "pe");
+      leg_norm_Dy->AddEntry(h1ys_norm_data_sub.at(name).front(), "Sideband subtracted", "pe");
+      pdf->prepare();
+      h1ys_norm_data_sideband.at(name).back()->Draw("axis");
+      for (int i=0; i<ny; i++) {
+        h1ys_norm_data_sideband.at(name)[i]->Draw("hist same");
+        h1ys_norm_mc_match.at(name)[i]->Draw("hist e1 same");
+        h1ys_norm_data_sigswap.at(name)[i]->Draw("pe1 same");
+        h1ys_norm_data_sub.at(name)[i]->Draw("pe1 same");
+      }
+      leg_norm_Dy->Draw();
+      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
+      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(-1), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
+      pdf->write();
+    }
 
     for (int i=0; i<ny; i++) {
       // sub
