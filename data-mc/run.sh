@@ -54,7 +54,8 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
 
             itag_splot=$cut_tag"/splot_"$data_tag"_"$mc_tag
             [[ ${5:-0} -gt 1 ]] && ./splot_datasets.exe "rootfiles/"$itag_fit".root" $itag_splot
-            [[ ${5:-0} -gt 0 ]] && ./draw_datasets.exe "rootfiles/"$itag_splot".root" $itag_splot
+            itag_draw=$cut_tag"/draw_"$data_tag"_"$mc_tag
+            [[ ${5:-0} -gt 0 && ${5:-0} -lt 3 ]] && ./draw_datasets.exe "rootfiles/"$itag_splot".root" $itag_draw
 
         done
 

@@ -7,7 +7,7 @@
 std::vector<global::variable> variables = {
   //
   { .varname = "Dmass", .var = "Dmass", .vartex = "m_{#piK} [GeV/c^{2}]", .varmin = 1.66, .varmax = 2.06, .nbin = 80, .logy = 0, .isbranch = 1 },
-  { .varname = "Dpt", .var = "Dpt", .vartex = "#it{p}_{T} [GeV/c]", .varmin = 2., .varmax = 5., .nbin = 15, .logy = 0, .isbranch = 1 },
+  { .varname = "Dpt", .var = "Dpt", .vartex = "#it{p}_{T} [GeV/c]", .varmin = 2., .varmax = 5., .nbin = 10, .logy = 0, .isbranch = 1 },
   { .varname = "Dy", .var = "Dy", .vartex = "y", .varmin = -2., .varmax = 2., .nbin = 20, .logy = 0, .isbranch = 1 },
   { .varname = "Dmva_BDT", .var = "Dmva_BDT", .vartex = "BDT", .varmin = 0, .varmax = 0.4, .nbin = 20, .logy = 0, .isbranch = 1 },
   { .varname = "Dalpha", .var = "Dalpha", .vartex = "#alpha (3D pointing angle)", .varmin = 0, .varmax = 0.6, .nbin = 15, .logy = 0, .isbranch = 1 },
@@ -37,8 +37,8 @@ std::vector<global::variable> variables = {
     .bins = { 0, 0.01, 0.02, 0.03, 0.04, 0.06, 0.09, 0.15, 0.25 } },
   { .varname = "Dtrk2PtErr", .var = "Dtrk2PtErr", .vartex = "Track 2#scale[0.5]{ }#sigma(p_{T}) [GeV/c]", .varmin = 0, .varmax = 0.4, .nbin = 20, .logy = 1, .isbranch = 1,
     .bins = { 0, 0.01, 0.02, 0.03, 0.04, 0.06, 0.09, 0.15, 0.25 } },
-  { .varname = "Dtrk1Eta", .var = "Dtrk1Eta", .vartex = "Track 1#scale[0.5]{ }#eta", .varmin = -2.4, .varmax = 2.4, .nbin = 48, .logy = 0, .isbranch = 1 },
-  { .varname = "Dtrk2Eta", .var = "Dtrk2Eta", .vartex = "Track 2#scale[0.5]{ }#eta", .varmin = -2.4, .varmax = 2.4, .nbin = 48, .logy = 0, .isbranch = 1 },
+  { .varname = "Dtrk1Eta", .var = "Dtrk1Eta", .vartex = "Track 1#scale[0.5]{ }#eta", .varmin = -2.4, .varmax = 2.4, .nbin = 24, .logy = 0, .isbranch = 1 },
+  { .varname = "Dtrk2Eta", .var = "Dtrk2Eta", .vartex = "Track 2#scale[0.5]{ }#eta", .varmin = -2.4, .varmax = 2.4, .nbin = 24, .logy = 0, .isbranch = 1 },
   // 
 };
 

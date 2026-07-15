@@ -113,17 +113,17 @@ int macro(std::string inputname, std::string outputname) {
       const auto the_var = var_by_name(name);
       if (the_var.varname.empty()) continue;
       
-      const auto* hname = Form("h1_%s_data_main__y-%d", name.c_str(), i);
+      const auto* hname = Form("h1_%s_data-main__y-%d", name.c_str(), i);
       if (!the_var.bins.empty()) {
         h1s_data_main[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.bins.size()-1, the_var.bins.data());
       } else {
         h1s_data_main[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.nbin, the_var.varmin, the_var.varmax);
       }
       h1s_data_main[name]->Sumw2();
-      h1s_data_sigswap[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sigswap").c_str());
-      h1s_data_sig[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sig").c_str());
-      h1s_data_sideband[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sideband").c_str());
-      h1s_mc_match[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "mc_match").c_str());
+      h1s_data_sigswap[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data-main", "data-sigswap").c_str());
+      h1s_data_sig[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data-main", "data-sig").c_str());
+      h1s_data_sideband[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data-main", "data-sideband").c_str());
+      h1s_mc_match[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data-main", "mc-match").c_str());
       __XJJLOG << "     >> " << name << std::endl;
     }
     
@@ -142,7 +142,7 @@ int macro(std::string inputname, std::string outputname) {
         density_swap = pdf_swap->getVal(&mass_obs) * (1 - val_frac_sig),
         density_sigswap = density_sig + density_swap,
         absfrac_sig = (density_sigswap > 0.) ? density_sig/density_sigswap : 0.;
-      const double weight_sig = weight_sigswap * absfrac_sig; // !
+      const double weight_sig = weight_sigswap * absfrac_sig; // I think this way is wrong, only weight_sigswap is reliable
       sum_weight_sigswap += weight_sigswap;
       sum_weight_sig += weight_sig;
 
@@ -163,7 +163,7 @@ int macro(std::string inputname, std::string outputname) {
       }
     }
     xjjc::progressbar_summary(nentries);
-    __XJJLOG << ">> sPlot yield check y-" << std::endl
+    __XJJLOG << ">> sPlot yield check" << std::endl
              << "   [ n_sigswap = " << n_sigswap->getVal()
              << ", sum(n_sigswap_sw) = " << sum_weight_sigswap
              << ", derived sum(signal sw) = " << sum_weight_sig

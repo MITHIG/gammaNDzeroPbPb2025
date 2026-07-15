@@ -22,6 +22,13 @@ private:
   void initialize(TTree* t);
 };
 
+struct hName {
+  std::string varname = "";
+  std::string type = "";
+  int index_y = -1;
+};
+hName parse_hname(std::string hname, bool verbose = false);
+
 // double scale_sideband = 0.5;
 int macro(std::string inputname, std::string outputname) {
   const auto inputfile = util::parse_input(inputname).content;
@@ -42,164 +49,224 @@ int macro(std::string inputname, std::string outputname) {
 
   auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
   draw::bintex btex(h3_bins, 0, 2);
+  auto ny = h3_bins->GetXaxis()->GetNbins();
 
-  xjjroot::setgstyle(1);
-  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
-
-  for (int i=0; i<h3_bins->GetXaxis()->GetNbins(); i++) {
+  //
+  std::vector<MassRange*> mranges(ny, nullptr);
+  for (int i=0; i<ny; i++) {
     auto* dir = (TDirectory*)inf->GetDirectory(Form("dir__y-%d", i));
     if (!dir) {
       __XJJLOG << "!! bad directory, skip." << std::endl;
       continue;
     }
-    auto make_h1s = [&dir, &i](std::string type, xjjroot::thgrstyle style = {}) {
-      const auto suffix = std::string(Form("%s__y-%d", type.c_str(), i));
-      auto vh1s = xjjana::getobj_regexp<TH1D>(dir, "h1_.+" + suffix);
-      std::map<std::string, TH1D*> h1s;
-      for (auto& h : vh1s) {
-        xjjroot::sethempty(h, 0, 0.4);
-        xjjroot::setthgrstyle(h, style);
-        auto name = xjjc::str_eraseall(h->GetName(), { "h1_", suffix });
-        h1s[name] = h;
-      }
-      if (h1s.empty()) {
-        __XJJLOG << "!! no matching histograms : " << suffix << std::endl;
-      }
-      return h1s;
-    };
-    auto make_h1s_norm = [](std::map<std::string, TH1D*>& h1s, xjjroot::thgrstyle style = {}) {
-      std::map<std::string, TH1D*> h1s_norm;
-      for (auto& [name, h] : h1s) {
-        auto* hnorm = (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "h1_", "h1_norm_").c_str());
-        hnorm->Scale(1./h->Integral(), "width");
-        hnorm->GetYaxis()->SetTitle("Distribution (self-normalized)");
-        xjjroot::sethempty(hnorm, 0, 0.4);
-        xjjroot::setthgrstyle(hnorm, style);
-        h1s_norm[name] = hnorm;
-      }
-      return h1s_norm;
-    };
+    mranges[i] = new MassRange((TTree*)dir->Get("mass_range"));
+  }
 
-    auto* mrange = new MassRange((TTree*)dir->Get("mass_range"));
-
-    auto make_h1s_scale = [](const std::map<std::string, TH1D*>& h1s, double scale) {
-      std::map<std::string, TH1D*> h1s_scaled;
-      for (auto& [name, h] : h1s) {
-        auto* h_scaled = (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "h1_", "h1_sub_").c_str());
-        // __XJJLOG << ">> scale = " << scale << std::endl;
-        h_scaled->Scale(scale);
-        xjjroot::sethempty(h_scaled, 0, 0.4);
-        h1s_scaled[name] = h_scaled;
+  // 
+  auto vh1s_all = xjjana::getobj_regexp_recur<TH1D>(inf, ".+", "", false);
+  auto collect_h1ys = [&vh1s_all, &ny](std::string type, xjjroot::thgrstyle style = {}, bool verbose = false) {
+    std::map<std::string, std::vector<TH1D*>> h1ys;
+    for (auto& h : vh1s_all) {
+      auto hpar = parse_hname(h->GetName());
+      if (hpar.type != type) continue;
+      if (hpar.index_y < 0 || hpar.index_y >= ny) {
+        __XJJLOG << "!! bad index_y : " << hpar.index_y << std::endl;
+        h1ys.clear();
+        return h1ys;
       }
-      return h1s_scaled;
-    };
-    auto make_h1s_sub = [](const std::map<std::string, TH1D*>& h1s_main,
-                           const std::map<std::string, TH1D*>& h1s_sideband_scaled,
-                           xjjroot::thgrstyle style = {}) {
-      std::map<std::string, TH1D*> h1s_sub;
-      for (auto& [name, h] : h1s_main) {
-        auto* hsub = (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "h1_", "h1_sub_").c_str());
-        hsub->Add(h1s_sideband_scaled.at(name), -1);
-        xjjroot::sethempty(hsub, 0, 0.4);
-        xjjroot::setthgrstyle(hsub, style);
-        h1s_sub[name] = hsub;
+      if (h1ys.find(hpar.varname) == h1ys.end()) {
+        h1ys[hpar.varname].resize(ny, nullptr);
       }
-      return h1s_sub;
-    };
-    
-    auto h1s_data_sig = make_h1s("_data_sig", { xjjroot::mycolor_middle["green"], 20, 1.5, xjjroot::mycolor_middle["green"], 1, 1 });
-    auto h1s_norm_data_sig = make_h1s_norm(h1s_data_sig);
-    if (h1s_norm_data_sig.empty()) continue;
-    auto h1s_data_sigswap = make_h1s("_data_sigswap", { xjjroot::mycolor_middle["blue"], 25, 1.5, xjjroot::mycolor_middle["blue"], 1, 1 });
-    auto h1s_norm_data_sigswap = make_h1s_norm(h1s_data_sigswap);
-    if (h1s_norm_data_sigswap.empty()) continue;
-    auto h1s_mc_match = make_h1s("_mc_match", { xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 1, xjjroot::mycolor_middle["red"], 1, 3004 });
-    auto h1s_norm_mc_match = make_h1s_norm(h1s_mc_match);
-    if (h1s_norm_mc_match.empty()) continue;
+      xjjroot::sethempty(h, 0, 0.4);
+      xjjroot::setthgrstyle(h, style);
+      h1ys[hpar.varname][hpar.index_y] = h;
+    }
+    if (h1ys.empty()) {
+      __XJJLOG << "!! no matching histograms : " << type << std::endl;
+    } else if (verbose) {
+      xjjroot::print_tab(h1ys, 0);
+    }
+    return h1ys;
+  };
 
-    auto h1s_data_main = make_h1s("_data_main", { kGray+2, 24, 1.5, kGray+2, 1, 1, kGray+2, 0.1, 1001 });
-    if (h1s_data_main.empty()) continue;
-    auto h1s_data_sideband = make_h1s("_data_sideband", { xjjroot::mycolor_middle["cyan"], 24, 1.5, xjjroot::mycolor_middle["cyan"], 1, 1, xjjroot::mycolor_middle["cyan"], 1, 3004 });
-    if (h1s_data_sideband.empty()) continue;
-    auto h1s_data_sideband_scaled = make_h1s_scale(h1s_data_sideband, mrange->sideband_scale());
-    auto h1s_data_sub = make_h1s_sub(h1s_data_main, h1s_data_sideband_scaled,
-                                     { xjjroot::mycolor_middle["blue"], 20, 1.7, xjjroot::mycolor_middle["blue"], 1, 1 });
-    auto h1s_norm_data_sub = make_h1s_norm(h1s_data_sub);
-    auto h1s_norm_data_main = make_h1s_norm(h1s_data_main, { kGray, 20, 1.5, kGray, 1, 1, kGray, 0.2, 1001 });
-    
-    pdf->draw_cover({ "#bf{" + btex.label_y(i) + "}" }, 0.05);
-
-    for (auto& [name, _] : h1s_norm_data_sig) {
-      const auto the_var = var_by_name(xjjc::str_eraseall(name, "_norm"));
-      if (the_var.varname.empty()) continue;
-
-      auto set_hsminmax = [&the_var](std::vector<TH1D*> hlist) {
-        if (the_var.logy) {
-          xjjana::sethsnonzeromin(hlist, 0.5);
-          xjjana::sethsmax(hlist, 50.);
-        } else {
-          xjjana::sethsmin(hlist, 0.);
-          xjjana::sethsmax(hlist, 1.5);        
+  auto make_h1ys_norm = [](std::map<std::string, std::vector<TH1D*>>& h1ys, xjjroot::thgrstyle style = {}) {
+    std::map<std::string, std::vector<TH1D*>> h1ys_norm;
+    for (auto& [name, vh] : h1ys) {
+      // h1ys[hpar.varname].resize(ny, nullptr);
+      for (auto& h : vh) {
+        auto* h_norm = h ? (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "__y", "_norm__y").c_str()) : nullptr; // !! without y
+        if (h_norm) {
+          h_norm->Scale(1./h->Integral(), "width");
+          h_norm->GetYaxis()->SetTitle("Self-normalized / bin width");
+          xjjroot::setthgrstyle(h_norm, style);
         }
-      };
+        h1ys_norm[name].push_back(h_norm);
+      }
+    }
+    return h1ys_norm;
+  };
+  
+  auto h1ys_data_main = collect_h1ys("data-main", { kGray+3, 24, 1.5, kGray+3, 1, 1, kGray+3, 0.1, 1001 }, true);
+  auto h1ys_norm_data_main = make_h1ys_norm(h1ys_data_main, { kGray, 20, 1.5, kGray, 1, 1, kGray, 0.2, 1001 });
+  if (h1ys_norm_data_main.empty()) return 2;
+  auto h1ys_data_sigswap = collect_h1ys("data-sigswap", { xjjroot::mycolor_middle["blue"], 25, 1.5, xjjroot::mycolor_middle["blue"], 1, 1 }, true);
+  auto h1ys_norm_data_sigswap = make_h1ys_norm(h1ys_data_sigswap);
+  if (h1ys_norm_data_sigswap.empty()) return 2;
+  // auto h1ys_data_sideband = collect_h1ys("data-sideband", { xjjroot::mycolor_middle["cyan"], 24, 1.5, xjjroot::mycolor_middle["cyan"], 1, 1, xjjroot::mycolor_middle["cyan"], 1, 3004 }, true);
+  auto h1ys_data_sideband = collect_h1ys("data-sideband", { kGray, 20, 1.5, kGray, 1, 1, kGray, 0.2, 1001 }, true);
+  if (h1ys_data_sideband.empty()) return 2;
+  auto h1ys_norm_data_sideband = make_h1ys_norm(h1ys_data_sideband);
+  auto h1ys_mc_match = collect_h1ys("mc-match", { xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 1, xjjroot::mycolor_middle["red"], 1, 3004 }, true);
+  auto h1ys_norm_mc_match = make_h1ys_norm(h1ys_mc_match);
+  
+  auto make_h1ys_scale = [&mranges](std::map<std::string, std::vector<TH1D*>>& h1ys, xjjroot::thgrstyle style = {},
+                                    double scale_force = -1) {
+    std::map<std::string, std::vector<TH1D*>> h1ys_scale;
+    for (auto& [name, vh] : h1ys) {
+      for (auto& h : vh) {
+        auto* h_scale = h ? (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "__y", "_scale__y").c_str()) : nullptr;
+        if (h_scale) {
+          auto scale = scale_force > 0 ? scale_force : mranges[parse_hname(h->GetName()).index_y]->sideband_scale();
+          // __XJJLOG << ">> scale [" << parse_hname(h->GetName()).index_y << " ] : " << scale << std::endl;
+          h_scale->Scale(scale);
+          xjjroot::setthgrstyle(h_scale, style);
+        }
+        h1ys_scale[name].push_back(h_scale);
+      }
+    }
+    return h1ys_scale;
+  };  
+  auto make_h1ys_sub = [](const std::map<std::string, std::vector<TH1D*>>& h1ys_main,
+                          const std::map<std::string, std::vector<TH1D*>>& h1ys_sideband_scaled,
+                          xjjroot::thgrstyle style = {}) {
+    std::map<std::string, std::vector<TH1D*>> h1ys_sub;
+    for (auto& [name, vh] : h1ys_main) {
+      for (auto& h : vh) {
+        auto* h_sub = h ? (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "_main", "_sub").c_str()) : nullptr;
+        if (h_sub) {
+          auto index_y = parse_hname(h->GetName()).index_y;
+          if (h1ys_sideband_scaled.at(name)[index_y]) {
+            h_sub->Add(h1ys_sideband_scaled.at(name)[index_y], -1);
+            xjjroot::setthgrstyle(h_sub, style);
+          }
+        }
+        h1ys_sub[name].push_back(h_sub);
+      }
+    }
+    return h1ys_sub;
+  };
+  
+  auto h1ys_data_sideband_scaled = make_h1ys_scale(h1ys_data_sideband, { xjjroot::mycolor_middle["cyan"], 24, 1.5, xjjroot::mycolor_middle["cyan"], 1, 1, xjjroot::mycolor_middle["cyan"], 1, 3004 });
+  auto h1ys_data_sub = make_h1ys_sub(h1ys_data_main, h1ys_data_sideband_scaled,
+                                     { xjjroot::mycolor_middle["blue"], 20, 1.7, xjjroot::mycolor_middle["blue"], 1, 1 });
+  auto h1ys_norm_data_sub = make_h1ys_norm(h1ys_data_sub);
 
-      auto init_leg = [](int nrow) { 
-        auto* leg = new TLegend(0.52, 0.86-0.040*nrow, 0.70, 0.86);
-        xjjroot::setleg(leg, 0.035);
-        return leg;
-      };
-      
-      auto* leg_sub = init_leg(5);
-      leg_sub->AddEntry(h1s_data_main.at(name), "Data in signal region", "pf");
-      leg_sub->AddEntry((TObject*)0, mrange->str_signal().c_str(), "");
-      leg_sub->AddEntry(h1s_data_sideband_scaled.at(name), "Sideband scaled", "pf");
-      leg_sub->AddEntry((TObject*)0, mrange->str_sideband().c_str(), "");
-      leg_sub->AddEntry(h1s_data_sub.at(name), "Sideband subtracted", "pe");
-      
-      set_hsminmax({ h1s_data_main.at(name), h1s_data_sideband_scaled.at(name), h1s_data_sub.at(name) });
+  xjjroot::setgstyle(1);
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+  
+  for (auto& [name, _] : h1ys_data_main) {
+    pdf->draw_cover({ "#bf{" + name + "}" }, 0.05);
+    const auto the_var = var_by_name(xjjc::str_eraseall(name, "_norm"));
+    if (the_var.varname.empty()) continue;
+
+    // preparations
+    auto set_hsminmax = [&the_var](std::vector<TH1D*> hlist) {
+      if (the_var.logy) {
+        xjjana::sethsnonzeromin(hlist, 0.5);
+        xjjana::sethsmax(hlist, 50.);
+      } else {
+        xjjana::sethsmin(hlist, 0.);
+        xjjana::sethsmax(hlist, 1.5);
+      }
+    };
+    auto init_leg = [](int nrow) {
+      auto* leg = new TLegend(0.52, 0.86-0.040*nrow, 0.70, 0.86);
+      xjjroot::setleg(leg, 0.035);
+      return leg;
+    };
+
+    for (int i=0; i<ny; i++) {
+      // norm
+      auto* leg_norm = init_leg(5);
+      leg_norm->AddEntry(h1ys_norm_data_sideband.at(name)[i], "Data in sideband", "f");
+      leg_norm->AddEntry((TObject*)0, mranges[i]->str_sideband().c_str(), "");
+      leg_norm->AddEntry(h1ys_norm_mc_match.at(name)[i], "Gen-matched MC", "f");
+      leg_norm->AddEntry(h1ys_norm_data_sigswap.at(name)[i], "sPlot signal + swap", "pe");
+      leg_norm->AddEntry(h1ys_norm_data_sub.at(name)[i], "Sideband subtracted", "pe");
+
+      set_hsminmax({ h1ys_norm_data_sigswap.at(name)[i], h1ys_norm_mc_match.at(name)[i], h1ys_norm_data_sideband.at(name)[i], h1ys_norm_data_sub.at(name)[i] });
       pdf->prepare();
       pdf->getc()->SetLogy(0);
       if (the_var.logy)
         pdf->getc()->SetLogy();
-      h1s_data_main.at(name)->Draw("hist e1");
-      h1s_data_sideband_scaled.at(name)->Draw("hist e1 same");
-      h1s_data_sub.at(name)->Draw("pe1 same");
-      leg_sub->Draw();
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
-      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
-      pdf->write();
-
-      auto* leg_norm = init_leg(6);
-      leg_norm->AddEntry(h1s_norm_data_main.at(name), "Data in signal region", "f");
-      leg_norm->AddEntry((TObject*)0, mrange->str_signal().c_str(), "");
-      leg_norm->AddEntry(h1s_norm_mc_match.at(name), "Gen-matched MC", "f");
-      leg_norm->AddEntry(h1s_norm_data_sigswap.at(name), "sPlot signal+swap", "pe");
-      // leg_norm->AddEntry(h1s_norm_data_sig.at(name), "sPlot signal", "pe");
-      leg_norm->AddEntry(h1s_norm_data_sub.at(name), "Sideband subtracted", "pe");
-      leg_norm->AddEntry((TObject*)0, mrange->str_sideband().c_str(), "");
-
-      auto hlist_norm = std::vector<TH1D*>{ h1s_norm_data_sig.at(name), h1s_norm_data_sigswap.at(name), h1s_norm_mc_match.at(name), h1s_norm_data_main.at(name) };
-      if (name != "Dmass") hlist_norm.push_back(h1s_norm_data_sub.at(name));
-      set_hsminmax(hlist_norm);
-      pdf->prepare();
-      pdf->getc()->SetLogy(0);
-      if (the_var.logy)
-        pdf->getc()->SetLogy();
-      h1s_norm_data_main.at(name)->Draw("hist");
-      h1s_norm_mc_match.at(name)->Draw("hist e1 same");
-      h1s_norm_data_sigswap.at(name)->Draw("pe1 same");
-      // h1s_norm_data_sig.at(name)->Draw("pe1 same");
-      if (name != "Dmass") h1s_norm_data_sub.at(name)->Draw("pe1 same");
+      h1ys_norm_data_sideband.at(name)[i]->Draw("hist");
+      h1ys_norm_mc_match.at(name)[i]->Draw("hist e1 same");
+      h1ys_norm_data_sigswap.at(name)[i]->Draw("pe1 same");
+      h1ys_norm_data_sub.at(name)[i]->Draw("pe1 same");
       leg_norm->Draw();
       xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
       pdf->write();
     }
 
-  } // loop y 
+    for (int i=0; i<ny; i++) {
+      // sub
+      auto* leg_sub = init_leg(5);
+      leg_sub->AddEntry(h1ys_data_main.at(name)[i], "Data in signal region", "pf");
+      leg_sub->AddEntry((TObject*)0, mranges[i]->str_signal().c_str(), "");
+      leg_sub->AddEntry(h1ys_data_sideband_scaled.at(name)[i], "Sideband scaled", "pf");
+      leg_sub->AddEntry((TObject*)0, mranges[i]->str_sideband().c_str(), "");
+      leg_sub->AddEntry(h1ys_data_sub.at(name)[i], "Sideband subtracted", "pe");
+
+      set_hsminmax({ h1ys_data_main.at(name)[i], h1ys_data_sideband_scaled.at(name)[i], h1ys_data_sub.at(name)[i] });
+      pdf->prepare();
+      pdf->getc()->SetLogy(0);
+      if (the_var.logy)
+        pdf->getc()->SetLogy();
+      h1ys_data_main.at(name)[i]->Draw("hist e1");
+      h1ys_data_sideband_scaled.at(name)[i]->Draw("hist e1 same");
+      h1ys_data_sub.at(name)[i]->Draw("pe1 same");
+      leg_sub->Draw();
+      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
+      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
+      pdf->write();
+    }
+    
+  }
+
+  pdf->draw_cover({
+      "#bf{data input} " + infos["data"]["input"],
+      "#bf{MC input} " + infos["template"]["input"],
+    });
   
   pdf->close();
 
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
+  // std::map<std::string, std::vector<TH1D*>>
+  for (auto& [name, _] : h1ys_data_main) {
+    outf->mkdir(Form("dir_%s", name.c_str()))->cd();
+    for (auto* h1ys : { &h1ys_data_sigswap, &h1ys_data_sub,
+                       &h1ys_data_main, &h1ys_data_sideband, &h1ys_data_sideband_scaled,
+                       &h1ys_mc_match } ) {
+      for (auto h : h1ys->at(name)) {
+        if (h) xjjroot::writehist(h);
+      }
+    }
+  }
+
+  outf->cd();
+  for (auto& [iname, info] : infos) {
+    outf->mkdir(iname.c_str())->cd();
+    auto* t_data = new TTree("info", "");
+    for (auto& [key, content] : info) {
+      t_data->Branch(key.c_str(), &content);
+    }
+    t_data->Fill();
+    t_data->Write();
+    outf->cd();
+  }
+  outf->Close();
+  
   return 0;
 }
 
@@ -236,4 +303,21 @@ void MassRange::initialize(TTree* t) {
   tex_sideband = Form("%.3f <#scale[0.5]{ }#Deltam < %.3f GeV", deltamass_sideband_low, deltamass_sideband_high);
   __XJJLOG << ">> sideband range -> " << tex_sideband << std::endl;
   __XJJLOG << ">> sideband scale -> " << sideband_scale() << std::endl;
+}
+
+hName parse_hname(std::string hname, bool verbose) {
+  hName result;
+  result.index_y = std::atoi(xjjc::str_erasestar(hname, "*__y-").c_str());
+  auto t_noy_noh1 = xjjc::str_erasestar(hname, "__y-*");
+  t_noy_noh1 = xjjc::str_eraseall(t_noy_noh1, "h1_");
+  auto strs = xjjc::str_divide_trim(t_noy_noh1, "_");
+  if (strs.size() > 0) {
+    result.type = strs.back();
+    result.varname = xjjc::str_eraseall(t_noy_noh1, "_"+result.type);
+  }
+  // h1_DsvpvDistance_2D_data-sideband__y-3
+  if (verbose)
+    __XJJLOG << ">> " << hname << " : [" << result.varname << ", " << result.type << ", " << result.index_y << " ]" << std::endl;
+
+  return result;
 }
