@@ -80,16 +80,6 @@ int macro(std::string inputname, std::string outputname) {
       return h1s_norm;
     };
 
-    auto h1s_data_sig = make_h1s("_data_sig", { xjjroot::mycolor_middle["green"], 20, 1.5, xjjroot::mycolor_middle["green"], 1, 1 });
-    auto h1s_norm_data_sig = make_h1s_norm(h1s_data_sig);
-    if (h1s_norm_data_sig.empty()) continue;
-    auto h1s_data_sigswap = make_h1s("_data_sigswap", { xjjroot::mycolor_middle["blue"], 24, 1.5, xjjroot::mycolor_middle["blue"], 1, 1 });
-    auto h1s_norm_data_sigswap = make_h1s_norm(h1s_data_sigswap);
-    if (h1s_norm_data_sigswap.empty()) continue;
-    auto h1s_mc_match = make_h1s("_mc_match", { xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 1, xjjroot::mycolor_middle["red"], 1, 3004 });
-    auto h1s_norm_mc_match = make_h1s_norm(h1s_mc_match);
-    if (h1s_norm_mc_match.empty()) continue;
-
     auto* mrange = new MassRange((TTree*)dir->Get("mass_range"));
 
     auto make_h1s_scale = [](const std::map<std::string, TH1D*>& h1s, double scale) {
@@ -117,15 +107,25 @@ int macro(std::string inputname, std::string outputname) {
       return h1s_sub;
     };
     
-    auto h1s_data_main = make_h1s("_data_main", { kGray+2, 20, 1.5, kGray+2, 1, 1, kGray+2, 0.1, 1001 });
+    auto h1s_data_sig = make_h1s("_data_sig", { xjjroot::mycolor_middle["green"], 20, 1.5, xjjroot::mycolor_middle["green"], 1, 1 });
+    auto h1s_norm_data_sig = make_h1s_norm(h1s_data_sig);
+    if (h1s_norm_data_sig.empty()) continue;
+    auto h1s_data_sigswap = make_h1s("_data_sigswap", { xjjroot::mycolor_middle["blue"], 25, 1.5, xjjroot::mycolor_middle["blue"], 1, 1 });
+    auto h1s_norm_data_sigswap = make_h1s_norm(h1s_data_sigswap);
+    if (h1s_norm_data_sigswap.empty()) continue;
+    auto h1s_mc_match = make_h1s("_mc_match", { xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 1, xjjroot::mycolor_middle["red"], 1, 3004 });
+    auto h1s_norm_mc_match = make_h1s_norm(h1s_mc_match);
+    if (h1s_norm_mc_match.empty()) continue;
+
+    auto h1s_data_main = make_h1s("_data_main", { kGray+2, 24, 1.5, kGray+2, 1, 1, kGray+2, 0.1, 1001 });
     if (h1s_data_main.empty()) continue;
-    auto h1s_data_sideband = make_h1s("_data_sideband", { xjjroot::mycolor_middle["cyan"], 20, 1.5, xjjroot::mycolor_middle["cyan"], 1, 1, xjjroot::mycolor_middle["cyan"], 1, 3004 });
+    auto h1s_data_sideband = make_h1s("_data_sideband", { xjjroot::mycolor_middle["cyan"], 24, 1.5, xjjroot::mycolor_middle["cyan"], 1, 1, xjjroot::mycolor_middle["cyan"], 1, 3004 });
     if (h1s_data_sideband.empty()) continue;
     auto h1s_data_sideband_scaled = make_h1s_scale(h1s_data_sideband, mrange->sideband_scale());
     auto h1s_data_sub = make_h1s_sub(h1s_data_main, h1s_data_sideband_scaled,
-                                     { xjjroot::mycolor_middle["blue"], 21, 1.5, xjjroot::mycolor_middle["blue"], 1, 1 });
+                                     { xjjroot::mycolor_middle["blue"], 20, 1.7, xjjroot::mycolor_middle["blue"], 1, 1 });
     auto h1s_norm_data_sub = make_h1s_norm(h1s_data_sub);
-    auto h1s_norm_data_main = make_h1s_norm(h1s_data_main, { kGray, 20, 1, kGray, 1, 1, kGray, 0.2, 1001 });
+    auto h1s_norm_data_main = make_h1s_norm(h1s_data_main, { kGray, 20, 1.5, kGray, 1, 1, kGray, 0.2, 1001 });
     
     pdf->draw_cover({ "#bf{" + btex.label_y(i) + "}" }, 0.05);
 
@@ -143,9 +143,18 @@ int macro(std::string inputname, std::string outputname) {
         }
       };
 
-      auto* leg1 = new TLegend(0.55, 0.86-0.038*3, 0.90, 0.86);
-      xjjroot::setleg(leg1, 0.035);
-      leg1->AddEntry(h1s_data_main.at(name), "Signal+Bkg in signal region");
+      auto init_leg = [](int nrow) { 
+        auto* leg = new TLegend(0.52, 0.86-0.040*nrow, 0.70, 0.86);
+        xjjroot::setleg(leg, 0.035);
+        return leg;
+      };
+      
+      auto* leg_sub = init_leg(5);
+      leg_sub->AddEntry(h1s_data_main.at(name), "Data in signal region", "pf");
+      leg_sub->AddEntry((TObject*)0, mrange->str_signal().c_str(), "");
+      leg_sub->AddEntry(h1s_data_sideband_scaled.at(name), "Sideband scaled", "pf");
+      leg_sub->AddEntry((TObject*)0, mrange->str_sideband().c_str(), "");
+      leg_sub->AddEntry(h1s_data_sub.at(name), "Sideband subtracted", "pe");
       
       set_hsminmax({ h1s_data_main.at(name), h1s_data_sideband_scaled.at(name), h1s_data_sub.at(name) });
       pdf->prepare();
@@ -155,9 +164,19 @@ int macro(std::string inputname, std::string outputname) {
       h1s_data_main.at(name)->Draw("hist e1");
       h1s_data_sideband_scaled.at(name)->Draw("hist e1 same");
       h1s_data_sub.at(name)->Draw("pe1 same");
+      leg_sub->Draw();
       xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
       pdf->write();
+
+      auto* leg_norm = init_leg(6);
+      leg_norm->AddEntry(h1s_norm_data_main.at(name), "Data in signal region", "f");
+      leg_norm->AddEntry((TObject*)0, mrange->str_signal().c_str(), "");
+      leg_norm->AddEntry(h1s_norm_mc_match.at(name), "Gen-matched MC", "f");
+      leg_norm->AddEntry(h1s_norm_data_sigswap.at(name), "sPlot signal+swap", "pe");
+      // leg_norm->AddEntry(h1s_norm_data_sig.at(name), "sPlot signal", "pe");
+      leg_norm->AddEntry(h1s_norm_data_sub.at(name), "Sideband subtracted", "pe");
+      leg_norm->AddEntry((TObject*)0, mrange->str_sideband().c_str(), "");
 
       auto hlist_norm = std::vector<TH1D*>{ h1s_norm_data_sig.at(name), h1s_norm_data_sigswap.at(name), h1s_norm_mc_match.at(name), h1s_norm_data_main.at(name) };
       if (name != "Dmass") hlist_norm.push_back(h1s_norm_data_sub.at(name));
@@ -171,15 +190,6 @@ int macro(std::string inputname, std::string outputname) {
       h1s_norm_data_sigswap.at(name)->Draw("pe1 same");
       // h1s_norm_data_sig.at(name)->Draw("pe1 same");
       if (name != "Dmass") h1s_norm_data_sub.at(name)->Draw("pe1 same");
-      auto* leg_norm = new TLegend(0.52, 0.86-0.038*6, 0.85, 0.86);
-      xjjroot::setleg(leg_norm, 0.035);
-      leg_norm->AddEntry(h1s_norm_data_main.at(name), "Data in signal region", "f");
-      leg_norm->AddEntry((TObject*)0, mrange->str_signal().c_str(), "");
-      leg_norm->AddEntry(h1s_norm_mc_match.at(name), "Gen-matched MC", "f");
-      leg_norm->AddEntry(h1s_norm_data_sigswap.at(name), "sPlot signal+swap", "pe");
-      // leg_norm->AddEntry(h1s_norm_data_sig.at(name), "sPlot signal", "pe");
-      leg_norm->AddEntry(h1s_norm_data_sub.at(name), "Sideband-subtracted", "pe");
-      leg_norm->AddEntry((TObject*)0, mrange->str_sideband().c_str(), "");
       leg_norm->Draw();
       xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
