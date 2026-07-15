@@ -185,6 +185,7 @@ RooPlot* droofitter::draw_data(int nmass, RooPlot *frame) {
 RooWorkspace* droofitter::make_ws(std::string name) {
   auto* ws = new RooWorkspace(name.c_str());
 
+  pdf_total->getParameters(ds_data_main)->assignValueOnly(fitr_total->floatParsFinal());
   ws->import(*pdf_total);
   // ws->import(*fitr_sig);
   // ws->import(*fitr_swap);

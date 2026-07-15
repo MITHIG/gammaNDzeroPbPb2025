@@ -36,7 +36,7 @@ int macro(std::string inputname, std::string outputname) {
   }
 
   auto wsys = xjjana::getobj_regexp<RooWorkspace>(inf, "ws__y-.+");
-  auto* h3_bins = xjjana::getobj<TH2D>(inf, "h3_bins_y-mass-pt");
+  auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
   if (wsys.size() != h3_bins->GetXaxis()->GetNbins()) {
     __XJJLOG << "!! inconsistent bin number: " << "ws__y-* vs h3_bins, abort." << std::endl;
     return 2;
@@ -56,6 +56,13 @@ int macro(std::string inputname, std::string outputname) {
     auto* pdf_total = ws->pdf("pdf_total"); // RooAbsPdf*
     auto* ds_data = (RooDataSet*)ws->data(Form("data_main__y-%d", i));
     auto* ds_mc_match = (RooDataSet*)ws->data(Form("mc_match__y-%d", i));
+    if (!pdf_total || !ds_data) {
+      __XJJLOG << "!! missing pdf_total or data_main__y-" << i << ", skip." << std::endl;
+      continue;
+    }
+    if (!ds_mc_match) {
+      __XJJLOG << "?? missing mc_match__y-" << i << "; skip matched-MC histograms." << std::endl;
+    }
 
     // yield variables
     auto* Dmass = ws->var("Dmass");
@@ -96,7 +103,7 @@ int macro(std::string inputname, std::string outputname) {
     restore_parameter_states(old_states);
     
     __XJJLOG << "++ loop variables" << std::endl;
-    std::map<std::string, TH1D*> h1s_data_main, h1s_data_sig, h1s_data_sideband, h1s_mc_match;
+    std::map<std::string, TH1D*> h1s_data_main, h1s_data_sigswap, h1s_data_sig, h1s_data_sideband, h1s_mc_match;
     const RooArgSet* columns = ds_data->get();
     for (RooAbsArg* arg : *columns) {
       auto *var = dynamic_cast<RooRealVar*>(arg);
@@ -113,14 +120,14 @@ int macro(std::string inputname, std::string outputname) {
         h1s_data_main[name] = new TH1D(hname, Form(";%s;Entries", the_var.vartex.c_str()), the_var.nbin, the_var.varmin, the_var.varmax);
       }
       h1s_data_main[name]->Sumw2();
+      h1s_data_sigswap[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sigswap").c_str());
       h1s_data_sig[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sig").c_str());
       h1s_data_sideband[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "data_sideband").c_str());
       h1s_mc_match[name] = (TH1D*)h1s_data_main[name]->Clone(xjjc::str_replaceall(h1s_data_main[name]->GetName(), "data_main", "mc_match").c_str());
-      // h1s_mc_match[name]->Sumw2();
       __XJJLOG << "     >> " << name << std::endl;
     }
     
-    // double weight_norm = 0, weight_min = 1.e10, weight_max = 1.e10; int count_norm = 0;
+    double sum_weight_sigswap = 0, sum_weight_sig = 0;
     const auto nentries = ds_data_sigswap->numEntries();
     for (int i = 0; i < nentries; ++i) {
       xjjc::progressslide(i, nentries);
@@ -136,14 +143,17 @@ int macro(std::string inputname, std::string outputname) {
         density_sigswap = density_sig + density_swap,
         absfrac_sig = (density_sigswap > 0.) ? density_sig/density_sigswap : 0.;
       const double weight_sig = weight_sigswap * absfrac_sig; // !
+      sum_weight_sigswap += weight_sigswap;
+      sum_weight_sig += weight_sig;
 
       for (auto& [name, _] : h1s_data_main) {
         const auto value = row_data->getRealValue(name.c_str());
+        h1s_data_sigswap.at(name)->Fill(value, weight_sigswap);
+        h1s_data_sig.at(name)->Fill(value, weight_sig);
+
         // fill signal region
         if (mass > mass_signal_low && mass < mass_signal_high) {
           h1s_data_main.at(name)->Fill(value);
-          h1s_data_sig.at(name)->Fill(value, weight_sig);
-          // h1->Fill(value, weight_sigswap);
         }
         // fill side band
         if (std::abs(mass - val_mean) > deltamass_sideband_low &&
@@ -153,8 +163,13 @@ int macro(std::string inputname, std::string outputname) {
       }
     }
     xjjc::progressbar_summary(nentries);
+    __XJJLOG << ">> sPlot yield check y-" << std::endl
+             << "   [ n_sigswap = " << n_sigswap->getVal()
+             << ", sum(n_sigswap_sw) = " << sum_weight_sigswap
+             << ", derived sum(signal sw) = " << sum_weight_sig
+             << " ]" << std::endl;
 
-    const auto nentries_mc = ds_mc_match->numEntries();
+    const auto nentries_mc = ds_mc_match ? ds_mc_match->numEntries() : 0;
     for (int i = 0; i < nentries_mc; ++i) {
       xjjc::progressslide(i, nentries_mc);
 
@@ -165,7 +180,7 @@ int macro(std::string inputname, std::string outputname) {
         h1s_mc_match.at(name)->Fill(value);
       }      
     }
-    xjjc::progressbar_summary(nentries_mc);
+    if (ds_mc_match) xjjc::progressbar_summary(nentries_mc);
 
     outf->cd();
     outf->mkdir(Form("dir__y-%d", i))->cd();
@@ -177,9 +192,11 @@ int macro(std::string inputname, std::string outputname) {
     t_mass->Fill();
     t_mass->Write();
     for (auto& [_, h] : h1s_data_main) xjjroot::writehist(h);
+    for (auto& [_, h] : h1s_data_sigswap) xjjroot::writehist(h);
     for (auto& [_, h] : h1s_data_sideband) xjjroot::writehist(h);
     for (auto& [_, h] : h1s_data_sig) xjjroot::writehist(h);
     for (auto& [_, h] : h1s_mc_match) xjjroot::writehist(h);
+
     outf->cd();
   } // loop y 
   

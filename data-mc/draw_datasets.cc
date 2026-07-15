@@ -40,7 +40,7 @@ int macro(std::string inputname, std::string outputname) {
     xjjc::print_tab<std::string, std::string>(info, -1);
   }
 
-  auto* h3_bins = xjjana::getobj<TH2D>(inf, "h3_bins_y-mass-pt");
+  auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
   draw::bintex btex(h3_bins, 0, 2);
 
   xjjroot::setgstyle(1);
@@ -83,6 +83,9 @@ int macro(std::string inputname, std::string outputname) {
     auto h1s_data_sig = make_h1s("_data_sig", { xjjroot::mycolor_middle["green"], 20, 1.5, xjjroot::mycolor_middle["green"], 1, 1 });
     auto h1s_norm_data_sig = make_h1s_norm(h1s_data_sig);
     if (h1s_norm_data_sig.empty()) continue;
+    auto h1s_data_sigswap = make_h1s("_data_sigswap", { xjjroot::mycolor_middle["blue"], 24, 1.5, xjjroot::mycolor_middle["blue"], 1, 1 });
+    auto h1s_norm_data_sigswap = make_h1s_norm(h1s_data_sigswap);
+    if (h1s_norm_data_sigswap.empty()) continue;
     auto h1s_mc_match = make_h1s("_mc_match", { xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 1, xjjroot::mycolor_middle["red"], 1, 3004 });
     auto h1s_norm_mc_match = make_h1s_norm(h1s_mc_match);
     if (h1s_norm_mc_match.empty()) continue;
@@ -143,6 +146,7 @@ int macro(std::string inputname, std::string outputname) {
       auto* leg1 = new TLegend(0.55, 0.86-0.038*3, 0.90, 0.86);
       xjjroot::setleg(leg1, 0.035);
       leg1->AddEntry(h1s_data_main.at(name), "Signal+Bkg in signal region");
+      
       set_hsminmax({ h1s_data_main.at(name), h1s_data_sideband_scaled.at(name), h1s_data_sub.at(name) });
       pdf->prepare();
       pdf->getc()->SetLogy(0);
@@ -155,7 +159,7 @@ int macro(std::string inputname, std::string outputname) {
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
       pdf->write();
 
-      auto hlist_norm = std::vector<TH1D*>{ h1s_norm_data_sig.at(name), h1s_norm_mc_match.at(name), h1s_norm_data_main.at(name) };
+      auto hlist_norm = std::vector<TH1D*>{ h1s_norm_data_sig.at(name), h1s_norm_data_sigswap.at(name), h1s_norm_mc_match.at(name), h1s_norm_data_main.at(name) };
       if (name != "Dmass") hlist_norm.push_back(h1s_norm_data_sub.at(name));
       set_hsminmax(hlist_norm);
       pdf->prepare();
@@ -164,8 +168,19 @@ int macro(std::string inputname, std::string outputname) {
         pdf->getc()->SetLogy();
       h1s_norm_data_main.at(name)->Draw("hist");
       h1s_norm_mc_match.at(name)->Draw("hist e1 same");
+      h1s_norm_data_sigswap.at(name)->Draw("pe1 same");
       // h1s_norm_data_sig.at(name)->Draw("pe1 same");
       if (name != "Dmass") h1s_norm_data_sub.at(name)->Draw("pe1 same");
+      auto* leg_norm = new TLegend(0.52, 0.86-0.038*6, 0.85, 0.86);
+      xjjroot::setleg(leg_norm, 0.035);
+      leg_norm->AddEntry(h1s_norm_data_main.at(name), "Data in signal region", "f");
+      leg_norm->AddEntry((TObject*)0, mrange->str_signal().c_str(), "");
+      leg_norm->AddEntry(h1s_norm_mc_match.at(name), "Gen-matched MC", "f");
+      leg_norm->AddEntry(h1s_norm_data_sigswap.at(name), "sPlot signal+swap", "pe");
+      // leg_norm->AddEntry(h1s_norm_data_sig.at(name), "sPlot signal", "pe");
+      leg_norm->AddEntry(h1s_norm_data_sub.at(name), "Sideband-subtracted", "pe");
+      leg_norm->AddEntry((TObject*)0, mrange->str_sideband().c_str(), "");
+      leg_norm->Draw();
       xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
       pdf->write();
