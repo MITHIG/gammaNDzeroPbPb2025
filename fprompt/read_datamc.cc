@@ -21,7 +21,8 @@ int macro(std::string inputname_data,
     return 2;
   }
   infos["data"] = xjjana::get_info(inf_data, "data/info");
-  TH1D* h1_dump = nullptr;
+  auto* h3_bins = xjjana::getobj<TH3D>(inf_data, "h3_bins_y-mass-pt");
+  std::map<std::string, TH1D*> h1s_dump; // vs var
   for (const std::string var : { "Dip3D", "Dip3Dsig" }) {
     auto* dir = (TDirectory*)inf_data->GetDirectory(Form("dir_%s", var.c_str()));
     if (!dir) {
@@ -31,9 +32,9 @@ int macro(std::string inputname_data,
     for (const std::string type : { "data-sub", "data-sigswap" }) {
       auto h1s = xjjana::getobj_regexp<TH1D>(dir, ".+" + type + ".+");
       if (h1s.empty()) continue;
-      if (!h1_dump) {
-        h1_dump = (TH1D*)h1s.front()->Clone("h1_dump");
-        h1_dump->Reset("M");
+      if (!h1s_dump[var]) {
+        h1s_dump[var] = (TH1D*)h1s.front()->Clone(Form("h1_dump_%s", var.c_str()));
+        h1s_dump[var]->Reset("ICESM");
         // !! need to sort !!
       }
       h1ys[var][type] = h1s;
@@ -41,7 +42,7 @@ int macro(std::string inputname_data,
   }
 
   // mc inputs
-  auto read_file = [&infos, &h1ys, &h1_dump](std::string inputname, std::string name) {
+  auto read_file = [&infos, &h1ys, &h1s_dump](std::string inputname, std::string name) {
     auto* inf = TFile::Open(inputname.c_str());
     if (!inf) {
       __XJJLOG << "!! bad mc input: " << inputname << ", abort."<< std::endl;
@@ -52,7 +53,7 @@ int macro(std::string inputname_data,
     for (auto* ds : datasets) {
       const auto index_y = std::atoi(xjjc::str_erasestar(ds->GetName(), "*__y-").c_str());
       for (auto& [var, _] : h1ys) {
-        auto* h = (TH1D*)h1_dump->Clone(Form("h1_%s_mc-%s__y-%d", var.c_str(), name.c_str(), index_y));
+        auto* h = (TH1D*)h1s_dump[var]->Clone(Form("h1_%s_mc-%s__y-%d", var.c_str(), name.c_str(), index_y));
         // h->Sumw2();
         __XJJLOG << "++ " << h->GetName() << std::endl;
         xjjc::saywait();
@@ -80,11 +81,14 @@ int macro(std::string inputname_data,
   for (auto& [var, h1s] : h1ys) {
     outf->mkdir(Form("dir_%s", var.c_str()))->cd();
     for (auto& [_, hh] : h1s)
-      for (auto& h : hh)
-        xjjroot::writehist(h);
+      for (auto& h : hh) {
+        auto* h_norm = (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "h1_", "h1_norm_").c_str());
+        h_norm->Scale(1./h->Integral(), "width");
+        xjjroot::writehist(h_norm);
+      }
   }
   outf->cd();
-  xjjroot::writehist(xjjana::getobj<TH3D>(inf_data, "h3_bins_y-mass-pt"));
+  xjjroot::writehist(h3_bins);
   for (auto& [iname, info] : infos) {
     outf->mkdir(iname.c_str())->cd();
     auto* t_data = new TTree("info", "");
