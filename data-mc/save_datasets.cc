@@ -173,7 +173,7 @@ int macro(std::string inputstr, std::string outputname, std::string ecutstr, int
   t->Branch("cut_tag", &ecuts.tag);
   t->Fill();
   t->Write();
-  outf->Close();
+  xjjroot::closefile(outf);
 
   return 0;
 }

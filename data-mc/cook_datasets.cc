@@ -10,48 +10,36 @@
 #define __BINS_PTY_DATAMCCOMP__
 #include "../include/bins.h"
 
-int macro(std::string inputname_data, std::string inputname_template, std::string outputname) {
-
-  std::map<std::string, RooDataSet*> datas;
-  std::map<std::string, xjjc::info> infos;
-  auto read_file = [&datas, &infos](std::string inputname, std::string dname, std::string iname) {
-    const auto inputfile = util::parse_input(inputname).content;
-    auto* inf = TFile::Open(inputfile.c_str());
-    if (!inf || inf->IsZombie()) {
-      __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
-      return 2;
-    }
-    auto* dataset = dynamic_cast<RooDataSet*>(inf->Get(dname.c_str()));
-    if (!dataset) {
-      __XJJLOG << "!! no RooDataSet: " << dname << ", abort." << std::endl;
-      // throw std::runtime_error(Form("Could not find RooDataSet %s", name));
-      return 2;
-    }
-    if (datas.find(dname) != datas.end()) {
-      __XJJLOG << "!! repleated keyname: " << dname << ", abort." << std::endl;
-      return 2;
-    }
-    __XJJLOG << ">> " << std::left << std::setw(10) << dname << ": "<< dataset->numEntries() << std::endl;
-    if (dataset->numEntries() == 0) return 2;
-    
-    datas[dname] = dataset;
-    if (infos.find(iname) == infos.end())
-      infos[iname] = xjjana::getval_regexp((TTree*)inf->Get("info"));
-    return 0;
-  };
-  
-  if (read_file(inputname_data, "data_main", "data")) return 2;
-  if (read_file(inputname_template, "mc_match", "template")) return 2;
-  if (read_file(inputname_template, "mc_swap", "template")) return 2;
-
-  xjjroot::print_tab(datas, 0);
-  
+int macro(std::string inputname, std::string outputname) {
   // parse binning
   xjjc::print_vec_h(bins::ybins, 0);
   auto* h2_bins = new TH2D("h2_bins_y-pt", ";y;#it{p}_{T}",
                            bins::ybins.size()-1, bins::ybins.data(),
                            bins::npt, xjjc::fixedbin_to_edges(bins::npt, bins::minpt, bins::maxpt).data());
 
+  const auto inputfile = util::parse_input(inputname).content;
+  auto* inf = TFile::Open(inputfile.c_str());
+  if (!inf || inf->IsZombie()) {
+    __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
+    return 2;
+  }
+  auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
+ 
+  auto datasets = xjjana::getobj_regexp<RooDataSet>(inf);
+  if (datasets.empty()) {
+    __XJJLOG << "!! no RooDataSet, abort." << std::endl;
+    xjjroot::closefile(inf);
+    // throw std::runtime_error(Form("Could not find RooDataSet %s", name));
+    return 2;
+  }
+  std::map<std::string, RooDataSet*> datas;
+  for (auto& ds : datasets) {
+    __XJJLOG << ">> " << std::left << std::setw(10) << ds->GetName() << ": "<< ds->numEntries() << std::endl;
+    if (ds->numEntries() == 0) return 2;
+    datas[ds->GetName()] = ds;
+  }
+  xjjroot::print_tab(datas, 0);
+  
   __XJJLOG << "++ split y bins" << std::endl;
   std::map<std::string, std::vector<RooDataSet*>> datays;
   for (int i=0; i<bins::ybins.size()-1; i++) {
@@ -71,32 +59,28 @@ int macro(std::string inputname_data, std::string inputname_template, std::strin
     for (auto& ds : vds)
       xjjroot::writehist(ds);
 
-  for (auto& [iname, info] : infos) {
-    outf->mkdir(iname.c_str())->cd();
-    auto* t_data = new TTree("info", "");
-    for (auto& [key, content] : info) {
-      t_data->Branch(key.c_str(), &content);
-    }
-    t_data->Fill();
-    t_data->Write();
-    outf->cd();
+  auto* t_data = new TTree("info", "");
+  for (auto& [key, content] : info) {
+    t_data->Branch(key.c_str(), &content);
   }
+  t_data->Fill();
+  t_data->Write();
   
-  outf->Close();
+  xjjroot::closefile(outf);
   
   return 0;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 5) {
-    __XJJLOG << ">> argv[4] (y binning) : " << argv[4] << std::endl;
-    auto overwrite_bins = xjjc::str_convert_vector<double>(argv[4], ",");
+  if (argc == 4) {
+    __XJJLOG << ">> argv[3] (y binning) : " << argv[3] << std::endl;
+    auto overwrite_bins = xjjc::str_convert_vector<double>(argv[3], ",");
     if (overwrite_bins.size() > 1)
       bins::ybins = overwrite_bins;
-    return macro(argv[1], argv[2], argv[3]);
+    return macro(argv[1], argv[2]);
   }
-  if (argc == 4) {
-    return macro(argv[1], argv[2], argv[3]);
+  if (argc == 3) {
+    return macro(argv[1], argv[2]);
   }
   return 1;
 }

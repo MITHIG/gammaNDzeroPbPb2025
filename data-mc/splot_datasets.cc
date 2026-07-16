@@ -212,7 +212,7 @@ int macro(std::string inputname, std::string outputname) {
     t_data->Write();
     outf->cd();
   }
-  outf->Close();
+  xjjroot::closefile(outf);
   
   return 0;
 }

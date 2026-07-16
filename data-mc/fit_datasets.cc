@@ -14,26 +14,23 @@
 #include "../include/droofitter.h"
 #include "../include/draw.h"
 
-int macro(std::string inputname, std::string outputname) {
-  const auto inputfile = util::parse_input(inputname).content;
-  auto* inf = TFile::Open(inputfile.c_str());
-  if (!inf || inf->IsZombie()) {
-    __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
-    return 2;
-  }
-  std::map<std::string, xjjc::info> infos;
-  for (std::string tr : { "data/info", "template/info" }) {
-    auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
-    infos[xjjc::str_eraseall(tr, "/info")] = info;
-  }
-  for (auto& [key, info] : infos) {
-    __XJJLOG << "++ infos [" << key << "]" << std::endl;
-    xjjc::print_tab<std::string, std::string>(info, -1);
-  }
+int macro(std::string inputname_data, std::string inputname_template, std::string outputname) {
 
   std::map<std::string, std::vector<RooDataSet*>> datays;
   TH2D* h2_bins = nullptr;
-  auto read_file = [&inf, &datays, &h2_bins](std::string dname) {
+  std::map<std::string, xjjc::info> infos;
+  auto read_file = [&datays, &infos, &h2_bins](std::string inputname, std::string dname, std::string infoname = "") {
+    const auto inputfile = util::parse_input(inputname).content;
+    auto* inf = TFile::Open(inputfile.c_str());
+    if (!inf || inf->IsZombie()) {
+      __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
+      return 2;
+    }
+    auto info = xjjana::getval_regexp(dynamic_cast<TTree*>(inf->Get("info")));
+    if (!infoname.empty() && infos.find(infoname) == infos.end()) {
+      xjjc::print_tab(info, -1);
+      infos[infoname] = info;
+    }
     auto dsy = xjjana::getobj_regexp<RooDataSet>(inf, dname + "__y-.+");
     if (dsy.empty()) {
       __XJJLOG << "!! no RooDataSet: " << dname << "__y*, abort." << std::endl;
@@ -46,9 +43,9 @@ int macro(std::string inputname, std::string outputname) {
     return 0;
   };
   
-  if (read_file("data_main")) return 2;
-  if (read_file("mc_match")) return 2;
-  if (read_file("mc_swap")) return 2;
+  if (read_file(inputname_data, "data_main", "data")) return 2;
+  if (read_file(inputname_template, "mc_match", "template")) return 2;
+  if (read_file(inputname_template, "mc_swap")) return 2;
     
   // RooRealVar Dmass("Dmass", v_by_name("Dmass").vartex.c_str(), bins::minmass, bins::maxmass);
   auto Dmass = dynamic_cast<RooRealVar*>(datays.at("data_main").front()->get()->find("Dmass"));
@@ -106,66 +103,14 @@ int macro(std::string inputname, std::string outputname) {
     t_data->Write();
     outf->cd();
   }
-  outf->Close();
-  
-  // RooStats::SPlot sData("sData", "sData", *datas.at("data_main"), &pdf_total,
-  //                       RooArgList(n_sigswap, n_bkg));
-
-  // TH1D hSigDpt("hSigDpt", ";D^{0} p_{T} (GeV);Signal sWeighted candidates",
-  //              ptBins, ptMin, ptMax);
-  // TH1D hSigSwapDpt("hSigSwapDpt",
-  //                  ";D^{0} p_{T} (GeV);Signal+swap sWeighted candidates",
-  //                  ptBins, ptMin, ptMax);
-  // hSigDpt.Sumw2();
-  // hSigSwapDpt.Sumw2();
-  // RooArgSet massObs(Dmass);
-  // for (int i = 0; i < datas.at("data_main")->numEntries(); ++i) {
-  //   const RooArgSet *row = datas.at("data_main")->get(i);
-  //   const auto *ptValue = dynamic_cast<const RooRealVar *>(row->find("Dpt"));
-  //   const auto *massValue =
-  //     dynamic_cast<const RooRealVar *>(row->find("Dmass"));
-  //   const auto *weight =
-  //     dynamic_cast<const RooRealVar *>(row->find("n_sigswap_sw"));
-  //   if (!ptValue || !massValue || !weight) {
-  //     throw std::runtime_error("Could not read Dpt/Dmass/n_sigswap_sw.");
-  //   }
-
-  //   Dmass.setVal(massValue->getVal());
-  //   const double sigDensity = pdf_sig.getVal(&massObs);
-  //   const double swapDensity = pdf_swap.getVal(&massObs);
-  //   const double signalPart =
-  //     signalFractionValue * sigDensity /
-  //     (signalFractionValue * sigDensity + swapFractionValue * swapDensity);
-  //   const double sigSwapWeight = weight->getVal();
-
-  //   hSigSwapDpt.Fill(ptValue->getVal(), sigSwapWeight);
-  //   hSigDpt.Fill(ptValue->getVal(), sigSwapWeight * signalPart);
-  // }
-
-  // TCanvas sPlotCanvas(Form("%s_sPlotDpt_canvas", outPrefix),
-  //                     "Signal sPlot Dpt", 850, 750);
-  // hSigDpt.SetMarkerStyle(kFullCircle);
-  // hSigDpt.SetMarkerSize(0.9);
-  // hSigDpt.SetLineColor(kBlue + 1);
-  // hSigDpt.SetMarkerColor(kBlue + 1);
-  // hSigDpt.Draw("E1");
-  // sPlotCanvas.SaveAs(Form("%s_sPlotDpt.pdf", outPrefix));
-  // sPlotCanvas.SaveAs(Form("%s_sPlotDpt.png", outPrefix));
-
-  // TFile output(Form("%s_workspaceInputs.root", outPrefix), "RECREATE");
-  // sigFit->Write("signalMcFitResult");
-  // swapFit->Write("swapMcFitResult");
-  // dataFit->Write("dataFitResult");
-  // hSigDpt.Write("hSigDpt");
-  // hSigSwapDpt.Write("hSigSwapDpt");
-  // output.Close();
+  xjjroot::closefile(outf);
 
   return 0;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 3) {
-    return macro(argv[1], argv[2]);
+  if (argc == 4) {
+    return macro(argv[1], argv[2], argv[3]);
   }
   return 1;
 }
