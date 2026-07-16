@@ -18,7 +18,7 @@ int macro(std::string configfile) {
   auto outputname = conf.has("Output") ? conf.get("Output") : xjjc::str_gettag_from_file(configfile);
   auto label_1 = conf.has("Label_1") ? conf.get("Label_1") : "";
 
-  auto* tdata = xjjana::get_tree_multifiles(inputfiles, "Tree");
+  auto* tdata = xjjana::chain_files(inputfiles, "Tree");
   auto* tmc_prompt = xjjana::get_tree_multifiles(inputfiles_prompt, "Tree");
   auto* tmc_nonprompt = xjjana::get_tree_multifiles(inputfiles_nonprompt, "Tree");
 
