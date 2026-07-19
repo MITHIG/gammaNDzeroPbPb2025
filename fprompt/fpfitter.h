@@ -9,14 +9,14 @@ public:
   fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt, std::string name_data = "", std::string name_mc = "");
   void fit(double xmin = 0, double xmax = 0);  
   std::vector<TPad*> draw(TCanvas* c);
-  void draw_smear();
   void print_fitresult();
   int status() const { return status_; }
   double fit_xmin() const { return hdata_->GetXaxis()->GetBinLowEdge(ibin_fit_min_); }
   double fit_xmax() const { return hdata_->GetXaxis()->GetBinLowEdge(ibin_fit_max_) + hdata_->GetXaxis()->GetBinWidth(ibin_fit_max_); }
   double fprompt() const { return func_->GetParameter(0); }
-  double fprompt_err() const { return func_->GetParError(0); }
-  double fprompt_err_manual() const { return hsmear_->GetFunction("gaus")->GetParameter(2); }
+  double fprompt_err_par() const { return func_->GetParError(0); }
+  double fprompt_err_low() const { return fprompt_err_low_; }
+  double fprompt_err_high() const { return fprompt_err_high_; }
   int ndf() const { return (ibin_fit_max_ - ibin_fit_min_ + 1)/*nbins fitted*/ - 1/*npars*/; }
   double chi2() const { return chi2_; }
 
@@ -35,7 +35,8 @@ private:
   TFitResultPtr fitresult_;
   int ibin_fit_min_, ibin_fit_max_, nbin_fit_;
   double chi2_;
-  TH1D *hprompt_fitted_, *hnonprompt_fitted_, *htotal_fitted_, *hpull_, *hsmear_;
+  TH1D *hprompt_fitted_, *hnonprompt_fitted_, *htotal_fitted_, *hpull_;
+  double fprompt_err_low_, fprompt_err_high_;
 
   double template_model(double* x, double* par) {
     const double fpr = par[0];
@@ -49,8 +50,8 @@ private:
   std::string add_suffix(const std::string& suffix, TH1D* h);
   TH1D* clone_h1(TH1D* h, const std::string& suffix);
   void random_smear(TH1D* h0, TH1D* h) {
-    for(int i=1; i<h0->GetXaxis()->GetNbins(); i++) {
-      h->SetBinContent(i, gRandom->Gaus(h0->GetBinContent(i), h0->GetBinError(i)));
+    for(int i = 0; i < h0->GetXaxis()->GetNbins(); i++) {
+      h->SetBinContent(i+1, gRandom->Gaus(h0->GetBinContent(i+1), h0->GetBinError(i+1)));
     }
   }
 };
@@ -62,7 +63,8 @@ fpfitter::fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt,
     name_mc_(name_mc.empty() ? xjjc::unique_str() : name_mc),
     status_(-1), area_hprompt_(0), area_hnonprompt_(0),
     func_(nullptr), func_smear_(nullptr), fitresult_(nullptr), chi2_(0),
-    hprompt_fitted_(nullptr), hnonprompt_fitted_(nullptr), htotal_fitted_(nullptr)
+    hprompt_fitted_(nullptr), hnonprompt_fitted_(nullptr), htotal_fitted_(nullptr),
+    fprompt_err_low_(0), fprompt_err_high_(0)
 {
   for (auto* h : { hdata, hprompt, hnonprompt } ) {
     if (!h) {
@@ -146,19 +148,36 @@ void fpfitter::fit(double xmin, double xmax) {
   htotal_fitted_ = clone_h1(hprompt_fitted_, "_total");
   htotal_fitted_->Add(hnonprompt_fitted_);
 
-  hsmear_ = new TH1D(xjjc::str_replaceall(hpull_->GetName(), { { "_norm", "_smear" }, { "_pull", "" } }).c_str(), ";#it{f}_{prompt};", 100, 0, 1);
   auto* hdata_smear = (TH1D*)hdata_->Clone("hdata_smear");
+  std::vector<double> toys;
   const int nSmearData = 1000;
   for (int j=0; j<nSmearData; j++) {
     random_smear(hdata_, hdata_smear);
     func_smear_->SetParameter(0, 0.9);
     func_smear_->SetParLimits(0, 0., 1.);
-    hdata_smear->Fit(func_smear_, "RIQN", "", fit_xmin(), fit_xmax());
-    hsmear_->Fill(func_smear_->GetParameter(0));
+    auto r = hdata_smear->Fit(func_smear_, "SRIQN", "", fit_xmin(), fit_xmax());
+    if (r.Get() && r->Status() == 0)
+      toys.push_back(func_smear_->GetParameter(0));
   }
   delete hdata_smear;
-  hsmear_->Fit("gaus","q");
 
+  std::sort(toys.begin(), toys.end());
+  auto quantile = [&toys](double q) {
+    const double x = q * (toys.size() - 1);
+    const auto i = static_cast<size_t>(x);
+    const auto a = x - i;
+    if (i + 1 >= toys.size()) return toys.back();
+    return toys[i] * (1 - a) + toys[i + 1] * a;
+  };
+  if (toys.size() < 100) {
+    __XJJLOG << "!! too few successful toys" << std::endl;
+  } else {
+    const double q16 = quantile(0.1587);
+    const double q84 = quantile(0.8413);
+    fprompt_err_low_  = fprompt() - q16;
+    fprompt_err_high_ = q84 - fprompt();
+  }
+  
   chi2_ = 0;
   for (int i = ibin_fit_min_; i <= ibin_fit_max_; ++i) {
     const double d = hdata_->GetBinContent(i);
@@ -205,7 +224,7 @@ std::vector<TPad*> fpfitter::draw(TCanvas* c) {
   hdata_->Draw("pe1 same");
   leg->Draw();
   xjjroot::drawtexgroup(xleft + 0.01, ytop - tsizes*1.1*4 - 0.01, {
-      Form("#it{f}_{prompt} = %.2f#scale[0.5]{ }#pm %.2f (%.2f)", fprompt(), fprompt_err(), fprompt_err_manual()),
+      Form("#it{f}_{prompt} = %.2f^{+%.2f}_{-%.2f} (#pm%.2f)", fprompt(), fprompt_err_high_, fprompt_err_low_, fprompt_err_par()),
       Form("#chi^{2} / ndf = %.2f (%.2f) / %d", chi2(), fitresult_->Chi2(), ndf())
     }, tsizes, 13, 42, 1.2);
   pads[0]->RedrawAxis();
@@ -215,12 +234,6 @@ std::vector<TPad*> fpfitter::draw(TCanvas* c) {
   hpull_temp->Draw("pe same");
   c->cd();
   return pads;
-}
-
-void fpfitter::draw_smear() {
-  xjjroot::sethempty(hsmear_);
-  xjjroot::setthgrstyle(hsmear_, kBlack, 20, 1.5, kBlack, 1, 1);
-  hsmear_->Draw("pe1");
 }
 
 std::string fpfitter::add_suffix(const std::string& suffix, TH1D* h) {
@@ -246,8 +259,8 @@ bool fpfitter::same_axis(const TH1D* a, const TH1D* b) {
 
 void fpfitter::print_fitresult() {
   __XJJLOG << "++ fitting result" << std::endl;
-  xjjc::print_tab<std::string>({ { "f_prompt", Form("%f +/- %f", fprompt(), fprompt_err()) },
-                                 { "f_nonprompt", Form("%f +/- %f", 1-fprompt(), fprompt_err()) },
+  xjjc::print_tab<std::string>({ { "f_prompt", Form("%f +%f -%f (+/- %f)", fprompt(), fprompt_err_high_, fprompt_err_low_, fprompt_err_par()) },
+                                 { "f_nonprompt", Form("%f +/- %f", 1-fprompt(), fprompt_err_par()) },
                                  { "chi2 (manual)", Form("%f", chi2_) },
                                  { "chi2 (fitresult)", Form("%f", fitresult_->Chi2()) },
                                  { "ndf", Form("%d", ndf()) },
@@ -259,5 +272,4 @@ void fpfitter::write_to_file() {
   xjjroot::writehist(htotal_fitted_);
   xjjroot::writehist(hnonprompt_fitted_);
   xjjroot::writehist(hpull_);
-  xjjroot::writehist(hsmear_);
 }

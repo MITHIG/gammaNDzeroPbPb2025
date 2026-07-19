@@ -147,7 +147,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
         if (k == fp.ibin_best-1) {
           h1s_fprompt_best[type_data]->SetBinContent(i+1, fprompt_k);
           h1s_fprompt_best[type_data]->SetBinError(i+1, fprompterr_k);
-          h1s_alpha_best[type_data]->SetBinContent(i+1, h1_bins_sf->GetBinCenter(k));
+          h1s_alpha_best[type_data]->SetBinContent(i+1, h1_bins_sf->GetBinCenter(k+1));
           h1s_alpha_best[type_data]->SetBinError(i+1, 0);
         }
         if (k == fp.ibin_fix-1) {

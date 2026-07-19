@@ -1,5 +1,6 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
+#include "TGraphAsymmErrors.h"
 
 #include "fpfitter.h"
 #include "../include/draw.h"
@@ -92,7 +93,12 @@ int macro(const std::string& inputname, const std::string& outputname) {
       auto* h1_fprompt = (TH1D*)h1_bins_sf->Clone(Form("h1_fprompt_%s_%s__y-%d", var.c_str(), type_data.c_str(), i)); //
       h1_fprompt->GetYaxis()->SetTitle("#it{f}_{prompt}");
       xjjroot::sethempty(h1_fprompt, 0, 0.3);
+      xjjroot::setthgrstyle(h1_fprompt, kGray+1, 25, 1.3, kGray+1, 1, 1);
+
+      auto* gr_fprompt = new TGraphAsymmErrors();
+      gr_fprompt->SetName(xjjc::str_replaceall(h1_fprompt->GetName(), "h1_", "gr_").c_str());
       xjjroot::setthgrstyle(h1_fprompt, kBlack, 21, 1.3, kBlack, 1, 1);
+      int ngr_fprompt = 0;
      
       // fit 
       pdf->draw_cover({ "#bf{Variable} " + var, "#bf{Signal extraction} " + title_data(type_data), tbins.label_y(i) });
@@ -108,9 +114,17 @@ int macro(const std::string& inputname, const std::string& outputname) {
         fitter->fit();
         // fitter->print_fitresult();
         h1_fprompt->SetBinContent(k+1, fitter->fprompt());
-        h1_fprompt->SetBinError(k+1, fitter->fprompt_err_manual());
+        h1_fprompt->SetBinError(k+1, fitter->fprompt_err_par());
         h1_chi2->SetBinContent(k+1, fitter->chi2() / fitter->ndf());
         h1_chi2->SetBinError(k+1, 0);
+
+        const double x = h1_bins_sf->GetBinCenter(k+1);
+        const double ex = 0.5 * h1_bins_sf->GetBinWidth(k+1);
+        gr_fprompt->SetPoint(ngr_fprompt, x, fitter->fprompt());
+        gr_fprompt->SetPointError(ngr_fprompt, ex, ex,
+                                  fitter->fprompt_err_low(),
+                                  fitter->fprompt_err_high());
+        ++ngr_fprompt;
             
         // draw 
         pdf->prepare();
@@ -125,10 +139,6 @@ int macro(const std::string& inputname, const std::string& outputname) {
         pdf->getc()->cd();
         pdf->write();
 
-        pdf->prepare();
-        fitter->draw_smear();
-        pdf->write();
-        
         results[k] = fitter;
       } // for (int k=0; k<nsf; k++) {
       
@@ -148,6 +158,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       xjjana::sethabsminmax(h1_fprompt, 0, 1.5);
       pdf->prepare();
       h1_fprompt->Draw("pe1");
+      gr_fprompt->Draw("pe1 same");
       xjjroot::drawline(h1_fprompt->GetBinCenter(ibin_best), h1_fprompt->GetMinimum(), h1_fprompt->GetBinCenter(ibin_best), h1_fprompt->GetBinContent(ibin_best), kGray+3, 2, 2);
       xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.55, fpfitter::ytop - 0.005, {
@@ -159,6 +170,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       dir_type_output->cd();
       xjjroot::writehist(h1_chi2);
       xjjroot::writehist(h1_fprompt);
+      xjjroot::writehist(gr_fprompt);
       results[ibin_best-1]->write_to_file();
     } // for (auto& [type_data, h1_data] : h1s_data) {
     
