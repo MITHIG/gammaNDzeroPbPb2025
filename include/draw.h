@@ -8,7 +8,7 @@ namespace draw {
   class bintex {
   public:
     explicit bintex(TH1* h, int xyz_y = 0,  int xyz_pt = 0)
-      : h_bins(h), axis_pt(decide_axis(xyz_pt)), axis_y(decide_axis(xyz_y)) {}
+      : h_bins(h), axis_pt(decide_axis(xyz_pt)), axis_y(decide_axis(xyz_y)) { h_dump.resize(3, nullptr); }
 
     std::string label_y(int i = -1) const {
       const auto ymin = (i >= 0 ? axis_y->GetBinLowEdge(i+1) : axis_y->GetBinLowEdge(1));
@@ -22,8 +22,14 @@ namespace draw {
       return xjjc::number_range_string(ptmin, ptmax, "#it{p}_{T}") + " GeV";
     }
 
+    template<class T> T* make_h1_y(std::string name) {
+      auto* h = new T(name.c_str(), Form(";%s;", axis_y->GetTitle()), axis_y->GetNbins(), axis_y->GetXbins()->GetArray());
+      return h;
+    }
+    
   private:
     TH1* h_bins;
+    std::vector<TH1D*> h_dump;
     const TAxis *axis_pt, *axis_y;
     const TAxis* decide_axis(int xyz) {
       const TAxis* axis = nullptr;
