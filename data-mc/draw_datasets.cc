@@ -142,7 +142,7 @@ int macro(std::string inputname, std::string outputname) {
     std::map<std::string, std::vector<TH1D*>> h1ys_sub;
     for (auto& [name, vh] : h1ys_main) {
       for (auto& h : vh) {
-        auto* h_sub = h ? (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "_main", "_sub").c_str()) : nullptr;
+        auto* h_sub = h ? (TH1D*)h->Clone(xjjc::str_replaceall(h->GetName(), "-main", "-sub").c_str()) : nullptr;
         if (h_sub) {
           auto index_y = parse_hname(h->GetName()).index_y;
           if (h1ys_sideband_scaled.at(name)[index_y]) {
@@ -262,7 +262,6 @@ int macro(std::string inputname, std::string outputname) {
   pdf->close();
 
   auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
-  // std::map<std::string, std::vector<TH1D*>>
   for (auto& [name, _] : h1ys_data_main) {
     outf->mkdir(Form("dir_%s", name.c_str()))->cd();
     for (auto* h1ys : { &h1ys_data_sigswap, &h1ys_data_sub,
@@ -273,8 +272,8 @@ int macro(std::string inputname, std::string outputname) {
       }
     }
   }
-
   outf->cd();
+  xjjroot::writehist(h3_bins);
   for (auto& [iname, info] : infos) {
     outf->mkdir(iname.c_str())->cd();
     auto* t_data = new TTree("info", "");

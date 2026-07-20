@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "usage: ./run.sh [data ds (1: save, 2: cook, 3: save + cook)] [mc ds (1: save, 2: cook, 3: save + cook)] [fit] [splot (1: make, 2: draw, 3: make + draw)]"
+echo -e "usage: \033[32m./run.sh\033[0m \033[36;1m[data ds]\033[0m \033[2m(1: save, 2: cook, 3: save + cook)\033[0m \033[36;1m[mc ds]\033[0m \033[2m(1: save, 2: cook, 3: save + cook)\033[0m \033[36;1m[fit] [splot]\033[0m \033[2m(1: make, 2: draw, 3: make + draw)\033[0m"
 
 TAG_BIN="" ; BINNING='' ; # default
 # TAG_BIN="_yincl" ; BINNING='-2,2' ;

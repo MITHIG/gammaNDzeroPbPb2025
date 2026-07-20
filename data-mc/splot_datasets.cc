@@ -10,7 +10,6 @@
 #include "xjjmypdf.h"
 
 #include "../include/util.h"
-#include "../include/draw.h"
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 
