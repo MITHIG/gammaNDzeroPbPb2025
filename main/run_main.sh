@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# IVER="" ; BINNING='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ;
-# IVER="-extendy" ; BINNING='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ;
-IVER="-coarse" ; BINNING='-2., -1., 0., 1., 2.' ;
+IVER="" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
+# IVER="-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
+# IVER="-yextend" ; BINNING_Y='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ; BINNING_PT='2., 5.' ;
+# IVER="-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
 
 SAVE_PNG=0
 
@@ -13,7 +14,7 @@ INPUTS_DATA=( # lumi is nb-1 - directly from brilcalc
 )
 CUTEVTS=(
     "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;#gammaN (Xn0n);gammaN-0nXn-25"
-    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;N#gamma (0nXn);Ngamma-0nXn-25"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;N#gamma (0nXn);Ngamma-0nXn-25"
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100;#gammaN (An0n);gammaN-0nAn-25"
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumMinus < 1000;N#gamma (0nAn);Ngamma-0nAn-25"
     # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 9.2 && ClusterCompatibilityFilter && nVtx <= 3;#gammaN (23);gammaN-0nXn-23"
@@ -75,7 +76,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             itag_template=$cut_tag"/mass_templates"$IVER #
             if [[ ${1:-0} -eq 1 ]] ; then
                 echo "    -> generate mass templates from MC"
-                ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING" 0 # 0: !isdata
+                ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING_Y" "$BINNING_PT" 0 # 0: !isdata
                 # ./hist_save.exe "$INPUT_MASS_TEMPLATE" "${CUT_BASE};D precut;Dpre" $itag_template 0
             elif [[ ${1:-0} -eq 2 ]] ; then 
                 echo "    -> copy existing mass templates to save time"
@@ -100,7 +101,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 itag_data=$cut_tag"/savehist_"$data_tag$IVER
                 [[ ${2:-0} -eq 1 ]] && {
                     echo "    -> fill data mass"
-                    ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING" 1 # 1: isdata
+                    ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING_Y" "$BINNING_PT" 1 # 1: isdata
                 }
 
                 ####################
@@ -122,7 +123,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     ####################
                     # D efficiency     # -> [ 26 min ]
                     ####################
-                    itag_deff=$cut_tag"/saveeff_"$mc_tag"_"$data_tag$IVER
+                    itag_deff=$cut_tag"/saveeff_"$mc_tag$IVER
                     if [[ ${4:-0} -eq 1 ]] ; then
                         echo "    -> generate D efficiency table from MC"
                         # ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff "$input_data"
@@ -133,21 +134,23 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     fi
 
                     [[ ${5:-0} -eq 1 ]] && {
-                        ./eff_calc.exe "rootfiles/"$itag_deff".root" "$BINNING" $SAVE_PNG
+                        ./eff_calc.exe "rootfiles/"$itag_deff".root" "$BINNING_Y" "$BINNING_PT" $SAVE_PNG
                     }
-                    itag_deff=$cut_tag"/calceff_"$mc_tag"_"$data_tag$IVER ##
+                    itag_deff=${itag_deff/saveeff/calceff}
                     
                     ####################
                     # Cross-section    #
                     ####################
-                    echo "    itag_data_fit:     "$itag_data_fit
-                    echo "    itag_data_deff:    "$itag_deff
-                    echo "    itag_data_evteff:  null"
-                    echo "    itag_data_fprompt: null"
-                    echo "    lumi:              "$data_lumi" nb-1"
+                    # itag_xsec=$cut_tag"/xsec_"${itag_data_fit##*/}"_"${itag_deff##*/}"_null_null"$IVER
+                    echo "    itag_data_fit:  "${itag_data_fit}
+                    echo "    itag_deff:      "$itag_deff
+                    echo "    itag_evteff:    null"
+                    echo "    itag_fprompt:   null"
+                    echo "    lumi:           "$data_lumi" nb-1"
+                    # echo "                ==> "$itag_xsec
                     [[ ${6:-0} -eq 1 ]] && {
                         echo "    -> calculate cross sections"
-                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff".root" null null $data_lumi $cut_tag
+                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff".root" null null $data_lumi $cut_tag 
                     }
                 done
             done
