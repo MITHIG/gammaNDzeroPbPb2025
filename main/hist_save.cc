@@ -21,17 +21,18 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
   // parse binning
   __XJJLOG << ">> current y binning:" << std::endl;
   xjjc::print_vec_h(bins::ybins, 0);
-  auto massbins = xjjc::fixedbin_to_edges(bins::nmass, bins::minmass, bins::maxmass),
-    ptbins = xjjc::fixedbin_to_edges(bins::npt, bins::minpt, bins::maxpt);      
+  __XJJLOG << ">> current pt binning:" << std::endl;
+  xjjc::print_vec_h(bins::ptbins, 0);
+  auto massbins = xjjc::fixedbin_to_edges(bins::nmass, bins::minmass, bins::maxmass);
 
   auto* outf = xjjroot::newfile("rootfiles/" + output + ".root");
   
   std::map<std::string, TH3D*> h3;
-  auto project = [&trs, &h3, &massbins, &ptbins](std::string key, std::string icut) {
+  auto project = [&trs, &h3, &massbins](std::string key, std::string icut) {
     h3[key] = new TH3D(Form("h3%s", key.c_str()), ";y;m_{K#pi} [GeV];p_{T} [GeV]",
                        bins::ybins.size()-1, bins::ybins.data(),
                        massbins.size()-1, massbins.data(),
-                       ptbins.size()-1, ptbins.data());
+                       bins::ptbins.size()-1, bins::ptbins.data());
     __XJJLOG << ">> "<<h3[key]->GetName()<<" \e[2m"<<icut<<"\e[0m"<<std::endl;
     xjjc::saywait();
     trs->Project(h3[key]->GetName(), "Dpt:Dmass:Dy", icut.c_str());
@@ -65,6 +66,11 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 7) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
+    bins::ptbins = xjjc::str_convert_vector<double>(argv[5], ",");
+    return macro(argv[1], argv[2], argv[3], atoi(argv[6]));
+  }
   if (argc == 6) {
     bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
     return macro(argv[1], argv[2], argv[3], atoi(argv[5]));

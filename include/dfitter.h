@@ -129,9 +129,10 @@ void xjjroot::dfitter::reset() {
   float tsize = 0.035;
   leg_ = new TLegend(0.6, 0.86-tsize*1.25*5, 0.85, 0.86);
   xjjroot::setleg(leg_, 0.04);
-  xjjroot::addentrybystyle(leg_, "Data", "pe", fstyle.at("h"));
+  xjjroot::thgrstyle data_scaled(fstyle.at("h").mcolor, fstyle.at("h").mstyle, fstyle.at("h").msize*xjjroot::scale_pad(), fstyle.at("h").lcolor, fstyle.at("h").lstyle, fstyle.at("h").lwidth);
+  xjjroot::addentrybystyle(leg_, "Data", "pe", data_scaled);
   xjjroot::addentrybystyle(leg_, "Fit", "l", fstyle.at("f"));
-  xjjroot::addentrybystyle(leg_, xjjroot::CMS::PDz + "+" + xjjroot::CMS::PDzbar + " Signal", "f", fstyle.at("mass"));
+  xjjroot::addentrybystyle(leg_, xjjroot::CMS::Dz + "+" + xjjroot::CMS::Dzbar + " Signal", "f", fstyle.at("mass"));
   xjjroot::addentrybystyle(leg_, "K-#pi swapped", "f", fstyle.at("swap"));
   xjjroot::addentrybystyle(leg_, "Combinatorial", "l", fstyle.at("background"));
   leg_->Draw();
@@ -424,6 +425,7 @@ void xjjroot::dfitter::set_hist(TH1* h) {
   h->SetYTitle(Form("Entries / (%.0f MeV/c^{2})", h->GetBinWidth(1)*1.e+3));
   xjjroot::sethempty(h, 0., 0.5);
   xjjroot::setthgrstyle(h, fstyle.at("h"));
+  h->SetMarkerSize(xjjroot::scale_pad()*h->GetMarkerSize());
   h->SetMaximum(-1111);
   h->SetAxisRange(0, h->GetMaximum()*1.4*1.2, "Y");
 }
