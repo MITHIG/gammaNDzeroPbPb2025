@@ -1,6 +1,11 @@
+#pragma once
+
 #include "TF1.h"
 #include "TFitResult.h"
 #include "TRandom.h"
+
+#define __COOK_NAME__
+#include "style.h"
 
 #include "xjjanauti.h"
 
@@ -13,7 +18,6 @@ public:
   fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt, std::string name_data = "", std::string name_mc = "");
   fpfitter(TH1D* hdata, TH1D* htotal_fitted, TH1D* hnonprompt_fitted, TFitResult* fresult, TH1D* hpull = nullptr, TH1D* hratio = nullptr);
   void fit(double xmin = 0, double xmax = 0);  
-  // std::vector<TPad*> draw(TCanvas* c, Qual q = Qual::pull);
   std::vector<TPad*> draw(TPad* c, Qual q = Qual::pull);
   void print_fitresult();
   int status() const { return status_; }
@@ -21,8 +25,6 @@ public:
   double fit_xmax() const { return hdata_->GetXaxis()->GetBinLowEdge(ibin_fit_max_) + hdata_->GetXaxis()->GetBinWidth(ibin_fit_max_); }
   double fprompt() const { return fitresult_->Parameter(0); }
   double fprompt_err_par() const { return fitresult_->ParError(0); }
-  // double fprompt() const { return func_->GetParameter(0); }
-  // double fprompt_err_par() const { return func_->GetParError(0); }
   double fprompt_err_low() const { return fprompt_err_low_; }
   double fprompt_err_high() const { return fprompt_err_high_; }
   int ndf() const { return (ibin_fit_max_ - ibin_fit_min_ + 1)/*nbins fitted*/ - 1/*npars*/; }
@@ -56,7 +58,6 @@ private:
   }
   void calc_pull_chi2(int ibin_min, int ibin_max, bool fill_hists = true);
   static bool same_axis(const TH1D* a, const TH1D* b);
-  std::string add_suffix(const std::string& suffix, TH1D* h);
   TH1D* clone_h1(TH1D* h, const std::string& suffix);
   void random_smear(TH1D* h0, TH1D* h) {
     for(int i = 0; i < h0->GetXaxis()->GetNbins(); i++) {
@@ -105,7 +106,7 @@ fpfitter::fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt,
     // if (hdata_->GetBinError(i+1) > 0)
     nbin_fit_++;
   }
-  func_ = new TF1(Form("func%s%s", name_data_.c_str(), name_mc_.c_str()),
+  func_ = new TF1(Form("func_%s", add_suffix__y(xjjc::str_eraseall(hdata_->GetName(), std::vector<std::string>{ "h1_", "norm_" }), name_mc_).c_str()),
                   [this](double* x, double* par) { return template_model(x, par); },
                   hdata_->GetXaxis()->GetXmin(), hdata_->GetXaxis()->GetXmax(), 1);
   func_->SetParName(0, "fprompt");
@@ -153,6 +154,7 @@ void fpfitter::fit(double xmin, double xmax) {
   // comparison for variable-width, bin-width-normalized histograms.
   // https://root.cern.ch/doc/v632/classTH1.html#a7e7d34c91d5ebab4fc9bba3ca47dabdd
   fitresult_ = hdata_->Fit(func_, "S R I Q N", "", fit_xmin(), fit_xmax()); // S: TFitResultPtr behaves as a smart pointer to the TFitResult object
+  fitresult_->SetName(xjjc::str_replaceall(func_->GetName(), "func_", "fresult_").c_str());
   status_ = int(fitresult_);
   if (int(fitresult_) > 0) {
     __XJJLOG << "++ bad fitting for " << func_->GetName() << std::endl;
@@ -229,11 +231,11 @@ void fpfitter::calc_pull_chi2(int ibin_min, int ibin_max, bool fill_hists) {
 }
 
 std::vector<TPad*> fpfitter::draw(TPad* c, Qual q) {
-  xjjroot::setthgrstyle(hdata_, kBlack, 20, 1.5, kBlack, 1, 1);
+  xjjroot::setthgrstyle(hdata_, kBlack, 20, 1.7, kBlack, 1, 1);
   xjjroot::setthgrstyle(htotal_fitted_, xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 2, xjjroot::mycolor_middle["red"], 0.4, 1001);
   xjjroot::setthgrstyle(hnonprompt_fitted_, xjjroot::mycolor_middle["blue"], 21, 0, xjjroot::mycolor_middle["blue"], 2, 2, xjjroot::mycolor_middle["blue"], 0.45, 1001);
   xjjroot::setthgrstyle(hpull_, xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 2, 2, 0);
-  xjjroot::setthgrstyle(hratio_, kBlack, 20, 1.5, kBlack, 1, 1, 0);
+  xjjroot::setthgrstyle(hratio_, kBlack, 20, 1.7, kBlack, 1, 1, 0);
   auto* hpull_temp = (TH1D*)hpull_->Clone(xjjc::unique_str().c_str());
   xjjroot::setthgrstyle(hpull_temp, xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 4, 0);
   auto* hnonprompt_fitted_temp = (TH1D*)hnonprompt_fitted_->Clone(xjjc::unique_str().c_str());
@@ -267,7 +269,7 @@ std::vector<TPad*> fpfitter::draw(TPad* c, Qual q) {
   hdata_->Draw("pe1 same");
   leg->Draw();
   xjjroot::drawtexgroup(xleft + 0.01, ytop - tsizes*1.1*4 - 0.01, {
-      Form("#it{f}_{prompt} = %.2f%s (#pm%.2f)", fprompt(), (fprompt_err_high_>=0 ? Form("f^{ +%.2f}_{ -%.2f}", fprompt_err_high_, fprompt_err_low_) : ""), fprompt_err_par()),
+      Form("#it{f}_{prompt} = %.2f%s (#pm%.2f)", fprompt(), ((fprompt_err_low_>=0 && fprompt_err_high_>=0) ? Form("^{ +%.2f}_{ -%.2f}", fprompt_err_high_, fprompt_err_low_) : ""), fprompt_err_par()),
       Form("#chi^{2} / ndf = %.2f (%.2f) / %d", chi2(), fitresult_->Chi2(), ndf())
     }, tsizes, 13, 42, 1.2);
   pads[0]->RedrawAxis();
@@ -279,16 +281,8 @@ std::vector<TPad*> fpfitter::draw(TPad* c, Qual q) {
   return pads;
 }
 
-std::string fpfitter::add_suffix(const std::string& suffix, TH1D* h) {
-  auto tag = xjjc::str_erasestar(h->GetName(), "__y-*");
-  auto ypart = xjjc::str_eraseall(h->GetName(), tag);
-  std::string newname(Form("%s%s%s", tag.c_str(), suffix.c_str(), ypart.c_str()));
-  // __XJJLOG << " >> " << h->GetName() << " + " << suffix << " -> " << newname << std::endl;
-  return newname;
-}
-
 TH1D* fpfitter::clone_h1(TH1D* h, const std::string& suffix) {
-  auto* hnew = (TH1D*)h->Clone(add_suffix(suffix, h).c_str());
+  auto* hnew = (TH1D*)h->Clone(add_suffix__y(h->GetName(), suffix).c_str());
   return hnew;
 }
 

@@ -8,6 +8,9 @@
 
 #include "xjjanauti.h"
 
+#define __COOK_NAME__
+#include "style.h"
+
 int macro(const std::string& inputname_data,
           const std::string& inputname_prompt, const std::string& inputname_nonprompt,
           const std::string& outputname,
@@ -15,6 +18,7 @@ int macro(const std::string& inputname_data,
 
   std::map<std::string, xjjc::info> infos;
   std::map<std::string, std::vector<TH1D*>> h1ys;
+  std::map<std::string, std::vector<std::vector<TH1D*>>> h1ysfs;
 
   // data inputs
   auto* inf_data = TFile::Open(inputname_data.c_str());
@@ -26,7 +30,7 @@ int macro(const std::string& inputname_data,
   auto* h3_bins = xjjana::getobj<TH3D>(inf_data, "h3_bins_y-mass-pt");
   float sfstep = 0.02, sfmin = 0.9, sfmax = 1.6; // ip3D
   if (xjjc::str_contains(var, "sig")) { // ip3Dsig
-    sfstep = 0.02, sfmin = 0.7; sfmax = 1.2;
+    sfmin = 0.7; sfmax = 1.2;
   }
   int nsf = (sfmax-sfmin)/sfstep + 1;
   auto* h1_bins_sf = new TH1D("h1_bins_sf", ";Resolution scale factor#scale[0.5]{ }#alpha_{reso};", nsf, sfmin - sfstep*0.5, sfmax + sfstep*0.5);
@@ -38,39 +42,43 @@ int macro(const std::string& inputname_data,
   }
   TH1D* h1_dump = nullptr;
   for (const std::string type : { "data-sub", "data-sigswap" }) {
-    auto h1s = xjjana::getobj_regexp<TH1D>(dir, ".+" + type + ".+");
-    if (h1s.empty()) continue;
+    auto h1v = xjjana::getobj_regexp<TH1D>(dir, ".+" + type + ".+");
+    std::sort(h1v.begin(), h1v.end(),
+              [](const TH1D* ha, const TH1D* hb) {
+                return index_y(ha) < index_y(hb);
+              });
+    if (h1v.empty()) continue;
     if (!h1_dump) {
-      h1_dump = (TH1D*)h1s.front()->Clone(Form("h1_dump_%s", var.c_str()));
+      h1_dump = (TH1D*)h1v.front()->Clone(Form("h1_dump_%s", var.c_str()));
       h1_dump->Reset("ICESM");
-      // !! need to sort !!
     }
-    h1ys[type] = h1s;
+    h1ys[type] = h1v;
   }
 
   auto ny = h3_bins->GetXaxis()->GetNbins();
   
   // mc inputs
-  auto read_file = [&infos, &ny, &h1ys, &h1_dump, &var, &nsf, &sfmin, &sfstep](std::string inputname, std::string name) {
+  auto read_file = [&infos, &ny, &h1ys, &h1ysfs, &h1_dump, &var, &nsf, &sfmin, &sfstep](std::string inputname, std::string name) {
     auto* inf = TFile::Open(inputname.c_str());
     if (!inf) {
       __XJJLOG << "!! bad mc input: " << inputname << ", abort."<< std::endl;
       return 2;
     }
     auto datasets = xjjana::getobj_regexp<RooDataSet>(inf, ".*mc_match__y-.+");
-    // !! need to sort
+    std::sort(datasets.begin(), datasets.end(),
+              [](const RooDataSet* ha, const RooDataSet* hb) {
+                return index_y(ha) < index_y(hb);
+              });
     if (datasets.size() != ny) {
       __XJJLOG << "!! inconsistent number of y bins : " << ny << " vs " << datasets.size() << ", abort." << std::endl;
       return 3;
     }
     for (auto* ds : datasets) { // loop y
-      const auto index_y = std::atoi(xjjc::str_erasestar(ds->GetName(), "*__y-").c_str());
-
-      auto* h = (TH1D*)h1_dump->Clone(Form("h1_%s_mc-%s__y-%d", var.c_str(), name.c_str(), index_y));
+      auto* h = (TH1D*)h1_dump->Clone(Form("h1_%s_mc-%s__y-%d", var.c_str(), name.c_str(), index_y(ds)));
       // h->Sumw2();
       std::vector<TH1D*> hs_sf(nsf, nullptr);
       for (int k=0; k<nsf; k++)
-        hs_sf[k] = (TH1D*)h->Clone(Form("h1_%s_mc-%s_sf-%d__y-%d", var.c_str(), name.c_str(), k, index_y));
+        hs_sf[k] = (TH1D*)h->Clone(add_suffix__y(h->GetName(), Form("_sf-%d", k)).c_str());
 
       __XJJLOG << "++ " << h->GetName() << std::endl;
       xjjc::saywait();
@@ -82,9 +90,7 @@ int macro(const std::string& inputname_data,
           hs_sf[k]->Fill(value * (sfmin + k*sfstep));
       }
       h1ys[name].push_back(h);
-      for (int k=0; k<nsf; k++) {
-        h1ys[Form("%s_sf-%d", name.c_str(), k)].push_back(hs_sf[k]);
-      }
+      h1ysfs[name].push_back(hs_sf);
     }
     infos[name] = xjjana::get_info(inf, "info");
     
@@ -107,21 +113,29 @@ int macro(const std::string& inputname_data,
       h_norm->Scale(1./h->Integral(), "width");
       xjjroot::writehist(h_norm);
     }
+    for (auto& [_, hhh] : h1ysfs) {
+      auto hh = hhh[i];
+      for (auto& h_sf : hh) {
+        auto* h_sf_norm = (TH1D*)h_sf->Clone(xjjc::str_replaceall(h_sf->GetName(), "h1_", "h1_norm_").c_str());
+        h_sf_norm->Scale(1./h_sf->Integral(), "width");
+        xjjroot::writehist(h_sf_norm);
+      }
+    }
     outf->cd();
   }
   outf->cd();
   xjjroot::writehist(h3_bins);
   xjjroot::writehist(h1_bins_sf);
+  outf->mkdir("info")->cd();
   for (auto& [iname, info] : infos) {
-    outf->mkdir(iname.c_str())->cd();
-    auto* t_data = new TTree("info", "");
+    auto* t_data = new TTree(iname.c_str(), "");
     for (auto& [key, content] : info) {
       t_data->Branch(key.c_str(), &content);
     }
     t_data->Fill();
     t_data->Write();
-    outf->cd();
   }
+  outf->cd();
   xjjroot::closefile(outf);
   return 0;
 }

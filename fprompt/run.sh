@@ -1,8 +1,10 @@
 #!/bin/bash
 
 INPUTS=(
-    # "rootfiles_data-mc/gammaN-0nXn-25/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-nonprompt.root gammaN-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt"
+    "rootfiles_data-mc/gammaN-0nXn-25/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-nonprompt.root gammaN-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt"
     "rootfiles_data-mc/twodirs-0nXn-25/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/twodirs-0nXn-25/dataset-cook_BeamA-prompt.root,rootfiles_data-mc/twodirs-0nXn-25/dataset-cook_BeamA-nonprompt.root twodirs-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt"
+    "rootfiles_data-mc/gammaN-0nXn-25/draw_2025PbPb_BeamA-prompt_ycoarse.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-prompt_ycoarse.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-nonprompt_ycoarse.root gammaN-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt_ycoarse"
+    "rootfiles_data-mc/twodirs-0nXn-25/draw_2025PbPb_BeamA-prompt_ycoarse.root,rootfiles_data-mc/twodirs-0nXn-25/dataset-cook_BeamA-prompt_ycoarse.root,rootfiles_data-mc/twodirs-0nXn-25/dataset-cook_BeamA-nonprompt_ycoarse.root twodirs-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt_ycoarse"
 )
 
 VARS=(
