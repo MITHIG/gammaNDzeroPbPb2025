@@ -24,9 +24,9 @@ int macro(const std::string& inputname_data,
   }
   infos["data"] = xjjana::get_info(inf_data, "data/info");
   auto* h3_bins = xjjana::getobj<TH3D>(inf_data, "h3_bins_y-mass-pt");
-  float sfstep = 0.02, sfmin = 1., sfmax = 1.7; // ip3D
+  float sfstep = 0.02, sfmin = 0.9, sfmax = 1.6; // ip3D
   if (xjjc::str_contains(var, "sig")) { // ip3Dsig
-    sfstep = 0.01, sfmin = 0.7; sfmax = 1.2;
+    sfstep = 0.02, sfmin = 0.7; sfmax = 1.2;
   }
   int nsf = (sfmax-sfmin)/sfstep + 1;
   auto* h1_bins_sf = new TH1D("h1_bins_sf", ";Resolution scale factor#scale[0.5]{ }#alpha_{reso};", nsf, sfmin - sfstep*0.5, sfmax + sfstep*0.5);

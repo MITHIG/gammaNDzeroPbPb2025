@@ -97,7 +97,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
 
       auto* gr_fprompt = new TGraphAsymmErrors();
       gr_fprompt->SetName(xjjc::str_replaceall(h1_fprompt->GetName(), "h1_", "gr_").c_str());
-      xjjroot::setthgrstyle(h1_fprompt, kBlack, 21, 1.3, kBlack, 1, 1);
+      xjjroot::setthgrstyle(gr_fprompt, kBlack, 21, 1.3, kBlack, 1, 1);
       int ngr_fprompt = 0;
      
       // fit 
@@ -142,7 +142,11 @@ int macro(const std::string& inputname, const std::string& outputname) {
         results[k] = fitter;
       } // for (int k=0; k<nsf; k++) {
       
-      auto ibin_best = h1_chi2->GetMinimumBin();
+      auto ibin_best = h1_chi2->GetMinimumBin(), ibin_fix = h1_chi2->FindBin(1.);
+      if (ibin_fix <= 0 || ibin_fix >= h1_chi2->GetNbinsX()) {
+        __XJJLOG << "!! can not find ibin_fix, abort." << std::endl;
+        return 3;
+      }
 
       xjjana::sethminmax(h1_chi2, 0, 1.3);
       pdf->prepare();
@@ -171,7 +175,11 @@ int macro(const std::string& inputname, const std::string& outputname) {
       xjjroot::writehist(h1_chi2);
       xjjroot::writehist(h1_fprompt);
       xjjroot::writehist(gr_fprompt);
+      dir_type_output->mkdir("fit_best")->cd();
       results[ibin_best-1]->write_to_file();
+      dir_type_output->mkdir("fit_fix")->cd();
+      results[ibin_fix-1]->write_to_file();
+      dir_type_output->cd();
     } // for (auto& [type_data, h1_data] : h1s_data) {
     
   } // for (int i=0; i < ny; i++) {
@@ -180,16 +188,16 @@ int macro(const std::string& inputname, const std::string& outputname) {
   outf->cd();
   xjjroot::writehist(h3_bins);
   xjjroot::writehist(h1_bins_sf);
+  outf->mkdir("info")->cd();
   for (auto& [iname, info] : infos) {
-    outf->mkdir(iname.c_str())->cd();
-    auto* t_data = new TTree("info", "");
+    auto* t_data = new TTree(iname.c_str(), "");
     for (auto& [key, content] : info) {
       t_data->Branch(key.c_str(), &content);
     }
     t_data->Fill();
     t_data->Write();
-    outf->cd();
   }
+  outf->cd();
   xjjroot::closefile(outf);
   inf->Close();
   return 0;

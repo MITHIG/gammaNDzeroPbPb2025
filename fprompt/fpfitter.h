@@ -4,17 +4,25 @@
 
 #include "xjjanauti.h"
 
+enum class Qual { pull = 0, ratio = 1 };
+std::vector<double> yref = { 0, 1 };
+std::vector<std::string> drawopt = { "hist", "pe1" };
+
 class fpfitter {
 public:
   fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt, std::string name_data = "", std::string name_mc = "");
+  fpfitter(TH1D* hdata, TH1D* htotal_fitted, TH1D* hnonprompt_fitted, TFitResult* fresult, TH1D* hpull = nullptr, TH1D* hratio = nullptr);
   void fit(double xmin = 0, double xmax = 0);  
-  std::vector<TPad*> draw(TCanvas* c);
+  // std::vector<TPad*> draw(TCanvas* c, Qual q = Qual::pull);
+  std::vector<TPad*> draw(TPad* c, Qual q = Qual::pull);
   void print_fitresult();
   int status() const { return status_; }
   double fit_xmin() const { return hdata_->GetXaxis()->GetBinLowEdge(ibin_fit_min_); }
   double fit_xmax() const { return hdata_->GetXaxis()->GetBinLowEdge(ibin_fit_max_) + hdata_->GetXaxis()->GetBinWidth(ibin_fit_max_); }
-  double fprompt() const { return func_->GetParameter(0); }
-  double fprompt_err_par() const { return func_->GetParError(0); }
+  double fprompt() const { return fitresult_->Parameter(0); }
+  double fprompt_err_par() const { return fitresult_->ParError(0); }
+  // double fprompt() const { return func_->GetParameter(0); }
+  // double fprompt_err_par() const { return func_->GetParError(0); }
   double fprompt_err_low() const { return fprompt_err_low_; }
   double fprompt_err_high() const { return fprompt_err_high_; }
   int ndf() const { return (ibin_fit_max_ - ibin_fit_min_ + 1)/*nbins fitted*/ - 1/*npars*/; }
@@ -35,7 +43,7 @@ private:
   TFitResultPtr fitresult_;
   int ibin_fit_min_, ibin_fit_max_, nbin_fit_;
   double chi2_;
-  TH1D *hprompt_fitted_, *hnonprompt_fitted_, *htotal_fitted_, *hpull_;
+  TH1D *hprompt_fitted_, *hnonprompt_fitted_, *htotal_fitted_, *hpull_, *hratio_;
   double fprompt_err_low_, fprompt_err_high_;
 
   double template_model(double* x, double* par) {
@@ -46,6 +54,7 @@ private:
     const double n = hnonprompt_->GetBinContent(bin) / area_hnonprompt_;
     return fpr * p + (1. - fpr) * n;
   }
+  void calc_pull_chi2(int ibin_min, int ibin_max, bool fill_hists = true);
   static bool same_axis(const TH1D* a, const TH1D* b);
   std::string add_suffix(const std::string& suffix, TH1D* h);
   TH1D* clone_h1(TH1D* h, const std::string& suffix);
@@ -64,7 +73,7 @@ fpfitter::fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt,
     status_(-1), area_hprompt_(0), area_hnonprompt_(0),
     func_(nullptr), func_smear_(nullptr), fitresult_(nullptr), chi2_(0),
     hprompt_fitted_(nullptr), hnonprompt_fitted_(nullptr), htotal_fitted_(nullptr),
-    fprompt_err_low_(0), fprompt_err_high_(0)
+    fprompt_err_low_(-1), fprompt_err_high_(-1)
 {
   for (auto* h : { hdata, hprompt, hnonprompt } ) {
     if (!h) {
@@ -106,6 +115,18 @@ fpfitter::fpfitter(TH1D* hdata, TH1D* hprompt, TH1D* hnonprompt,
                         hdata_->GetXaxis()->GetXmin(), hdata_->GetXaxis()->GetXmax(), 1);
 }
 
+fpfitter::fpfitter(TH1D* hdata, TH1D* htotal_fitted, TH1D* hnonprompt_fitted, TFitResult* fresult, TH1D* hpull, TH1D* hratio) :
+  hdata_(hdata), htotal_fitted_(htotal_fitted), hnonprompt_fitted_(hnonprompt_fitted),
+  hpull_(hpull), hratio_(hratio), fitresult_(fresult),
+  status_(-1), area_hprompt_(0), area_hnonprompt_(0),
+  fprompt_err_low_(-1), fprompt_err_high_(-1)
+{
+  bool fill_hpull = !hpull_ || !hratio_;
+  ibin_fit_min_ = 1;
+  ibin_fit_max_ = hdata_->GetXaxis()->GetNbins(); // !! need to find a way to tell the fitting range
+  calc_pull_chi2(ibin_fit_min_, ibin_fit_max_, fill_hpull);
+}
+
 void fpfitter::fit(double xmin, double xmax) {
   if (!xjjc::almost_eq(xmin, xmax)) {
     ibin_fit_min_ = 0;
@@ -138,9 +159,6 @@ void fpfitter::fit(double xmin, double xmax) {
     __XJJLOG << ">> fitting result code : " << int(fitresult_) << std::endl;
   }
   
-  hpull_ = clone_h1(hdata_, "_pull" + name_mc_);
-  hpull_->Reset("ICESM");
-  hpull_->GetYaxis()->SetTitle("Pull");
   hprompt_fitted_ = clone_h1(hprompt_, "_fitted" + name_data_);
   hprompt_fitted_->Scale(fprompt() / area_hprompt_);
   hnonprompt_fitted_ = clone_h1(hnonprompt_, "_fitted" + name_data_);
@@ -177,24 +195,45 @@ void fpfitter::fit(double xmin, double xmax) {
     fprompt_err_low_  = fprompt() - q16;
     fprompt_err_high_ = q84 - fprompt();
   }
+
+  calc_pull_chi2(ibin_fit_min_, ibin_fit_max_, true /*fill hpull_ and hratio_*/);
+}
+
+void fpfitter::calc_pull_chi2(int ibin_min, int ibin_max, bool fill_hists) {
+  if (fill_hists) {
+    hpull_ = clone_h1(hdata_, "_pull" + name_mc_);
+    hpull_->Reset("ICESM");
+    hpull_->GetYaxis()->SetTitle("Pull");
+    hratio_ = clone_h1(hdata_, "_ratio" + name_mc_);
+    hratio_->Reset("ICESM");
+    hratio_->GetYaxis()->SetTitle("Data / Fit");
+  }
   
   chi2_ = 0;
-  for (int i = ibin_fit_min_; i <= ibin_fit_max_; ++i) {
+  for (int i = ibin_min; i <= ibin_max; ++i) {
     const double d = hdata_->GetBinContent(i);
     double e = hdata_->GetBinError(i);
+    bool emptybin = e <= 0;
     if (e <= 0) e = std::sqrt(std::max(std::abs(d), 1.));
-    const double r = (d - htotal_fitted_->GetBinContent(i)) / e;
+    const double ftotal = htotal_fitted_->GetBinContent(i); 
+    const double r = (d - ftotal) / e;
     chi2_ += r * r;
-    hpull_->SetBinContent(i, r);
-    hpull_->SetBinError(i, 1.e-5);
+
+    if (fill_hists) {
+      hpull_->SetBinContent(i, emptybin ? 0 : r);
+      hpull_->SetBinError(i, 1.e-5);
+      hratio_->SetBinContent(i, ftotal==0 ? 0 : d/ftotal);
+      hratio_->SetBinError(i, ftotal==0 ? 0 : hdata_->GetBinError(i)/ftotal);
+    }
   }
 }
 
-std::vector<TPad*> fpfitter::draw(TCanvas* c) {
+std::vector<TPad*> fpfitter::draw(TPad* c, Qual q) {
   xjjroot::setthgrstyle(hdata_, kBlack, 20, 1.5, kBlack, 1, 1);
   xjjroot::setthgrstyle(htotal_fitted_, xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 2, xjjroot::mycolor_middle["red"], 0.4, 1001);
   xjjroot::setthgrstyle(hnonprompt_fitted_, xjjroot::mycolor_middle["blue"], 21, 0, xjjroot::mycolor_middle["blue"], 2, 2, xjjroot::mycolor_middle["blue"], 0.45, 1001);
   xjjroot::setthgrstyle(hpull_, xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 2, 2, 0);
+  xjjroot::setthgrstyle(hratio_, kBlack, 20, 1.5, kBlack, 1, 1, 0);
   auto* hpull_temp = (TH1D*)hpull_->Clone(xjjc::unique_str().c_str());
   xjjroot::setthgrstyle(hpull_temp, xjjroot::mycolor_middle["red"], 21, 0, xjjroot::mycolor_middle["red"], 1, 4, 0);
   auto* hnonprompt_fitted_temp = (TH1D*)hnonprompt_fitted_->Clone(xjjc::unique_str().c_str());
@@ -203,10 +242,14 @@ std::vector<TPad*> fpfitter::draw(TCanvas* c) {
   std::vector<TH1D*> hlist = { hdata_, htotal_fitted_ };
   xjjana::sethsnonzeromin(hlist, 0.5);
   xjjana::sethsmax(hlist, 10.);
-  xjjana::sethminmax(hpull_, xjjana::gethminimum(hpull_) < 0 ? 1.3 : 0,
-                     xjjana::gethmaximum(hpull_) > 0 ? 1.3 : 0);
   xjjana::sethabsminmax(hpull_, -3.95, 3.95);
+  xjjana::sethabsminmax(hratio_, 0.01, 1.99);
  
+  auto* h_low = (q == Qual::pull ? hpull_ : hratio_);
+  const auto iq = static_cast<size_t>(q);
+  auto yref_q = yref[iq];
+  auto drawopt_q = drawopt[iq];
+  
   float tsizes = tsize/pratio;
   auto* leg = new TLegend(xleft, ytop-tsizes*1.1*4, xleft+tsizes*5, ytop);
   xjjroot::setleg(leg, tsizes);
@@ -215,7 +258,7 @@ std::vector<TPad*> fpfitter::draw(TCanvas* c) {
   xjjroot::addentrybystyle(leg, "Prompt", "f", { .lcolor = 0, .lstyle = 0, .lwidth = 0, .fcolor = htotal_fitted_->GetFillColor(), .falpha = 0.3 });
   leg->AddEntry(hnonprompt_fitted_, "Nonprompt", "f");
   
-  auto pads = xjjroot::twopads(c, hdata_, hpull_, pratio);
+  auto pads = xjjroot::twopads(c, hdata_, h_low, pratio);
   pads[0]->SetLogy(1);
   pads[0]->cd();
   htotal_fitted_->Draw("hist same");
@@ -224,14 +267,14 @@ std::vector<TPad*> fpfitter::draw(TCanvas* c) {
   hdata_->Draw("pe1 same");
   leg->Draw();
   xjjroot::drawtexgroup(xleft + 0.01, ytop - tsizes*1.1*4 - 0.01, {
-      Form("#it{f}_{prompt} = %.2f^{+%.2f}_{-%.2f} (#pm%.2f)", fprompt(), fprompt_err_high_, fprompt_err_low_, fprompt_err_par()),
+      Form("#it{f}_{prompt} = %.2f%s (#pm%.2f)", fprompt(), (fprompt_err_high_>=0 ? Form("f^{ +%.2f}_{ -%.2f}", fprompt_err_high_, fprompt_err_low_) : ""), fprompt_err_par()),
       Form("#chi^{2} / ndf = %.2f (%.2f) / %d", chi2(), fitresult_->Chi2(), ndf())
     }, tsizes, 13, 42, 1.2);
   pads[0]->RedrawAxis();
   pads[1]->cd();
-  xjjroot::drawline(hpull_->GetXaxis()->GetXmin(), 0, hpull_->GetXaxis()->GetXmax(), 0, kGray+3, 2, 2);
-  hpull_->Draw("hist same");
-  hpull_temp->Draw("pe same");
+  xjjroot::drawline(h_low->GetXaxis()->GetXmin(), yref_q, h_low->GetXaxis()->GetXmax(), yref_q, kGray+3, 2, 2);
+  h_low->Draw(Form("%s same", drawopt_q.c_str()));
+  if (q == Qual::pull) hpull_temp->Draw("pe same");
   c->cd();
   return pads;
 }
@@ -272,4 +315,6 @@ void fpfitter::write_to_file() {
   xjjroot::writehist(htotal_fitted_);
   xjjroot::writehist(hnonprompt_fitted_);
   xjjroot::writehist(hpull_);
+  xjjroot::writehist(hratio_);
+  xjjroot::writehist(fitresult_.Get());
 }

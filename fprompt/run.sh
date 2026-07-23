@@ -1,7 +1,8 @@
 #!/bin/bash
 
 INPUTS=(
-    "rootfiles_data-mc/gammaN-0nXn-25/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-nonprompt.root gammaN-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt"
+    # "rootfiles_data-mc/gammaN-0nXn-25/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-prompt.root,rootfiles_data-mc/gammaN-0nXn-25/dataset-cook_BeamA-nonprompt.root gammaN-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt"
+    "rootfiles_data-mc/twodirs-0nXn-25/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/twodirs-0nXn-25/dataset-cook_BeamA-prompt.root,rootfiles_data-mc/twodirs-0nXn-25/dataset-cook_BeamA-nonprompt.root twodirs-0nXn-25/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt"
 )
 
 VARS=(
@@ -9,14 +10,17 @@ VARS=(
     "Dip3Dsig"
 )
 
-make read_datamc.exe fit_fprompt.exe draw_fprompt.exe || exit 
+make read_datamc.exe fit_fprompt.exe draw_fprompt.exe collect_fprompt.exe || exit 
 
 for input in "${INPUTS[@]}" ; do
     inputpars=($input)
     inputfiles=${inputpars[0]}
+    tag_input=${inputpars[1]}
 
+    inputs_collect=
+    output_collect=
     for var in ${VARS[@]} ; do
-        itag=${inputpars[1]}"_"$var
+        itag=$tag_input"_"$var
         
         [[ ${1:-0} -eq 1 ]] && {
             set -x
@@ -31,5 +35,17 @@ for input in "${INPUTS[@]}" ; do
         [[ ${3:-0} -eq 1 ]] && {
             ./draw_fprompt.exe "rootfiles/"$itag_fit".root" $itag_draw
         }
-    done    
+        
+        inputs_collect=$inputs_collect',rootfiles/'$itag_draw'.root'
+        output_collect=$output_collect'-'$var
+    done
+
+    inputs_collect=${inputs_collect#*,}
+    echo $inputs_collect
+    output_collect=${tag_input/hists__/collect__}'_'${output_collect#*-}
+    echo $output_collect
+
+    [[ ${4:-0} -eq 1 ]] && {
+        ./collect_fprompt.exe "$inputs_collect" $output_collect
+    }
 done
