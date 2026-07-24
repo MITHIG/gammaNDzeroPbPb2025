@@ -41,8 +41,10 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
 
   project((isdata ? "_data" : ""), cut);
   if (!isdata) {
-    project("_match", cut + " && Dgen==23333");
-    project("_swap", cut + " && Dgen==23344");
+    project("_mc-match", cut + " && Dgen==23333");
+    project("_mc-swap", cut + " && Dgen==23344");
+    project("_mc-kk", cut + " && DisSignalKK");
+    project("_mc-pipi", cut + " && DisSignalpipi");
   }
   
   auto* t = new TTree("info", "");
