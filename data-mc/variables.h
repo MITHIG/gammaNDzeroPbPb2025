@@ -29,7 +29,7 @@ std::vector<global::variable> variables = {
   { .varname = "Dip3D", .var = "Dip3D", .vartex = "DCA [cm]", .varmin = 0, .varmax = 0.1, .nbin = 20, .logy = 1, .isbranch = 1,
     .bins = { 0, 0.001, 0.00227, 0.0038829, 0.00593128, 0.00853273, 0.0118366, 0.0160324, 0.0213612, 0.0281287, 0.0367235, 0.0476388, 0.0615013, 0.0791066, 0.1 } },
   { .varname = "Dip3derr", .var = "Dip3derr", .vartex = "#sigma(DCA) [cm]", .varmin = 0, .varmax = 0.1, .nbin = 20, .logy = 1, .isbranch = 1 },
-  { .varname = "Dip3Dsig", .var = "Dip3D/Dip3derr", .vartex = "DCA significance", .varmin = 0, .varmax = 25, .nbin = 25*5, .logy = 1, .isbranch = 0, // 
+  { .varname = "Dip3Dsig", .var = "Dip3D/Dip3derr", .vartex = "DCA /#scale[0.4]{ }#sigma_{DCA}", .varmin = 0, .varmax = 25, .nbin = 25*5, .logy = 1, .isbranch = 0, // 
     .bins = { 0, 0.2, 0.5, 1., 2, 3, 4, 5, 7, 9, 11, 14, 18, 25 } },
   { .varname = "Dtrk1Pt", .var = "Dtrk1Pt", .vartex = "Track 1#scale[0.5]{ }#it{p}_{T} [GeV/c]", .varmin = 0, .varmax = 5, .nbin = 25, .logy = 0, .isbranch = 1 },
   { .varname = "Dtrk2Pt", .var = "Dtrk2Pt", .vartex = "Track 2#scale[0.5]{ }#it{p}_{T} [GeV/c]", .varmin = 0, .varmax = 5, .nbin = 25, .logy = 0, .isbranch = 1 },

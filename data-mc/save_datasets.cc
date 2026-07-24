@@ -104,8 +104,8 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
              VAL(Dtrk1Pt) > 0.5 && VAL(Dtrk2Pt) > 0.5 &&
              VAL(Dchi2cl) > 0.05 && (VAL(DsvpvDistance)/VAL(DsvpvDisErr)) > 1. )) continue;
 
-      bool pass_BDT_gammaN = ZDCgammaN && ((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098));
-      bool pass_BDT_Ngamma = ZDCNgamma && ((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098));
+      bool pass_BDT_gammaN = pass_gammaN && ((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098));
+      bool pass_BDT_Ngamma = pass_Ngamma && ((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098));
       
       if (ecut == ECutPreset::gammaN && !pass_BDT_gammaN) continue;
       if (ecut == ECutPreset::Ngamma && !pass_BDT_Ngamma) continue;
@@ -114,8 +114,18 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
       // set dataset values
       for (auto& [_, v] : vars) {
         if (v.br) {
-          // std::cout<<"   "<<j<<"  "<<v.roov->GetName() << " (" << v.br->size() << ")" << std::endl;
           v.roov->setVal( v.br->at(j) );
+          if (ecut == ECutPreset::twoDirs && pass_Ngamma) {
+            bool need_refl = false;
+            for (const std::string str_vref : { "Dy", "Eta" }) {
+              if (xjjc::str_contains(v.roov->GetName(), str_vref)) {
+                need_refl = true;
+                break;
+              }
+            }
+            if (need_refl)
+              v.roov->setVal( 0. - v.br->at(j) ); // reflection
+          }
         }
       }
 

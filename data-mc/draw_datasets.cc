@@ -176,15 +176,22 @@ int macro(std::string inputname, std::string outputname) {
         xjjana::sethsmax(hlist, 50.);
       } else {
         xjjana::sethsmin(hlist, 0.);
-        xjjana::sethsmax(hlist, 1.5);
+        xjjana::sethsmax(hlist, 1.6);
       }
     };
     auto init_leg = [](int nrow) {
-      auto* leg = new TLegend(0.52, 0.86-0.040*nrow, 0.70, 0.86);
+      auto* leg = new TLegend(0.52, 0.82-0.040*nrow, 0.70, 0.82);
       xjjroot::setleg(leg, 0.035);
       return leg;
     };
 
+    auto draw_global = [&btex, &infos](int ibin_y = -1) {
+      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
+      // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
+      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(ibin_y), btex.label_pt() }, 0.038, 13);
+      xjjroot::drawtexgroup(0.525, 0.86, { infos["data"]["cut_tex"] }, 0.038, 13);
+    };
+    
     for (int i=0; i<ny; i++) {
       // norm
       auto* leg_norm = init_leg(5);
@@ -204,8 +211,7 @@ int macro(std::string inputname, std::string outputname) {
       h1ys_norm_data_sigswap.at(name)[i]->Draw("pe1 same");
       h1ys_norm_data_sub.at(name)[i]->Draw("pe1 same");
       leg_norm->Draw();
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
-      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
+      draw_global(i);
       pdf->write();
     }
     
@@ -224,8 +230,7 @@ int macro(std::string inputname, std::string outputname) {
         h1ys_norm_data_sub.at(name)[i]->Draw("pe1 same");
       }
       leg_norm_Dy->Draw();
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
-      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(-1), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
+      draw_global(-1);
       pdf->write();
     }
 
@@ -247,8 +252,7 @@ int macro(std::string inputname, std::string outputname) {
       h1ys_data_sideband_scaled.at(name)[i]->Draw("hist e1 same");
       h1ys_data_sub.at(name)[i]->Draw("pe1 same");
       leg_sub->Draw();
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
-      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
+      draw_global(i);
       pdf->write();
     }
     
