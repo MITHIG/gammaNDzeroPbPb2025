@@ -81,10 +81,11 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
     for (int j=0; j<tbins.npt(); j++) {
       pdf->getc()->cd(j+1);
       const auto &h = h1ptys.at("data")[j][i],
-        &hmc = h1ptys.at("match")[j][i], &hmcswap = h1ptys.at("swap")[j][i];
+        &hmc = h1ptys.at("mc-match")[j][i], &hmcswap = h1ptys.at("mc-swap")[j][i],
+        &hmckk = h1ptys.at("mc-kk")[j][i], &hmcpipi = h1ptys.at("mc-pipi")[j][i];
 
       auto* df = new xjjroot::dfitter("S3");
-      df->fit(h, hmc, hmcswap);
+      df->fit(h, hmc, hmcswap, hmckk, hmcpipi);
       xjjroot::drawtexgroup(0.25, 0.86, { tbins.label_y(i), tbins.label_pt(j), "#bf{" + info_data.at("cut_tex") + "}" }, 0.035, 13);
       df->draw_leg();
       df->draw_result(0.25, 0.86-3*0.035*1.15, 0.035);
@@ -109,13 +110,18 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
     pdf->getc()->Divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
       pdf->getc()->cd(j+1);
-      const auto &hmc = h1ptys.at("match")[j][i], &hmcswap = h1ptys.at("swap")[j][i];
+      const auto &hmc = h1ptys.at("mc-match")[j][i], &hmcswap = h1ptys.at("mc-swap")[j][i],
+        &hmckk = h1ptys.at("mc-kk")[j][i], &hmcpipi = h1ptys.at("mc-pipi")[j][i];
 
       auto* df = dfs[j][i];
       df->set_hist(hmc);
       hmc->Draw("pe1"); 
       df->set_hist(hmcswap);
       hmcswap->Draw("pe1 same");
+      df->set_hist(hmckk);
+      hmckk->Draw("pe1 same");
+      df->set_hist(hmcpipi);
+      hmcpipi->Draw("pe1 same");
       df->draw_fmc();
       xjjroot::drawtexgroup(0.25, 0.86, { tbins.label_y(i), tbins.label_pt(j) }, 0.035, 13);
       df->draw_params(0.25, 0.86-2*0.035*1.15, 0.035);
@@ -199,4 +205,3 @@ int main(int argc, char* argv[]) {
   }
   return 1;
 }
-
