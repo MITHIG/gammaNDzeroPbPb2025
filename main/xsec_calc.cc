@@ -94,8 +94,10 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   };
   
   xjjana::sethsmin(h1pts.at("y_xsec"), 0.);
-  xjjana::sethsmax(h1pts.at("y_xsec"), 2.);
-  // for (auto& h : h1pts.at("y_xsec")) h->SetMaximum(5.);
+  if (tbins.npt() == 1)
+    xjjana::sethsmax(h1pts.at("y_xsec"), 2.);
+  else
+    for (auto& h : h1pts.at("y_xsec")) h->SetMaximum(5.);
   pdf->prepare();
   h1pts.at("y_xsec").front()->Draw("axis");
   auto* g_HIN_25_002 = measurement::draw_HIN_25_002(event_is);

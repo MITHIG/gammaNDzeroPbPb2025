@@ -69,13 +69,15 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
   xjjroot::print_tab(h1pts, 0);
 
   auto dfs = xjjc::array2d<xjjroot::dfitter*>(tbins.npt(), tbins.ny());
+  auto ndiv = std::ceil(std::sqrt(tbins.npt()));
   xjjroot::setgstyle(1);
-  gStyle->SetLineScalePS(2.0);
-  auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(input_data, { { "rootfiles/", "figspdf/" }, { ".root", ".pdf" }, { "savehist_", "fithist_" } }));
+  gStyle->SetLineScalePS(3./ndiv);
+  auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(input_data, { { "rootfiles/", "figspdf/" }, { ".root", ".pdf" }, { "savehist_", "fithist_" } }),
+                                 xjjroot::mypdf::w_default*ndiv, xjjroot::mypdf::h_default*ndiv);
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   for (int i=0; i<tbins.ny(); i++) {
     pdf->prepare();
-    pdf->getc()->Divide(std::ceil(std::sqrt(tbins.npt())), std::ceil(std::sqrt(tbins.npt())));
+    pdf->getc()->Divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
       pdf->getc()->cd(j+1);
       const auto &h = h1ptys.at("data")[j][i],
@@ -104,7 +106,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
   
   for (int i=0; i<tbins.ny(); i++) {
     pdf->prepare();
-    pdf->getc()->Divide(std::ceil(std::sqrt(tbins.npt())), std::ceil(std::sqrt(tbins.npt())));
+    pdf->getc()->Divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
       pdf->getc()->cd(j+1);
       const auto &hmc = h1ptys.at("match")[j][i], &hmcswap = h1ptys.at("swap")[j][i];
