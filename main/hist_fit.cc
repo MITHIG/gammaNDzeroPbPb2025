@@ -5,9 +5,18 @@
 
 #include "../include/dfitter.h"
 #include "../include/draw.h"
+#include "../include/util.h"
 
-int macro(std::string input_data, std::string input_template, int fit_type = 0, int save_png = 1) {
+int macro(const std::string& input_data, const std::string& input_template, const std::string& outputname, const std::string& fit_opt = "3", int save_png = 1) {
   std::cout<<std::endl;
+
+  const auto fitopt = util::parse_input(fit_opt);
+  __XJJLOG << ">> fitting option : " << fit_opt << " -> " << fitopt.content << std::endl;
+  xjjc::info info_fit = {
+    { "fitopt", fitopt.content },
+    { "fitopt_tex", fitopt.tex },
+    { "fitopt_tag", fitopt.tag },
+  };
 
 #define READ_FILE(q)                                                    \
   auto* inf##q = TFile::Open(input##q.c_str());                         \
@@ -72,70 +81,70 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
   auto ndiv = std::ceil(std::sqrt(tbins.npt()));
   xjjroot::setgstyle(1);
   gStyle->SetLineScalePS(3./ndiv);
-  auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(input_data, { { "rootfiles/", "figspdf/" }, { ".root", ".pdf" }, { "savehist_", "fithist_" } }), "c",
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf", "c",
                                  xjjroot::mypdf::w_default*ndiv, xjjroot::mypdf::h_default*ndiv);
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   for (int i=0; i<tbins.ny(); i++) {
     pdf->prepare();
-    pdf->getc()->Divide(ndiv, ndiv);
+    xjjroot::divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
-      pdf->getc()->cd(j+1);
+      auto* p = (TPad*)pdf->getc()->cd(j+1);
       const auto &h = h1ptys.at("data")[j][i],
         &hmc = h1ptys.at("mc-match")[j][i], &hmcswap = h1ptys.at("mc-swap")[j][i],
         &hmckk = h1ptys.at("mc-kk")[j][i], &hmcpipi = h1ptys.at("mc-pipi")[j][i];
 
-      auto* df = new xjjroot::dfitter("S3");
+      auto* df = new xjjroot::dfitter(fitopt.content.c_str());
       df->fit(h, hmc, hmcswap, hmckk, hmcpipi);
-      xjjroot::drawtexgroup(0.25, 0.86, { tbins.label_y(i), tbins.label_pt(j), "#bf{" + info_data.at("cut_tex") + "}" }, 0.035, 13);
+      xjjroot::drawtexgroup(0.24, 0.86, { tbins.label_y(i), tbins.label_pt(j), "#bf{" + info_data.at("cut_tex") + "}" }, 0.035, 13);
       df->draw_leg();
-      df->draw_result(0.25, 0.86-3*0.035*1.15, 0.035);
+      df->draw_result(0.24, 0.86-3*0.035*1.15, 0.035);
       xjjroot::drawCMS(xjjroot::CMS::internal, info_data.at("input_tex"));
 
       h1pts.at("yield-y")[j]->SetBinContent(i+1, df->yield());
       h1pts.at("yield-y")[j]->SetBinError(i+1, df->yieldErr());
-      auto w68mc = df->width_mc_mass(xjjana::frac_1sigma),
-        w95mc = df->width_mc_mass(xjjana::frac_2sigma);
+      auto w68mc = df->width_mc_match(xjjana::frac_1sigma),
+        w95mc = df->width_mc_match(xjjana::frac_2sigma);
       h1pts.at("width68mc-y")[j]->SetBinContent(i+1, w68mc.first);
       h1pts.at("width68mc-y")[j]->SetBinError(i+1, w68mc.second);
       h1pts.at("width95mc-y")[j]->SetBinContent(i+1, w95mc.first);
       h1pts.at("width95mc-y")[j]->SetBinError(i+1, w95mc.second);
     
       dfs[j][i] = df;
+      p->RedrawAxis();
     }
     pdf->write(Form("%s_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
   }
-  
+
   for (int i=0; i<tbins.ny(); i++) {
     pdf->prepare();
-    pdf->getc()->Divide(ndiv, ndiv);
+    xjjroot::divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
-      pdf->getc()->cd(j+1);
-      const auto &hmc = h1ptys.at("mc-match")[j][i], &hmcswap = h1ptys.at("mc-swap")[j][i],
-        &hmckk = h1ptys.at("mc-kk")[j][i], &hmcpipi = h1ptys.at("mc-pipi")[j][i];
-
+      auto* p = (TPad*)pdf->getc()->cd(j+1);
       auto* df = dfs[j][i];
-      df->set_hist(hmc);
-      hmc->Draw("pe1"); 
-      df->set_hist(hmcswap);
-      hmcswap->Draw("pe1 same");
-      df->set_hist(hmckk);
-      hmckk->Draw("pe1 same");
-      df->set_hist(hmcpipi);
-      hmcpipi->Draw("pe1 same");
+
+      for (const std::string s : { "match", "swap", "kk", "pipi" }) {
+        if (!df->haskkpipi() && (s == "kk" || s == "pipi")) continue; 
+        auto* hmc = h1ptys.at("mc-" + s)[j][i];
+        df->set_hist(hmc);
+        if (xjjroot::fstyle.find(s) != xjjroot::fstyle.end() && s != "match")
+          xjjroot::setthgrstyle(hmc, xjjroot::fstyle.at(s).lcolor, -1, -1, xjjroot::fstyle.at(s).lcolor, -1, -1, -1, -1, -1, 0.6, 0.6);
+        hmc->Draw(s == "match" ? "pe1" : "pe1 same");
+      }
       df->draw_fmc();
-      xjjroot::drawtexgroup(0.25, 0.86, { tbins.label_y(i), tbins.label_pt(j) }, 0.035, 13);
-      df->draw_params(0.25, 0.86-2*0.035*1.15, 0.035);
+      xjjroot::drawtexgroup(0.24, 0.86, { tbins.label_y(i), tbins.label_pt(j) }, 0.035, 13);
+      df->draw_params(0.24, 0.86-2*0.035*1.15, 0.035);
       xjjroot::drawCMS(xjjroot::CMS::simulation, info_template.at("input_tex"));
+      p->RedrawAxis();
     }
     pdf->write(Form("%s_mc_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
   }
-  
+
   for (const std::string& p : { "yield-y", "width68mc-y", "width95mc-y" }) {
     pdf->prepare();
     xjjana::sethsmin(h1pts.at(p), 0);
     xjjana::sethsmax(h1pts.at(p), 1.6);
-    auto* leg = new TLegend(0.55, 0.80-0.042*tbins.npt(), 0.75, 0.80);
-    xjjroot::setleg(leg, 0.038);
+    auto* leg = new TLegend(0.60, 0.86-0.035*1.25*tbins.npt(), 0.80, 0.86);
+    xjjroot::setleg(leg, 0.035);
     for (int j=0; j<tbins.npt(); j++) {
       xjjroot::sethempty(h1pts.at(p)[j], 0, 0.5);
       xjjroot::setthgrstyle(h1pts.at(p)[j], kBlack, 21, 1.5, kBlack, 1, 1, -1, -1, -1, 1-j*0.4, 1-j*0.4);
@@ -144,7 +153,10 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
     h1pts.at(p).front()->Draw("axis");
     for (auto& h : h1pts.at(p)) h->Draw("pe1 same");
     leg->Draw();
-    xjjroot::drawtexgroup(0.25, 0.85, { info_data.at("cut_tex") }, 0.035, 13, 42, 1.25);
+    xjjroot::drawtexgroup(0.24, 0.85, {
+        info_data.at("cut_tex"),
+        info_fit.at("fitopt_tex"),
+      }, 0.035, 13, 42, 1.25);
     xjjroot::drawCMS(xjjc::str_contains(p, "mc") ? xjjroot::CMS::simulation : xjjroot::CMS::internal, info_data.at("input_tex"));
     pdf->write();
   }
@@ -158,7 +170,7 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
 
   pdf->close();
   
-  auto* outf = xjjroot::newfile(xjjc::str_replaceall(input_data, { { "savehist_", "fithist_" } }));
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
 
   for (const auto& [_, h] : h3s) xjjroot::writehist(h);
   for (const auto& [_, hh] : h1pts)
@@ -188,20 +200,29 @@ int macro(std::string input_data, std::string input_template, int fit_type = 0, 
   t_template->Write();
   outf->cd();
 
+  outf->mkdir("fit")->cd();
+  auto* t_fit = new TTree("info", "");
+  for (auto& [key, content] : info_fit) {
+    t_fit->Branch(key.c_str(), &content);
+  }
+  t_fit->Fill();
+  t_fit->Write();
+  outf->cd();
+
   xjjroot::closefile(outf);
   
   return 0; 
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 6) {
+    return macro(argv[1], argv[2], argv[3], argv[4], atoi(argv[5]));
+  }
   if (argc == 5) {
-    return macro(argv[1], argv[2], atoi(argv[3]), atoi(argv[4]));
+    return macro(argv[1], argv[2], argv[3], argv[4]);
   }
   if (argc == 4) {
-    return macro(argv[1], argv[2], atoi(argv[3]));
-  }
-  if (argc == 3) {
-    return macro(argv[1], argv[2]);
+    return macro(argv[1], argv[2], argv[3]);
   }
   return 1;
 }

@@ -1,11 +1,15 @@
 #!/bin/bash
 
-IVER="" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
-# IVER="-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
-# IVER="-yextend" ; BINNING_Y='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ; BINNING_PT='2., 5.' ;
-# IVER="-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
-
 SAVE_PNG=0
+
+TAG_BINNING="" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
+# TAG_BINNING="_ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
+# TAG_BINNING="_yextend" ; BINNING_Y='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ; BINNING_PT='2., 5.' ;
+# TAG_BINNING="_ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
+
+fitopt="3P;Triple gaus signal;"
+# fitopt="P;Double gaus signal;_2gaus"
+# fitopt="3;No KK/#pi#pi;_nopeaky"
 
 INPUTS_DATA=( # lumi is nb-1 - directly from brilcalc
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb;0.06036" # 2025 
@@ -14,16 +18,14 @@ INPUTS_DATA=( # lumi is nb-1 - directly from brilcalc
 )
 CUTEVTS=(
     "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;#gammaN (Xn0n);gammaN-0nXn-25"
-    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;N#gamma (0nXn);Ngamma-0nXn-25"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;N#gamma (0nXn);Ngamma-0nXn-25"
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100;#gammaN (An0n);gammaN-0nAn-25"
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumMinus < 1000;N#gamma (0nAn);Ngamma-0nAn-25"
     # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 9.2 && ClusterCompatibilityFilter && nVtx <= 3;#gammaN (23);gammaN-0nXn-23"
 )
 INPUTS_TEMPLATE=(
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);BeamA"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);BeamB"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamA_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);BeamA"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamB_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);BeamB"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamA_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);2024-SoftQCD-BeamA"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamB_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);2024-SoftQCD-BeamB"
 )
 INPUTS_MC=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.85]{YTHIA}8#scale[0.5]{ }#gammaN (5.36 TeV);2024-SoftQCD-BeamA"
@@ -32,8 +34,8 @@ INPUTS_MC=(
 CUT_BASE="Dpt>=2 && Dpt<5 && TMath::Abs(Dtrk1PtErr/Dtrk1Pt)<0.1 && TMath::Abs(Dtrk2PtErr/Dtrk2Pt)<0.1 && TMath::Abs(Dtrk1Eta) < 2.4 && TMath::Abs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5 && Dchi2cl > 0.05 && (DsvpvDistance/DsvpvDisErr) > 1. && DsvpvDisErr>1.e-8 && DsvpvDisErr_2D>1.e-8"
 CUTDS=(
     # "${CUT_BASE} && (Dtrk1PixelHit+Dtrk1StripHit)>=11 && (Dtrk2PixelHit+Dtrk2StripHit)>=11 && DpassCut23PAS;Cut23PAS;D23pas"
-    "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));Optimized BDT;Dbdt-gammaN"
-    "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.143) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));Optimized BDT;Dbdt-Ngamma"
+    "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN"
+    "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.143) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma"
     # "${CUT_BASE} && Dmva_BDT>0;D pre-cuts;Dpre"
 )
 
@@ -75,20 +77,10 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             ####################
             # Mass template    # -> [ 3 min ]
             ####################
-            itag_template=$cut_tag"/mass_templates"$IVER #
+            itag_template=$cut_tag"/template_"$template_tag$TAG_BINNING #
             if [[ ${1:-0} -eq 1 ]] ; then
-                echo "    -> generate mass templates from MC"
+                echo "    -> generate mass templates from MC (about 3 min)"
                 ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING_Y" "$BINNING_PT" 0 # 0: !isdata
-                # ./hist_save.exe "$INPUT_MASS_TEMPLATE" "${CUT_BASE};D precut;Dpre" $itag_template 0
-            elif [[ ${1:-0} -eq 2 ]] ; then 
-                echo "    -> copy existing mass templates to save time"
-                template_dump="gammaN-0nXn-25_Dbdt-gammaN/mass_templates"$IVER
-                [[ $template_tag == *BeamB* ]] && { template_dump="Ngamma-0nXn-25_Dbdt-Ngamma/mass_templates"$IVER ; }
-
-                template_dir="rootfiles/"$itag_template".root"
-                template_dir=${template_dir%/*}
-                mkdir -p $template_dir
-                cp -v "rootfiles/"$template_dump".root" "rootfiles/"$itag_template".root"
             fi
 
             ## Loop data
@@ -100,20 +92,21 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 ####################
                 # Fill data mass   # -> [ 13 min ]
                 ####################
-                itag_data=$cut_tag"/savehist_"$data_tag$IVER
+                itag_data=$cut_tag"/savehist_"$data_tag$TAG_BINNING
                 [[ ${2:-0} -eq 1 ]] && {
-                    echo "    -> fill data mass"
+                    echo "    -> fill data mass (about 13 min)"
                     ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING_Y" "$BINNING_PT" 1 # 1: isdata
                 }
 
                 ####################
                 # Mass fitting     #
                 ####################
+                IFS=';' ; fitopts=($fitopt) ; unset IFS ; fit_tag=${fitopts[2]} ; 
+                itag_data_fit=$cut_tag"/fithist_"$data_tag"_"$template_tag$TAG_BINNING$fit_tag ## 
                 [[ ${3:-0} -eq 1 ]] && {
                     echo "    -> fit invariant mass"
-                    ./hist_fit.exe "rootfiles/"$itag_data".root" "rootfiles/"$itag_template".root" 0 $SAVE_PNG
+                    ./hist_fit.exe "rootfiles/"$itag_data".root" "rootfiles/"$itag_template".root" $itag_data_fit "$fitopt" $SAVE_PNG
                 }
-                itag_data_fit=$cut_tag"/fithist_"$data_tag$IVER ## 
 
                 ## Loop MC
                 for input_mc in "${INPUTS_MC[@]}" ; do
@@ -125,34 +118,31 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     ####################
                     # D efficiency     # -> [ 26 min ]
                     ####################
-                    itag_deff=$cut_tag"/saveeff_"$mc_tag$IVER
+                    itag_deff=$cut_tag"/saveeff_"$mc_tag # no binning info
                     if [[ ${4:-0} -eq 1 ]] ; then
-                        echo "    -> generate D efficiency table from MC"
+                        echo "    -> generate D efficiency table from MC (about 26 min)"
                         # ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff "$input_data"
                         ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff null
-                    elif [[ ${4:-0} -eq 2 ]] ; then 
-                        echo "    -> copy existing efficiency table to save time"
-                        cp -v "rootfiles/"${itag_deff/$IVER/}".root" "rootfiles/"$itag_deff".root"
                     fi
 
+                    itag_deff_calc=${itag_deff/saveeff/calceff}$TAG_BINNING # no binning info
                     [[ ${5:-0} -eq 1 ]] && {
-                        ./eff_calc.exe "rootfiles/"$itag_deff".root" "$BINNING_Y" "$BINNING_PT" $SAVE_PNG
+                        ./eff_calc.exe "rootfiles/"$itag_deff".root" $itag_deff_calc "$BINNING_Y" "$BINNING_PT" $SAVE_PNG
                     }
-                    itag_deff=${itag_deff/saveeff/calceff}
                     
                     ####################
                     # Cross-section    #
                     ####################
-                    # itag_xsec=$cut_tag"/xsec_"${itag_data_fit##*/}"_"${itag_deff##*/}"_null_null"$IVER
-                    echo "    itag_data_fit:  "${itag_data_fit}
-                    echo "    itag_deff:      "$itag_deff
+                    # itag_xsec=$cut_tag"/xsec_"${itag_data_fit##*/}"_"${itag_deff##*/}"_null_null"$TAG_BINNING
+                    echo "    itag_data_fit:  "$itag_data_fit
+                    echo "    itag_deff:      "$itag_deff_calc
                     echo "    itag_evteff:    null"
                     echo "    itag_fprompt:   null"
                     echo "    lumi:           "$data_lumi" nb-1"
                     # echo "                ==> "$itag_xsec
                     [[ ${6:-0} -eq 1 ]] && {
                         echo "    -> calculate cross sections"
-                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff".root" null null $data_lumi $cut_tag 
+                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" null null $data_lumi $cut_tag 
                     }
                 done
             done

@@ -75,7 +75,7 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
   t->Write();
   outf->cd();
 
-  outf->Close();
+  xjjroot::closefile(outf);
   
   return 0; 
 }

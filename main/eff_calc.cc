@@ -11,7 +11,7 @@ namespace eff {
   std::pair<TH1D*, TH1D*> sum_norm_byweight(TH2D* hreveff, TH2D* hweight, TH1D* hrefbin);
 }
 
-int macro(std::string inputname, int save_png = 1) {
+int macro(const std::string& inputname, const std::string& outputname, int save_png = 1) {
   std::cout<<std::endl;
 
   auto* inf = TFile::Open(inputname.c_str());
@@ -114,7 +114,7 @@ int macro(std::string inputname, int save_png = 1) {
   };
   
   xjjroot::setgstyle(1, 2, xjjroot::Colz);
-  auto* pdf = new xjjroot::mypdf(xjjc::str_replaceall(inputname, { { "saveeff", "calceff" }, { "rootfiles/", "figspdf/" }, { ".root", ".pdf" } }));
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   auto png_name = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
 
   // TH2
@@ -154,7 +154,7 @@ int macro(std::string inputname, int save_png = 1) {
 
   pdf->close();
 
-  auto* outf = xjjroot::newfile(xjjc::str_replaceall(inputname, "saveeff", "calceff"));
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
   for (auto& [_, h] : h2s) xjjroot::writehist(h);
   for (auto& [_, hh] : h1pts)
     for (auto& h : hh)
@@ -165,16 +165,19 @@ int macro(std::string inputname, int save_png = 1) {
   }
   t->Fill();
   t->Write();
-  outf->Close();
+  xjjroot::closefile(outf);
   
   return 0;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 5) {
-    bins::ybins = xjjc::str_convert_vector<double>(argv[2], ",");
-    bins::ptbins = xjjc::str_convert_vector<double>(argv[3], ",");
-    return macro(argv[1], atoi(argv[4]));
+  if (argc >= 5) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[3], ",");
+    bins::ptbins = xjjc::str_convert_vector<double>(argv[4], ",");
+    if (argc == 6)
+      return macro(argv[1], argv[2], atoi(argv[5]));
+    if (argc == 5)
+      return macro(argv[1], argv[2]);
   }
   return 1;
 }
