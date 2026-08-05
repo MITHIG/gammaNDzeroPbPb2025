@@ -1,0 +1,112 @@
+#Data tag : 24v2 , Norm tag: composite
++--------------+-------------------+------+-----------------------------------------------------------------+----------------+---------------+
+| run:fill     | time              | ncms | hltpath                                                         | delivered(/nb) | recorded(/nb) |
++--------------+-------------------+------+-----------------------------------------------------------------+----------------+---------------+
+| 399465:11289 | 11/14/25 14:40:59 | 131  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000043928    | 0.000022790   |
+| 399466:11289 | 11/14/25 15:34:49 | 41   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000482    | 0.000000454   |
+| 399467:11289 | 11/14/25 15:53:33 | 37   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000398    | 0.000000382   |
+| 399468:11289 | 11/14/25 16:10:50 | 3    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000031    | 0.000000008   |
+| 399471:11289 | 11/14/25 16:22:29 | 82   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000070649    | 0.000019115   |
+| 399484:11290 | 11/14/25 18:59:51 | 32   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000597    | 0.000000561   |
+| 399485:11290 | 11/14/25 19:13:35 | 71   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000065177    | 0.000056556   |
+| 399486:11290 | 11/14/25 19:44:03 | 38   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000050    | 0.000000048   |
+| 399487:11290 | 11/14/25 20:01:49 | 3    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000004    | 0.000000003   |
+| 399488:11290 | 11/14/25 20:04:43 | 59   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000024641    | 0.000022550   |
+| 399489:11290 | 11/14/25 20:29:32 | 55   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000010891    | 0.000009615   |
+| 399490:11290 | 11/14/25 20:55:43 | 256  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000065054    | 0.000060842   |
+| 399499:11292 | 11/15/25 02:17:03 | 242  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000283481    | 0.000262498   |
+| 399540:11297 | 11/15/25 15:09:12 | 332  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000128452    | 0.000115672   |
+| 399542:11297 | 11/15/25 17:23:24 | 42   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000007705    | 0.000005614   |
+| 399543:11297 | 11/15/25 17:42:26 | 923  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000235050    | 0.000212703   |
+| 399572:11303 | 11/16/25 13:36:40 | 955  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000343776    | 0.000332233   |
+| 399584:11304 | 11/16/25 22:29:20 | 53   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000019561    | 0.000017047   |
+| 399586:11304 | 11/16/25 22:58:03 | 17   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000006762    | 0.000005073   |
+| 399587:11304 | 11/16/25 23:07:43 | 42   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000027705    | 0.000024257   |
+| 399588:11304 | 11/16/25 23:27:27 | 216  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000171833    | 0.000158240   |
+| 399589:11304 | 11/17/25 00:54:24 | 175  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000108421    | 0.000103518   |
+| 399593:11305 | 11/17/25 05:28:52 | 227  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000262589    | 0.000240785   |
+| 399618:11307 | 11/17/25 11:10:54 | 312  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000076572    | 0.000071196   |
+| 399619:11307 | 11/17/25 13:15:26 | 295  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000043939    | 0.000041544   |
+| 399620:11307 | 11/17/25 15:12:43 | 329  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000040726    | 0.000039699   |
+| 399655:11310 | 11/17/25 21:25:36 | 179  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000059263    | 0.000051849   |
+| 399658:11310 | 11/17/25 23:15:11 | 131  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000018364    | 0.000017289   |
+| 399659:11310 | 11/18/25 00:07:34 | 56   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000001126    | 0.000001060   |
+| 399660:11310 | 11/18/25 00:30:47 | 160  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000002532    | 0.000002419   |
+| 399661:11310 | 11/18/25 01:36:06 | 305  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000004089    | 0.000003888   |
+| 399662:11310 | 11/18/25 03:36:08 | 58   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000591    | 0.000000557   |
+| 399710:11314 | 11/18/25 16:18:47 | 916  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000062182    | 0.000058103   |
+| 399720:11316 | 11/19/25 06:01:13 | 281  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000127131    | 0.000119342   |
+| 399766:11318 | 11/19/25 19:03:04 | 360  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000174974    | 0.000164510   |
+| 399767:11318 | 11/19/25 21:32:47 | 594  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000079263    | 0.000075591   |
+| 399768:11318 | 11/20/25 01:26:21 | 77   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000005733    | 0.000005449   |
+| 399771:11318 | 11/20/25 03:12:20 | 56   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000002798    | 0.000002647   |
+| 399912:11328 | 11/23/25 01:59:37 | 552  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000176793    | 0.000167062   |
+| 399937:11331 | 11/23/25 21:17:42 | 1065 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000194485    | 0.000184359   |
+| 399942:11332 | 11/24/25 06:56:52 | 1151 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000157429    | 0.000149248   |
+| 399966:11333 | 11/24/25 17:42:57 | 153  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000079805    | 0.000069554   |
+| 399967:11333 | 11/24/25 18:47:46 | 144  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000028916    | 0.000027107   |
+| 399970:11334 | 11/25/25 02:31:09 | 802  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000089049    | 0.000085389   |
+| 399989:11335 | 11/25/25 10:06:27 | 68   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000036660    | 0.000033899   |
+| 400002:11338 | 11/25/25 15:55:59 | 905  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000244422    | 0.000230999   |
+| 400007:11338 | 11/25/25 22:39:39 | 72   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000005200    | 0.000004934   |
+| 400059:11343 | 11/26/25 19:05:47 | 786  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000203803    | 0.000192892   |
+| 400064:11344 | 11/27/25 08:01:23 | 784  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000183125    | 0.000173123   |
+| 400090:11349 | 11/28/25 03:26:20 | 51   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000028502    | 0.000026532   |
+| 400098:11350 | 11/28/25 06:47:42 | 346  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000136356    | 0.000128722   |
+| 400125:11352 | 11/28/25 16:46:01 | 829  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000225185    | 0.000211713   |
+| 400126:11352 | 11/28/25 22:11:34 | 245  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000017450    | 0.000016615   |
+| 400133:11353 | 11/29/25 03:23:02 | 140  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000078261    | 0.000072549   |
+| 400135:11353 | 11/29/25 04:31:17 | 884  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000126916    | 0.000119820   |
+| 400165:11356 | 11/29/25 21:47:41 | 1115 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000240990    | 0.000227196   |
+| 400177:11357 | 11/30/25 07:39:21 | 740  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000257301    | 0.000241507   |
+| 400192:11359 | 11/30/25 17:48:32 | 732  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000244475    | 0.000229265   |
+| 400194:11359 | 11/30/25 22:37:41 | 4    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000386    | 0.000000059   |
+| 400195:11359 | 11/30/25 22:42:11 | 38   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000002471    | 0.000002046   |
+| 400196:11359 | 11/30/25 22:59:05 | 86   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000400    | 0.000000391   |
+| 400197:11359 | 11/30/25 23:35:32 | 63   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000004564    | 0.000004217   |
+| 400201:11361 | 12/01/25 05:07:39 | 334  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000170329    | 0.000159656   |
+| 400239:11365 | 12/01/25 15:06:19 | 292  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000414517    | 0.000367706   |
+| 400243:11366 | 12/01/25 21:11:10 | 1230 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000247247    | 0.000232700   |
+| 400265:11372 | 12/02/25 18:05:45 | 32   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000007279    | 0.000002481   |
+| 400266:11372 | 12/02/25 18:21:45 | 46   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000047012    | 0.000043887   |
+| 400295:11377 | 12/03/25 13:11:53 | 799  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000289196    | 0.000270992   |
+| 400323:11380 | 12/04/25 11:37:32 | 1134 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000282877    | 0.000266304   |
+| 400332:11381 | 12/04/25 21:30:00 | 1187 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000269931    | 0.000254326   |
+| 400339:11382 | 12/05/25 08:34:18 | 1081 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000245898    | 0.000230709   |
+| 400353:11383 | 12/05/25 17:56:58 | 1209 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000309307    | 0.000289843   |
+| 400356:11384 | 12/06/25 04:11:21 | 160  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000094383    | 0.000082806   |
+| 400357:11384 | 12/06/25 05:17:17 | 688  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000146064    | 0.000134339   |
+| 400358:11384 | 12/06/25 09:48:08 | 6    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000486    | 0.000000001   |
+| 400359:11384 | 12/06/25 09:52:22 | 74   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000005599    | 0.000004694   |
+| 400360:11384 | 12/06/25 10:22:51 | 6    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000426    | 0.000000002   |
+| 400361:11384 | 12/06/25 10:27:01 | 31   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000002121    | 0.000001851   |
+| 400362:11384 | 12/06/25 10:40:46 | 5    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000333    | 0             |
+| 400363:11384 | 12/06/25 10:45:48 | 48   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000003039    | 0.000002809   |
+| 400387:11387 | 12/06/25 19:59:23 | 1197 | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000313729    | 0.000295646   |
+| 400391:11388 | 12/07/25 06:01:13 | 651  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000254949    | 0.000239309   |
+| 400392:11388 | 12/07/25 10:15:41 | 3    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000371    | 0             |
+| 400393:11388 | 12/07/25 10:19:36 | 7    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000845    | 0             |
+| 400394:11388 | 12/07/25 10:24:09 | 5    | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000593    | 0             |
+| 400395:11388 | 12/07/25 10:29:59 | 13   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000001492    | 0.000001276   |
+| 400396:11388 | 12/07/25 10:38:21 | 25   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000137    | 0.000000125   |
+| 400397:11388 | 12/07/25 10:50:33 | 25   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000002595    | 0.000002210   |
+| 400398:11388 | 12/07/25 11:03:31 | 63   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000005995    | 0.000005567   |
+| 400399:11388 | 12/07/25 11:31:05 | 102  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000000434    | 0.000000422   |
+| 400401:11388 | 12/07/25 12:17:10 | 36   | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000002770    | 0.000002579   |
+| 400414:11389 | 12/07/25 15:07:25 | 783  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000274492    | 0.000257398   |
+| 400419:11390 | 12/07/25 22:49:02 | 149  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000076665    | 0.000072275   |
+| 400426:11391 | 12/08/25 02:27:57 | 171  | HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 0.000102226    | 0.000095795   |
++--------------+-------------------+------+-----------------------------------------------------------------+----------------+---------------+
+#Summary: 
++-----------------------------------------------------------------+-------+------+-------+-------------------+------------------+
+| hltpath                                                         | nfill | nrun | ncms  | totdelivered(/nb) | totrecorded(/nb) |
++-----------------------------------------------------------------+-------+------+-------+-------------------+------------------+
+| HLT_HIUPC_ZeroBias_SinglePixelTrackLowPt_MaxPixelCluster400_v15 | 43    | 94   | 31488 | 0.008912799       | 0.008242617      |
++-----------------------------------------------------------------+-------+------+-------+-------------------+------------------+
+#Sum delivered : 0.008912799
+#Sum recorded : 0.008242617
+
+Warning: problems found in merging -i and --normtag selections:
+  in run 400201 [[33, 368]] is not a superset of [[35, 369]]
+#Check JSON:
+#(run,ls) in json but not in results: [(399489, 56)]

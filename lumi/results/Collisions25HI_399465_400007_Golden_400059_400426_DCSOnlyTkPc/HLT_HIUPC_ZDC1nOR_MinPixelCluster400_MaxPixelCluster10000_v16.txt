@@ -1,0 +1,88 @@
+#Data tag : 24v2 , Norm tag: composite
++--------------+-------------------+------+---------------------------------------------------------------+----------------+---------------+
+| run:fill     | time              | ncms | hltpath                                                       | delivered(/nb) | recorded(/nb) |
++--------------+-------------------+------+---------------------------------------------------------------+----------------+---------------+
+| 399540:11297 | 11/15/25 15:09:12 | 332  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000015962    | 0.000014328   |
+| 399542:11297 | 11/15/25 17:23:24 | 42   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000000847    | 0.000000617   |
+| 399543:11297 | 11/15/25 17:42:26 | 923  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000026053    | 0.000023584   |
+| 399572:11303 | 11/16/25 13:36:40 | 955  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000067753    | 0.000065469   |
+| 399618:11307 | 11/17/25 11:10:54 | 312  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000009754    | 0.000008987   |
+| 399619:11307 | 11/17/25 13:15:26 | 295  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000004845    | 0.000004581   |
+| 399620:11307 | 11/17/25 15:12:43 | 329  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000004491    | 0.000004378   |
+| 399655:11310 | 11/17/25 21:33:22 | 152  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000034989    | 0.000031144   |
+| 399658:11310 | 11/17/25 23:22:11 | 113  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000172192    | 0.000159756   |
+| 399659:11310 | 11/18/25 00:07:34 | 56   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000094357    | 0.000088969   |
+| 399660:11310 | 11/18/25 00:30:47 | 160  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000356907    | 0.000339882   |
+| 399661:11310 | 11/18/25 01:36:06 | 305  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001139485    | 0.001083046   |
+| 399662:11310 | 11/18/25 03:36:08 | 58   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000236306    | 0.000222591   |
+| 399710:11314 | 11/18/25 16:18:47 | 916  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.002849722    | 0.002728878   |
+| 399720:11316 | 11/19/25 06:01:13 | 281  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000063217    | 0.000059211   |
+| 399766:11318 | 11/19/25 19:03:04 | 360  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000099347    | 0.000088503   |
+| 399767:11318 | 11/19/25 21:32:47 | 594  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001689474    | 0.001611771   |
+| 399768:11318 | 11/20/25 01:26:21 | 77   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000277182    | 0.000263654   |
+| 399771:11318 | 11/20/25 03:13:29 | 53   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000207532    | 0.000196603   |
+| 399912:11328 | 11/23/25 01:59:37 | 552  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000790995    | 0.000752170   |
+| 399937:11331 | 11/23/25 21:17:42 | 1065 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.002960011    | 0.002825483   |
+| 399942:11332 | 11/24/25 06:56:52 | 1151 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003647992    | 0.003491030   |
+| 399966:11333 | 11/24/25 17:42:57 | 153  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000034338    | 0.000029936   |
+| 399967:11333 | 11/24/25 18:47:46 | 144  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000311586    | 0.000293106   |
+| 399970:11334 | 11/25/25 02:31:09 | 802  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.002526362    | 0.002430812   |
+| 399989:11335 | 11/25/25 10:06:27 | 68   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000015305    | 0.000014141   |
+| 400002:11338 | 11/25/25 15:55:59 | 905  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001969694    | 0.001876095   |
+| 400007:11338 | 11/25/25 22:39:39 | 72   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000270817    | 0.000257021   |
+| 400059:11343 | 11/26/25 19:05:47 | 786  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001735435    | 0.001658848   |
+| 400064:11344 | 11/27/25 08:01:23 | 784  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001858662    | 0.001776557   |
+| 400090:11349 | 11/28/25 03:26:20 | 51   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000011729    | 0.000010942   |
+| 400098:11350 | 11/28/25 06:47:42 | 346  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000327696    | 0.000310561   |
+| 400125:11352 | 11/28/25 16:46:01 | 829  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001736668    | 0.001643097   |
+| 400126:11352 | 11/28/25 22:11:34 | 245  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000967499    | 0.000922623   |
+| 400133:11353 | 11/29/25 03:23:02 | 140  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000031720    | 0.000029395   |
+| 400135:11353 | 11/29/25 04:31:17 | 884  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.002744198    | 0.002621548   |
+| 400165:11356 | 11/29/25 21:47:41 | 1115 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003358765    | 0.003190910   |
+| 400177:11357 | 11/30/25 07:39:21 | 740  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001536811    | 0.001454881   |
+| 400192:11359 | 11/30/25 17:48:32 | 732  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001558836    | 0.001473048   |
+| 400194:11359 | 11/30/25 22:37:41 | 4    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000026225    | 0.000004012   |
+| 400195:11359 | 11/30/25 22:47:37 | 24   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000026472    | 0.000020222   |
+| 400197:11359 | 11/30/25 23:35:32 | 63   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000263891    | 0.000245262   |
+| 400201:11361 | 12/01/25 05:07:39 | 334  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000254322    | 0.000238039   |
+| 400239:11365 | 12/01/25 15:08:15 | 287  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000052843    | 0.000047014   |
+| 400243:11366 | 12/01/25 21:11:10 | 1230 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003930508    | 0.003738352   |
+| 400295:11377 | 12/03/25 13:11:53 | 799  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001564854    | 0.001483736   |
+| 400323:11380 | 12/04/25 11:37:32 | 1134 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003114812    | 0.002976109   |
+| 400332:11381 | 12/04/25 21:30:00 | 1187 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003464063    | 0.003310225   |
+| 400339:11382 | 12/05/25 08:34:18 | 1081 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003168444    | 0.002993734   |
+| 400353:11383 | 12/05/25 17:56:58 | 1209 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003288582    | 0.003129808   |
+| 400356:11384 | 12/06/25 04:11:21 | 160  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000036329    | 0.000031923   |
+| 400357:11384 | 12/06/25 05:17:17 | 688  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.002011651    | 0.001875826   |
+| 400358:11384 | 12/06/25 09:48:08 | 6    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000023897    | 0.000000062   |
+| 400359:11384 | 12/06/25 09:52:22 | 74   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000307524    | 0.000258601   |
+| 400360:11384 | 12/06/25 10:22:51 | 6    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000025939    | 0.000000100   |
+| 400361:11384 | 12/06/25 10:27:01 | 31   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000134377    | 0.000117238   |
+| 400362:11384 | 12/06/25 10:40:46 | 5    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000021725    | 0.000000003   |
+| 400363:11384 | 12/06/25 10:45:48 | 48   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000205403    | 0.000190131   |
+| 400387:11387 | 12/06/25 19:59:23 | 1197 | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.003217164    | 0.003065846   |
+| 400391:11388 | 12/07/25 06:01:13 | 651  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001075110    | 0.001000901   |
+| 400392:11388 | 12/07/25 10:15:41 | 3    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000010805    | 0             |
+| 400393:11388 | 12/07/25 10:19:36 | 7    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000024621    | 0             |
+| 400394:11388 | 12/07/25 10:24:09 | 5    | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000017277    | 0.000000003   |
+| 400395:11388 | 12/07/25 10:29:59 | 13   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000041203    | 0.000035075   |
+| 400397:11388 | 12/07/25 10:50:33 | 25   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000014903    | 0.000012695   |
+| 400398:11388 | 12/07/25 11:03:31 | 63   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000234515    | 0.000217725   |
+| 400401:11388 | 12/07/25 12:17:10 | 36   | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000145751    | 0.000135735   |
+| 400414:11389 | 12/07/25 15:07:25 | 783  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.001175289    | 0.001107705   |
+| 400419:11390 | 12/07/25 22:50:35 | 145  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000033450    | 0.000031467   |
+| 400426:11391 | 12/08/25 02:30:40 | 164  | HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 0.000037790    | 0.000035387   |
++--------------+-------------------+------+---------------------------------------------------------------+----------------+---------------+
+#Summary: 
++---------------------------------------------------------------+-------+------+-------+-------------------+------------------+
+| hltpath                                                       | nfill | nrun | ncms  | totdelivered(/nb) | totrecorded(/nb) |
++---------------------------------------------------------------+-------+------+-------+-------------------+------------------+
+| HLT_HIUPC_ZDC1nOR_MinPixelCluster400_MaxPixelCluster10000_v16 | 37    | 70   | 29339 | 0.063695274       | 0.060361091      |
++---------------------------------------------------------------+-------+------+-------+-------------------+------------------+
+#Sum delivered : 0.063695274
+#Sum recorded : 0.060361091
+
+Warning: problems found in merging -i and --normtag selections:
+  in run 400201 [[33, 368]] is not a superset of [[35, 369]]
+#Check JSON:
+#(run,ls) in json but not in results: [(399489, 56)]
