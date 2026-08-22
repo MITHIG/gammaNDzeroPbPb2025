@@ -165,10 +165,10 @@ RooPlot* droofitter::draw_data(int nmass, RooPlot *frame) {
   }
   draw_ds(ds_data_main, frame);
   pdf_total->getParameters(ds_data_main)->assignValueOnly(fitr_total->floatParsFinal());
-  pdf_total->plotOn(frame, RooFit::LineColor(kRed), RooFit::Name("c_pdf_total"));
-  pdf_total->plotOn(frame, RooFit::Components("pdf_swap"), RooFit::LineColor(kGreen+4), RooFit::LineWidth(3), RooFit::FillColor(kGreen+4), RooFit::FillStyle(3005), RooFit::DrawOption("FL"), RooFit::Name("c_pdf_swap"));
+  pdf_total->plotOn(frame, RooFit::LineColor(kRed+1), RooFit::Name("c_pdf_total"));
+  pdf_total->plotOn(frame, RooFit::Components("pdf_swap"), RooFit::LineColor(kCyan+3), RooFit::LineWidth(3), RooFit::FillColor(kCyan+3), RooFit::FillStyle(3005), RooFit::DrawOption("FL"), RooFit::Name("c_pdf_swap"));
   pdf_total->plotOn(frame, RooFit::Components("pdf_sig"), RooFit::LineColor(kOrange-3), RooFit::LineStyle(kDashed), RooFit::LineWidth(3), RooFit::FillColor(kOrange-3), RooFit::FillStyle(3344), RooFit::DrawOption("FL"), RooFit::Name("c_pdf_sig"));
-  pdf_total->plotOn(frame, RooFit::Components("pdf_bkg"), RooFit::LineColor(kBlue+1), RooFit::LineStyle(kDashed), RooFit::LineWidth(3), RooFit::Name("c_pdf_bkg"));
+  pdf_total->plotOn(frame, RooFit::Components("pdf_bkg"), RooFit::LineColor(kBlue-5), RooFit::LineStyle(kDashed), RooFit::LineWidth(3), RooFit::Name("c_pdf_bkg"));
 
   float tsize = 0.035;
   leg_ = new TLegend(0.6, 0.86-tsize*1.25*5, 0.85, 0.86);

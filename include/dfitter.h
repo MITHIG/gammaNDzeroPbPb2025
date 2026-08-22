@@ -316,7 +316,7 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
   hMCSwapped->Fit(fun_f_->GetName(), fitopt,"", xmin_, xmax_);
   
   fun_mc_swap_ = f_swap(Form("%s_mc_swap", fun_f_->GetName()));
-  xjjroot::setthgrstyle(fun_mc_swap_, fstyle.at("swap"));
+  xjjroot::setthgrstyle(fun_mc_swap_, -1, -1, -1, fstyle.at("swap").lcolor, 1, fstyle.at("swap").lwidth, 0, 0, 0);
 
   const auto norm_mc_swap = fun_f_->GetParameter(0);
   fun_f_->FixParameter(14, fun_f_->GetParameter(14)); // swap mean

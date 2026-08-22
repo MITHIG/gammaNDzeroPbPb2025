@@ -15,6 +15,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 
   __XJJLOG << ">> lumi: " << lumi << " nb-1" << std::endl;
   std::map<std::string, std::vector<TH1D*>> h1pts;
+  // std::map<std::string, std::vector<TH1D*>> h1ys;
   std::map<std::string, std::map<std::string, std::string>> infos;
   std::string tag = "xsec";
   auto* h3_bins = xjjana::getobj<TH3D>(inputname_raw + "::h3_bins");
@@ -58,7 +59,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   };
 
   get_h1pts(inputname_raw, "raw", { "h1_y_yield" }, { "data/info", "template/info" });
-  get_h1pts(inputname_effd, "effd", { "h1_y_eff__rebin", "h1_y_effdata__rebin" }, { "info" });
+  get_h1pts(inputname_effd, "effd", { "h1_y_eff__rebin" }, { "info" });
   get_h1pts(inputname_effevent, "effevent", {  }, {  });
   get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
 
@@ -89,32 +90,39 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 
   auto draw_global = [&infos, &lumi](bool divide2) {
     xjjroot::drawCMS(xjjroot::CMS::internal, xjjc::str_replaceall(infos.at("raw_data").at("input_tex"), ")", Form(", %.1f#scale[0.3]{ }#mub^{-1})", lumi*1.e3)));
-    xjjroot::drawtexgroup(0.24, 0.86, { infos.at("raw_data").at("cut_tex") }, 0.04, 13, 42, 1.25);
-    xjjroot::drawtexgroup(0.88, 0.87, { divide2 ? xjjroot::CMS::DzDzbar2 : xjjroot::CMS::DznDzbar }, 0.043, 33, 42, 1.25);
+    xjjroot::drawtexgroup(0.23, 0.85, { infos.at("raw_data").at("cut_tex") }, 0.04, 13, 42, 1.25);
+    xjjroot::drawtexgroup(0.88, 0.86, { divide2 ? xjjroot::CMS::DzDzbar2 : xjjroot::CMS::DznDzbar }, 0.043, 33, 42, 1.25);
   };
   
   xjjana::sethsmin(h1pts.at("y_xsec"), 0.);
-  if (tbins.npt() == 1)
-    xjjana::sethsmax(h1pts.at("y_xsec"), 2.);
-  else
-    for (auto& h : h1pts.at("y_xsec")) h->SetMaximum(5.);
+  auto ymax = xjjana::sethsmax(h1pts.at("y_xsec"), 2.);
+  if (ymax < 2.5) xjjana::sethsabsmax(h1pts.at("y_xsec"), 3.2);
+
+  const auto x1 = (event_is==Event::Ngamma ? 0.222 : 0.54), y1 = 0.755,
+    tsize = 0.038, lspace = 1.25, tlsize = tsize*lspace;
+  auto* legvs23 = new TLegend(x1, y1-tlsize*0.9 - tlsize*(tbins.npt()+2), x1+0.3, y1-tlsize*0.9);
+  xjjroot::setleg(legvs23, tsize);
+  for (int i=0; i<tbins.npt(); i++)
+    legvs23->AddEntry(h1pts.at("y_xsec")[i], tbins.label_pt(i).c_str(), "p");
+  legvs23->AddEntry((TObject*)0, "", NULL);
+  legvs23->AddEntry(measurement::get_style(), xjjroot::str_fixspace(xjjc::number_range_string(float(2), float(5), "#it{p}_{T}") + " GeV").c_str(), "pf");
+
   pdf->prepare();
   h1pts.at("y_xsec").front()->Draw("axis");
-  auto* g_HIN_25_002 = measurement::draw_HIN_25_002(event_is);
+  measurement::draw_HIN_25_002(event_is);
   for (auto& h : h1pts.at("y_xsec"))
     h->Draw("pe1 same");
   draw_global(true);
-  auto* legvs23 = new TLegend((event_is==Event::Ngamma ? 0.24 : 0.55), 0.75-0.042*(tbins.npt()+2), (event_is==Event::Ngamma ? 0.24 : 0.55)+0.3, 0.75);
-  xjjroot::setleg(legvs23, 0.038);
-  legvs23->SetHeader("This analysis");
-  for (int i=0; i<tbins.npt(); i++)
-    legvs23->AddEntry(h1pts.at("y_xsec")[i], tbins.label_pt(i).c_str(), "p");
-  legvs23->AddEntry(g_HIN_25_002, "PAS-HIN-25-002", "pf");
   legvs23->Draw();
+  xjjroot::drawtex(legvs23->GetX1() + 0.008, legvs23->GetY2()+tlsize*0.5 - 0.005, "This analysis", tsize, 12);
+  xjjroot::drawtex(legvs23->GetX1() + 0.008, legvs23->GetY1()+tlsize*1.5 - 0.005, "2023 PbPb (HIN-25-002)", tsize, 12);
   pdf->write(name_png + "_xsec_vs23.pdf");
 
-  auto* leg = new TLegend((event_is==Event::Ngamma ? 0.24 : 0.55), 0.75-0.042*tbins.npt(), (event_is==Event::Ngamma ? 0.24 : 0.55)+0.3, 0.75);
-  xjjroot::setleg(leg, 0.038);
+  for (auto& h : h1pts.at("y_xsec"))
+    xjjroot::print_th(h);
+  
+  auto* leg = new TLegend(x1, y1-tlsize*tbins.npt(), x1+0.3, y1);
+  xjjroot::setleg(leg, tsize);
   for (int i=0; i<tbins.npt(); i++)
     leg->AddEntry(h1pts.at("y_yield")[i], tbins.label_pt(i).c_str(), "p");
   leg->Draw();
@@ -125,7 +133,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     xjjana::sethsmax(h1pts.at(t), 1.8);
     h1pts.at(t).front()->Draw("axis");
     for (auto& h : h1pts.at(t)) {
-      xjjroot::setthgrstyle(h, kBlack, -1, -1, kBlack, -1, -1);
+      if (h1pts.size() == 1)
+        xjjroot::setthgrstyle(h, kBlack, -1, -1, kBlack, -1, -1);
       h->Draw("pe1 same");
     }
     leg->Draw();
@@ -135,16 +144,19 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 
   pdf->close();
 
-  // auto* outf = xjjroot::newfile(xjjc::str_replaceall(inputname, "saveeff", "calceff"));
+  auto* outf = xjjroot::newfile("rootfiles/" + outputdir + "/" + tag + ".root");
   // for (auto& [_, h] : h2s) xjjroot::writehist(h);
-  // for (auto& [_, h] : h1s) xjjroot::writehist(h);
+  for (auto& [_, hh] : h1pts)
+    for (auto& h : hh)
+      xjjroot::writehist(h);
+  xjjroot::writehist(h3_bins);
   // auto* t = new TTree("info", "");
   // for (auto& [key, content] : info) {
   //   t->Branch(key.c_str(), &content);
   // }
   // t->Fill();
   // t->Write();
-  // outf->Close();
+  xjjroot::closefile(outf);
   
   return 0;
 }

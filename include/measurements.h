@@ -1,6 +1,12 @@
 enum Event { gammaN, Ngamma, Other };
 
 namespace measurement {
+  xjjroot::thgrstyle style = { kGray+1, 20, 1.6, 0, 0, 0, kGray+1, 0.8, 3004 };
+  TGraphErrors* get_style() {
+    auto* gdump = new TGraphErrors();
+    xjjroot::setthgrstyle(gdump, style);
+    return gdump;
+  }
   TGraphErrors* draw(const std::vector<double>& xbins, const std::vector<double>& y,
                      const std::vector<double>& ystat, const std::vector<double>& ysyst) {
     std::vector<double> x, xerr;
@@ -8,11 +14,11 @@ namespace measurement {
       x.push_back((xbins[i+1] + xbins[i]) / 2.);
       xerr.push_back((xbins[i+1] - xbins[i]) / 2.);
     }
-    auto color = kGray+1;
     auto* gstat = new TGraphErrors(xbins.size()-1, x.data(), y.data(), xerr.data(), ystat.data());
-    xjjroot::setthgrstyle(gstat, color, 20, 1.6, color, 1, 1);
+    xjjroot::setthgrstyle(gstat, style.mcolor, style.mstyle, style.msize, style.mcolor, 1, 1);
     auto* gsyst = new TGraphErrors(xbins.size()-1, x.data(), y.data(), xerr.data(), ysyst.data());
-    xjjroot::setthgrstyle(gsyst, color, 20, 1.6, 0, 0, 0, color, 0.8, 3004);
+    // xjjroot::setthgrstyle(gsyst, color, 20, 1.6, 0, 0, 0, color, 0.8, 3004);
+    xjjroot::setthgrstyle(gsyst, style);
 
     gsyst->Draw("2 same");
     gstat->Draw("pe1 same");

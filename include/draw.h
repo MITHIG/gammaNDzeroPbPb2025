@@ -9,11 +9,12 @@ namespace draw {
   public:
     explicit bintex(TH1* h = nullptr, int xyz_y = 0,  int xyz_pt = 0)
       : h_bins(h), axis_pt(decide_axis(xyz_pt)), axis_y(decide_axis(xyz_y)) { }
-
+    bool valid() { return h_bins != nullptr; }
+    
     std::string label_y(int i = -1) const {
       const auto ymin = (i >= 0 ? axis_y->GetBinLowEdge(i+1) : axis_y->GetBinLowEdge(1));
       const auto ymax = (i >= 0 ? axis_y->GetBinUpEdge(i+1) : axis_y->GetBinUpEdge(axis_y->GetNbins()));
-      return xjjc::number_range_string(ymin, ymax, "y", -1.e1);
+      return xjjc::str_replaceall(xjjc::number_range_string(ymin, ymax, "y", -1.e1), " #", "#scale[0.4]{ }#");
     }
     int ny() const { return axis_y->GetNbins(); }
     double binwidth_y(int i = -1) const {
@@ -24,7 +25,7 @@ namespace draw {
     std::string label_pt(int i = -1) const {
       const auto ptmin = (i >= 0 ? axis_pt->GetBinLowEdge(i+1) : axis_pt->GetBinLowEdge(1));
       const auto ptmax = (i >= 0 ? axis_pt->GetBinUpEdge(i+1) : axis_pt->GetBinUpEdge(axis_pt->GetNbins()));
-      return xjjc::number_range_string(ptmin, ptmax, "#it{p}_{T}") + " GeV";
+      return xjjc::str_replaceall(xjjc::number_range_string(ptmin, ptmax, "#it{p}_{T}"), " #", "#scale[0.4]{ }#") + " GeV";
     }
     double binwidth_pt(int i = -1) const {
       const auto ptmin = (i >= 0 ? axis_pt->GetBinLowEdge(i+1) : axis_pt->GetBinLowEdge(1));
@@ -32,7 +33,7 @@ namespace draw {
       return ptmax-ptmin;
     }
     int npt() const { return axis_pt->GetNbins(); }
-
+    
     template<class T> T* make_h1_y(std::string name) const {
       auto* h = new T(name.c_str(), Form(";%s;", axis_y->GetTitle()), axis_y->GetNbins(), axis_y->GetXbins()->GetArray());
       return h;

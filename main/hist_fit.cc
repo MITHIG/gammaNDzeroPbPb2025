@@ -77,18 +77,19 @@ int macro(const std::string& input_data, const std::string& input_template, cons
   xjjroot::print_tab(h3s, 0);
   xjjroot::print_tab(h1pts, 0);
 
-  auto dfs = xjjc::array2d<xjjroot::dfitter*>(tbins.npt(), tbins.ny());
-  auto ndiv = std::ceil(std::sqrt(tbins.npt()));
   xjjroot::setgstyle(1);
-  gStyle->SetLineScalePS(3./ndiv);
-  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf", "c",
-                                 xjjroot::mypdf::w_default*ndiv, xjjroot::mypdf::h_default*ndiv);
+  auto dfs = xjjc::array2d<xjjroot::dfitter*>(tbins.npt(), tbins.ny());
+  // auto ndiv = std::ceil(std::sqrt(tbins.npt()));
+  // gStyle->SetLineScalePS(3./ndiv);
+  // auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf", "c", ndiv, ndiv);
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   for (int i=0; i<tbins.ny(); i++) {
-    pdf->prepare();
-    xjjroot::divide(ndiv, ndiv);
+    // pdf->prepare();
+    // xjjroot::divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
-      auto* p = (TPad*)pdf->getc()->cd(j+1);
+      pdf->prepare();
+      // auto* p = (TPad*)pdf->getc()->cd(j+1);
       const auto &h = h1ptys.at("data")[j][i],
         &hmc = h1ptys.at("mc-match")[j][i], &hmcswap = h1ptys.at("mc-swap")[j][i],
         &hmckk = h1ptys.at("mc-kk")[j][i], &hmcpipi = h1ptys.at("mc-pipi")[j][i];
@@ -110,16 +111,17 @@ int macro(const std::string& input_data, const std::string& input_template, cons
       h1pts.at("width95mc-y")[j]->SetBinError(i+1, w95mc.second);
     
       dfs[j][i] = df;
-      p->RedrawAxis();
+      gPad->RedrawAxis();
+      pdf->write(Form("%s_pt-%d_y-%d.pdf", name_png.c_str(), j, i), save_png ? "" : "X");
     }
-    pdf->write(Form("%s_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
   }
 
   for (int i=0; i<tbins.ny(); i++) {
-    pdf->prepare();
-    xjjroot::divide(ndiv, ndiv);
+    // pdf->prepare();
+    // xjjroot::divide(ndiv, ndiv);
     for (int j=0; j<tbins.npt(); j++) {
-      auto* p = (TPad*)pdf->getc()->cd(j+1);
+      pdf->prepare();
+      // auto* p = (TPad*)pdf->getc()->cd(j+1);
       auto* df = dfs[j][i];
 
       for (const std::string s : { "match", "swap", "kk", "pipi" }) {
@@ -131,12 +133,14 @@ int macro(const std::string& input_data, const std::string& input_template, cons
         hmc->Draw(s == "match" ? "pe1" : "pe1 same");
       }
       df->draw_fmc();
+      df->draw_legmc();
       xjjroot::drawtexgroup(0.24, 0.86, { tbins.label_y(i), tbins.label_pt(j) }, 0.035, 13);
       df->draw_params(0.24, 0.86-2*0.035*1.15, 0.035);
+      // xjjroot::drawtexgroup(0.88, 0.86, { info_fit.at("fitopt_tex") }, 0.035, 33);
       xjjroot::drawCMS(xjjroot::CMS::simulation, info_template.at("input_tex"));
-      p->RedrawAxis();
+      gPad->RedrawAxis();
+      pdf->write(Form("%s_mc_pt-%d_y-%d.pdf", name_png.c_str(), j, i), save_png ? "" : "X");
     }
-    pdf->write(Form("%s_mc_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
   }
 
   for (const std::string& p : { "yield-y", "width68mc-y", "width95mc-y" }) {
@@ -145,9 +149,10 @@ int macro(const std::string& input_data, const std::string& input_template, cons
     xjjana::sethsmax(h1pts.at(p), 1.6);
     auto* leg = new TLegend(0.60, 0.86-0.035*1.25*tbins.npt(), 0.80, 0.86);
     xjjroot::setleg(leg, 0.035);
+    auto cc = xjjroot::grayscales_alpha(tbins.npt());
     for (int j=0; j<tbins.npt(); j++) {
       xjjroot::sethempty(h1pts.at(p)[j], 0, 0.5);
-      xjjroot::setthgrstyle(h1pts.at(p)[j], kBlack, 21, 1.5, kBlack, 1, 1, -1, -1, -1, 1-j*0.4, 1-j*0.4);
+      xjjroot::setthgrstyle(h1pts.at(p)[j], kBlack, 21, 1.5, kBlack, 1, 1, -1, -1, -1, cc[j], cc[j]);
       leg->AddEntry(h1pts.at(p)[j], tbins.label_pt(j).c_str(), "p");
     }
     h1pts.at(p).front()->Draw("axis");
@@ -157,8 +162,10 @@ int macro(const std::string& input_data, const std::string& input_template, cons
         info_data.at("cut_tex"),
         info_fit.at("fitopt_tex"),
       }, 0.035, 13, 42, 1.25);
-    xjjroot::drawCMS(xjjc::str_contains(p, "mc") ? xjjroot::CMS::simulation : xjjroot::CMS::internal, info_data.at("input_tex"));
-    pdf->write();
+    xjjroot::drawCMS(xjjc::str_contains(p, "mc") ? xjjroot::CMS::simulation : xjjroot::CMS::internal,
+                     xjjc::str_contains(p, "mc") ? info_template.at("input_tex") : info_data.at("input_tex"));
+    auto save_indi = save_png && (p == "width68mc-y");
+    pdf->write(Form("%s_%s.pdf", name_png.c_str(), p.c_str()), save_indi ? "" : "X");
   }
   
   pdf->draw_cover( {
