@@ -2,10 +2,10 @@
 
 SAVE_PNG=0
 
-TAG_BINNING="_b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="_b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
-# TAG_BINNING="_b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="_b-incl" ; BINNING_Y='-2., 2.' ; BINNING_PT='2., 5.' ;
+TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
+# TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
+# TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
+# TAG_BINNING="b-incl" ; BINNING_Y='-2., 2.' ; BINNING_PT='2., 5.' ;
 
 fitopt="3P;Triple gaus signal;"
 # fitopt="P;Double gaus signal;_f-2gaus"
@@ -38,7 +38,8 @@ INPUTS_TEMPLATE=(
 )
 INPUTS_MC=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);SoftQCD-BeamA"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260814-yinclbdt_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260814-yinclbdt_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
 )
@@ -91,7 +92,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             ######################
             # Event efficiency   #
             ######################
-            itag_evteff=$cut_tag"/evteffsave_"$mc_evt_tag$TAG_BINNING #
+            itag_evteff=$cut_tag"/"$TAG_BINNING"/evteffsave_"$mc_evt_tag #
             if [[ ${1:-0} -eq 1 || ${1:-0} -eq 3 ]] ; then
                 ./evteff_save.exe "$input_mc_evt" "$cutevtstr" "${cutdstr} && $CUT_SIGNALWIN" $itag_evteff "$BINNING_Y" "$BINNING_PT"
             fi
@@ -99,6 +100,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             if [[ ${1:-0} -eq 2 || ${1:-0} -eq 3 ]] ; then
                 ./evteff_calc.exe "rootfiles/"$itag_evteff".root" $itag_evteff_calc $SAVE_PNG
             fi
+            echo -e "  \033[2m"$itag_evteff"\n  -> "$itag_evteff_calc"\033[0m"
         done
 
         # loop template
@@ -111,12 +113,12 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             ####################
             # Mass template    # -> [ 3 min ]
             ####################
-            itag_template=$cut_tag"/template_"$template_tag$TAG_BINNING #
+            itag_template=$cut_tag"/"$TAG_BINNING"/template_"$template_tag #
             if [[ ${2:-0} -eq 1 ]] ; then
                 echo "    -> generate mass templates from MC (about 3 min)"
                 ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING_Y" "$BINNING_PT" 0 # 0: !isdata
             fi
-
+            echo -e "  \033[2m"$itag_template"\033[0m"
             ## Loop data
             for input_data in "${INPUTS_DATA[@]}" ; do
                 
@@ -126,7 +128,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 ####################
                 # Fill data mass   # -> [ 13 min ]
                 ####################
-                itag_data=$cut_tag"/savehist_"$data_tag$TAG_BINNING
+                itag_data=$cut_tag"/"$TAG_BINNING"/savehist_"$data_tag #
                 [[ ${3:-0} -eq 1 || ${3:-0} -eq 3 ]] && {
                     echo "    -> fill data mass (about 13 min)"
                     ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING_Y" "$BINNING_PT" 1 # 1: isdata
@@ -136,12 +138,12 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 # Mass fitting     #
                 ####################
                 IFS=';' ; fitopts=($fitopt) ; unset IFS ; fit_tag=${fitopts[2]} ; 
-                itag_data_fit=$cut_tag"/fithist_"$data_tag"_"$template_tag$TAG_BINNING$fit_tag ## 
+                itag_data_fit=$cut_tag"/"$TAG_BINNING"/fithist_"$data_tag"_"$template_tag$fit_tag ## 
                 [[ ${3:-0} -eq 2 || ${3:-0} -eq 3 ]] && {
                     echo "    -> fit invariant mass"
                     ./hist_fit.exe "rootfiles/"$itag_data".root" "rootfiles/"$itag_template".root" $itag_data_fit "$fitopt" $SAVE_PNG
                 }
-
+                echo -e "  \033[2m"$itag_data"\n  -> "$itag_data_fit"\033[0m"
                 ## Loop MC
                 for input_mc in "${INPUTS_MC[@]}" ; do
 
@@ -159,10 +161,11 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                         ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff null
                     fi
 
-                    itag_deff_calc=${itag_deff/deffsave/deffcalc}$TAG_BINNING 
+                    itag_deff_calc=$cut_tag"/"$TAG_BINNING"/deffcalc_"$mc_tag
                     [[ ${4:-0} -eq 2 || ${4:-0} -eq 3 ]] && {
                         ./eff_calc.exe "rootfiles/"$itag_deff".root" $itag_deff_calc "$BINNING_Y" "$BINNING_PT" $SAVE_PNG
                     }
+                    echo -e "  \033[2m"$itag_deff"\n  -> "$itag_deff_calc"\033[0m"
 
                     itag_fprompt='null'
                     
@@ -178,7 +181,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     # echo "                ==> "$itag_xsec
                     [[ ${5:-0} -eq 1 ]] && {
                         echo "    -> calculate cross sections"
-                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $cutevt_lumi $cut_tag 
+                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $cutevt_lumi $cut_tag"/"$TAG_BINNING
                     }
                 done
             done

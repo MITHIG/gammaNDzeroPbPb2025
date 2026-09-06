@@ -22,16 +22,13 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     return 2;
   draw::bintex tbins(h3_bins, 0, 2);
   //
-  std::string tag = "xsec", tag_bin;
-  auto get_h1pts = [&h1pts, &infos, &tag, &tag_bin](const std::string &inputname, const std::string &category,
+  std::string tag = "xsec";
+  auto get_h1pts = [&h1pts, &infos, &tag](const std::string &inputname, const std::string &category,
                                                     const std::vector<std::string>& h1names,
                                                     const std::vector<std::string>& infots) {
     __XJJLOG << "[" << category << "] " << inputname << std::endl;
     auto* inf = TFile::Open(inputname.c_str());
     auto itag = xjjc::str_tag_from_file(inputname);
-    const auto tag_b = xjjc::str_extract_regex(itag, "(_b-[a-z]+)").front();
-    if (tag_bin.empty()) tag_bin = tag_b;
-    if (!tag_b.empty()) itag = xjjc::str_eraseall(itag, tag_b);
     tag += ("_" + itag);
     if (!inf) {
       __XJJLOG << "?? no " << category << " input file: " << inputname << ", skip." << std::endl;
@@ -69,8 +66,6 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   get_h1pts(inputname_effevent, "effevent", { "h1_y_evteff" }, { "info" });
   get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
 
-  tag += tag_bin; // final tag
-  
   Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "#gammaN") ? Event::gammaN :
     (xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "N#gamma") ? Event::Ngamma : Event::Other);
   // auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
