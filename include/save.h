@@ -35,4 +35,22 @@ namespace save {
     }
     return cut_r;
   }
+
+  template <typename T = int> int tree_is_mc(TTree* nt, const char* brname = "Run") {
+    auto* br = nt->GetBranch(brname);
+    if (!br) {
+      __XJJLOG << "!! bad branch for run number: " << brname << ", abort." << std::endl;
+      return -1;
+    }
+    T Run{};
+    nt->SetBranchAddress(brname, &Run);
+    if (nt->GetEntry(0) <= 0) {
+      __XJJLOG << "!! failed to read entry 0, abort." << std::endl;
+      nt->ResetBranchAddress(br);
+      return -1;
+    }
+    auto result = static_cast<int>(Run < 10000);
+    nt->ResetBranchAddress(br);
+    return result;
+  }
 }

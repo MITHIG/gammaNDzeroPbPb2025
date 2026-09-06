@@ -10,24 +10,29 @@ namespace global {
 }
 
 int macro(const std::string& inputname_raw, const std::string& inputname_effd,
-          const std::string& inputname_effevent = "null", const std::string inputname_fprompt = "null",
+          const std::string& inputname_effevent, const std::string inputname_fprompt = "null",
           float lumi = 1., const std::string& outputdir = "") {
 
   __XJJLOG << ">> lumi: " << lumi << " nb-1" << std::endl;
   std::map<std::string, std::vector<TH1D*>> h1pts;
   // std::map<std::string, std::vector<TH1D*>> h1ys;
   std::map<std::string, std::map<std::string, std::string>> infos;
-  std::string tag = "xsec";
   auto* h3_bins = xjjana::getobj<TH3D>(inputname_raw + "::h3_bins");
   if (!h3_bins)
     return 2;
   draw::bintex tbins(h3_bins, 0, 2);
-  auto get_h1pts = [&h1pts, &infos, &tag](const std::string &inputname, const std::string &category,
-                                          const std::vector<std::string>& h1names,
-                                          const std::vector<std::string>& infots) {
+  //
+  std::string tag = "xsec", tag_bin;
+  auto get_h1pts = [&h1pts, &infos, &tag, &tag_bin](const std::string &inputname, const std::string &category,
+                                                    const std::vector<std::string>& h1names,
+                                                    const std::vector<std::string>& infots) {
     __XJJLOG << "[" << category << "] " << inputname << std::endl;
     auto* inf = TFile::Open(inputname.c_str());
-    tag += ("_" + xjjc::str_tag_from_file(inputname));
+    auto itag = xjjc::str_tag_from_file(inputname);
+    const auto tag_b = xjjc::str_extract_regex(itag, "(_b-[a-z]+)").front();
+    if (tag_bin.empty()) tag_bin = tag_b;
+    if (!tag_b.empty()) itag = xjjc::str_eraseall(itag, tag_b);
+    tag += ("_" + itag);
     if (!inf) {
       __XJJLOG << "?? no " << category << " input file: " << inputname << ", skip." << std::endl;
       return 2;
@@ -35,7 +40,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     // TH1D
     std::vector<Color_t> colors = { xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"], xjjroot::mycolor_middle["red"] };
     for (auto& name : h1names) {
-      auto vh = xjjana::getobj_regexp<TH1D>(inf, name+".*__pt-.+");
+      // auto vh = xjjana::getobj_regexp<TH1D>(inf, name + ".*__pt-.+");
+      auto vh = xjjana::getobj_regexp<TH1D>(inf, name + "__pt-.+");
       if (vh.empty()) {
         __XJJLOG << "?? TH1D " << name << " not found, skip." << std::endl;
         continue;
@@ -60,9 +66,11 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 
   get_h1pts(inputname_raw, "raw", { "h1_y_yield" }, { "data/info", "template/info" });
   get_h1pts(inputname_effd, "effd", { "h1_y_eff__rebin" }, { "info" });
-  get_h1pts(inputname_effevent, "effevent", {  }, {  });
+  get_h1pts(inputname_effevent, "effevent", { "h1_y_evteff" }, { "info" });
   get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
 
+  tag += tag_bin; // final tag
+  
   Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "#gammaN") ? Event::gammaN :
     (xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "N#gamma") ? Event::Ngamma : Event::Other);
   // auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
@@ -76,6 +84,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     h_corr->GetYaxis()->SetTitle("Corrected Yield");
     h1pts["y_corr"].push_back(h_corr);
     auto* h_xsec = (TH1D*)h_corr->Clone(xjjc::str_replaceall(h_corr->GetName(), "corr", "xsec").c_str());
+    h_xsec->Divide(h1pts.at("y_evteff")[j]);
     h_xsec->Scale(0.5/global::BR_DtoKpi/(lumi*1.e6)/tbins.binwidth_pt(j)/*dpt*/, "width");
     h_xsec->GetYaxis()->SetTitle("#frac{d^{2}#sigma}{d#it{y}d#it{p}_{T}} [mb/GeV]");
     xjjroot::sethempty(h_xsec, 0, 0.2);
@@ -95,8 +104,9 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   };
   
   xjjana::sethsmin(h1pts.at("y_xsec"), 0.);
-  auto ymax = xjjana::sethsmax(h1pts.at("y_xsec"), 2.);
+  auto ymax = xjjana::sethsmax(h1pts.at("y_xsec"), 1.8);
   if (ymax < 2.5) xjjana::sethsabsmax(h1pts.at("y_xsec"), 3.2);
+  else if (ymax >= 2.5 && ymax < 5.) xjjana::sethsabsmax(h1pts.at("y_xsec"), 6.6);
 
   const auto x1 = (event_is==Event::Ngamma ? 0.222 : 0.54), y1 = 0.755,
     tsize = 0.038, lspace = 1.25, tlsize = tsize*lspace;
@@ -127,7 +137,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     leg->AddEntry(h1pts.at("y_yield")[i], tbins.label_pt(i).c_str(), "p");
   leg->Draw();
 
-  for (auto& t : { "y_yield", "y_eff__rebin", "y_corr", "y_xsec" }) {
+  for (auto& t : { "y_yield", "y_eff__rebin", "y_evteff", "y_corr", "y_xsec" }) {
     pdf->prepare();
     xjjana::sethsmin(h1pts.at(t), 0.);
     xjjana::sethsmax(h1pts.at(t), 1.8);
