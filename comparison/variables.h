@@ -1,8 +1,8 @@
 #include "xjjanauti.h"
 
 std::vector<xjjana::variable> vars = {
-  { .varname = "ZDCsumPlus", .var = "ZDCsumPlus", .vartex = "Offline ZDC Plus Energy [GeV]", .varmin = 0, .varmax = 9000, .nbin = 1000, .logy = 1 },
-  { .varname = "ZDCsumMinus", .var = "ZDCsumMinus", .vartex = "Offline ZDC Minus Energy [GeV]", .varmin = 0, .varmax = 9000, .nbin = 1000, .logy = 1 },
+  { .varname = "ZDCsumPlus", .var = "ZDCsumPlus", .vartex = "Offline ZDC Plus Energy [GeV]", .varmin = 0, .varmax = 9000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumMinus", .var = "ZDCsumMinus", .vartex = "Offline ZDC Minus Energy [GeV]", .varmin = 0, .varmax = 9000, .nbin = 100, .logy = 1 },
   { .varname = "nTrackInAcceptanceHP", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta|<2.4, p_{T}>0.5 GeV)", .varmin = 0, .varmax = 40, .nbin = 40, .logy = 1 },
   { .varname = "HFEMaxPlusforest", .var = "HFEMaxPlus_forest", .vartex = "Leading HF+ PF (3 < |#eta| < 6) E_{max} [GeV]", .varmin = 0, .varmax = 40, .nbin = 100, .logy = 1 },
   { .varname = "HFEMaxPlusforest-zoom", .var = "HFEMaxPlus_forest", .vartex = "Leading HF+ PF (3 < |#eta| < 6) E_{max} [GeV]", .varmin = 0, .varmax = 25, .nbin = 100, .logy = 1 },

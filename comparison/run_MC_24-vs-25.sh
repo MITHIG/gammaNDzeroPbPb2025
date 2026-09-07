@@ -52,7 +52,6 @@ CUTDS=(
     # "Dgen==23333 && TMath::Abs(Dtrk1PtErr/Dtrk1Pt)<0.1 && TMath::Abs(Dtrk2PtErr/Dtrk2Pt)<0.1 && TMath::Abs(Dtrk1Eta) < 2.4 && TMath::Abs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5 && Dchi2cl > 0.05 && (DsvpvDistance/DsvpvDisErr) > 1. && DsvpvDisErr>1.e-8 && DsvpvDisErr_2D>1.e-8;Signal D#scale[0.6]{#lower[-0.7]{0}} #rightarrow K#pi && Precuts;-Dgenprecut"
     "GisSignalCalc;Gen signal;-Gsignal"
     # "Dpt>0;;-Dnocut"
-    # "Dtrk1PtErr/Dtrk1Pt<0.1 && Dtrk2PtErr/Dtrk2Pt<0.1 && DpassCut23PAS && (Dtrk1PixelHit+Dtrk1StripHit)>=11 && (Dtrk2PixelHit+Dtrk2StripHit)>=11;DpassCut23PAS;-D23pas"
 )
 
 make savehist.exe calchists.exe drawhists.exe || exit 1

@@ -17,20 +17,19 @@ INPUTS=(
 )
 
 VARS=(
-    # nTrackInAcceptanceHP
-    # ZDCsumPlus
-    # ZDCsumMinus
-    # HFEMaxPlusforest
-    # HFEMaxMinusforest
-    # HFEMaxPlusforest-zoom
-    # HFEMaxMinusforest-zoom
+    ZDCsumPlus
+    ZDCsumMinus
+    nTrackInAcceptanceHP
+    HFEMaxPlusforest
+    HFEMaxMinusforest
+    HFEMaxPlusforest-zoom
+    HFEMaxMinusforest-zoom
     nVtx
     
     #
     # Dmass
     # Dalpha
     # Ddls
-    # Dalpha-Low
     # Dtrk1Pt
     # Dtrk2Pt
     # Dchi2cl
@@ -38,34 +37,34 @@ VARS=(
     # Dtrk2ptrel
     # Dtrk1nhit
     # Dtrk2nhit
+    # # Dalpha-zoom
 )
 
 CUTEVTS=(
-    # "isL1ZDCOr && ZDCgammaN && HFEMaxPlus_forest < 16 && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp for 2023;gammaN;2025"
-    # "isL1ZDCOr && ZDCgammaN && gapgammaN && selectedBkgFilter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp for 2023;gammaN;2023"
-    # "isL1ZDCOr && ZDCgammaN && gapgammaN && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight;gammaN-noccf;2023"
+    "isL1ZDCOr && ZDCgammaN && HFEMaxPlus_forest < 16 && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight;gammaN;2025"
+    "isL1ZDCOr && ZDCgammaN && gapgammaN && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight;gammaN;2023"
+    # "isL1ZDCOr && ZDCgammaN && gapgammaN && selectedBkgFilter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp;gammaN-wccf;2023"
+    # "isL1ZDCOr && ZDCgammaN && gapgammaN && selectedBkgFilter && selectedVtxFilter && nVtx <= 3;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp, nVtx <= 3 for 2023;gammaN-wccf-nvtx3;2023"
+    # "isL1ZDCOr && ZDCgammaN && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), |v_{z}| < 15, cscHaloTight;gammaN-nogap;" # for HFEMax
 
-    "isL1ZDCOr && ZDCgammaN && selectedBkgFilter && selectedVtxFilter;ZDC Xn0n (#gammaN), |v_{z}| < 15, cscHaloTight%%clusComp for 2023;gammaN-nogap;2023"
-    "isL1ZDCOr && ZDCgammaN && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), |v_{z}| < 15, cscHaloTight%%clusComp for 2023;gammaN-nogap;2025"
-
-    # "isL1ZDCOr && ZDCgammaN && gapgammaN && selectedBkgFilter && selectedVtxFilter && nVtx <= 3;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp, nVtx <= 3 for 2023;gammaN-nvtx3;2023"
-
-    # "isL1ZDCOr;HLT_ZDCOr && PV filter && ZDC0nOr (1500 GeV);nocut;"
     # "isNotBptxOR;HLT_HIL1NotBptxOR;isNotBptxOR;"
 )
 ##
 
 CUTDS=(
     "1;;" # for event variables 
-    "Dpt>2 && Dpt<5 && fabs(Dy)<2;;-Dpre"
-    "Dpt>2 && Dpt<5 && fabs(Dy)<2 && Dtrk1PtErr/Dtrk1Pt<0.1 && Dtrk2PtErr/Dtrk2Pt<0.1 && DpassCut23PAS && (Dtrk1PixelHit+Dtrk1StripHit)>=11 && (Dtrk2PixelHit+Dtrk2StripHit)>=11;DpassCut23PAS;-D23pas"
+    # "Dpt>0;;-Dnocut"
+    # "TMath::Abs(Dtrk1PtErr/Dtrk1Pt)<0.1 && TMath::Abs(Dtrk2PtErr/Dtrk2Pt)<0.1 && TMath::Abs(Dtrk1Eta) < 2.4 && TMath::Abs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5 && Dchi2cl > 0.05 && (DsvpvDistance/DsvpvDisErr) > 1. && DsvpvDisErr>1.e-8 && DsvpvDisErr_2D>1.e-8;Precuts;-Dprecut"
+    # "Dtrk1PtErr/Dtrk1Pt<0.1 && Dtrk2PtErr/Dtrk2Pt<0.1 && DpassCut23PAS && (Dtrk1PixelHit+Dtrk1StripHit)>=11 && (Dtrk2PixelHit+Dtrk2StripHit)>=11;DpassCut23PAS;-D23pas"
 )
 
 make savehist.exe calchists.exe drawhists.exe || exit 1
 
-for var in "${VARS[@]}" ; do
-    for cutdstr in "${CUTDS[@]}" ; do
-        IFS=';' ; cutdtags=($cutdstr) ; unset IFS ; cutd=${cutdtags[0]} ; cutd_tex=${cutdtags[1]} ; cutd_tag=${cutdtags[2]} ; 
+# D cut
+for cutdstr in "${CUTDS[@]}" ; do
+    IFS=';' ; cutdtags=($cutdstr) ; unset IFS ; cutd=${cutdtags[0]} ; cutd_tex=${cutdtags[1]} ; cutd_tag=${cutdtags[2]} ; 
+
+    for var in "${VARS[@]}" ; do
         [[ ($var == D* && ${cutd} != 1) || ($var != D* && ${cutd} == 1) ]] || { continue ; }
 
         # event cut
@@ -87,11 +86,11 @@ for var in "${VARS[@]}" ; do
 
                 echo -e "    \033[33m"$var" \033[33;2m("$input_tag")\033[0m"
 
-                itag="rootfiles/"$var"/"$cut_tag"-"$input_tag"_savehist" # 
+                itag="rootfiles/"$cut_tag"/"$var"_"$input_tag"_savehist" #
                 echo "    "$itag
 
                 [[ ${1:-0} -eq 1 ]] && {
-                    ./savehist.exe "$inputstr" "$cutstr" "$var" $itag
+                    ./savehist.exe "$inputstr" "$cutstr" "$var" $itag &
                 }
 
                 [[ ${2:-0} -eq 1 ]] && {
@@ -113,5 +112,33 @@ for var in "${VARS[@]}" ; do
             }
         done
 
+        echo 
+        manual_draw_list=(
+            gammaN${cutd_tag}__d23-rJan24,gammaN${cutd_tag}__d23-rFeb25,gammaN${cutd_tag}__d25-rp";"0
+            # gammaN-nogap${cutd_tag}-d23-rFeb25,gammaN-nogap${cutd_tag}-d25-rp";"0 # for HFEmax
+        )
+        #                 itag="rootfiles/"$cut_tag"/"$var"_"$input_tag"_savehist" #
+        for items in "${manual_draw_list[@]}" ; do
+            IFS=';' ; draw_opts=($items) ; unset IFS ; do_save_png=${draw_opts[1]}
+
+            compare_list=
+            tag_list=
+            IFS=',' ; draw_tags=(${draw_opts[0]}) ; unset IFS ;
+            for itag in "${draw_tags[@]}" ; do
+                jtag_cut=${itag%%__*}
+                jtag_input=${itag##*__}
+                compare_list=$compare_list",rootfiles/"$jtag_cut"/"$var"_"$jtag_input"_calchist.root"
+                tag_list=$tag_list"_"${itag/__/-}
+            done
+            compare_list=${compare_list#,}
+            tag_list=${tag_list#_}
+            echo $compare_list
+            echo $tag_list
+            [[ ${4:-0} -eq 1 ]] && {
+                ./drawhists.exe "$compare_list" "$tag_list" $do_save_png
+            }
+        done
+        
     done
+    wait
 done
