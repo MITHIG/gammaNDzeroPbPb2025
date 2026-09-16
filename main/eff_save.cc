@@ -1,6 +1,7 @@
 #include <TH3D.h>
 #include "xjjanauti.h"
 
+#include "../include/util.h"
 #include "../include/save.h"
 #define __BINS_PTY_EFF__
 #define __BINS_MULT__
@@ -9,27 +10,27 @@
 int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, std::string output, std::string inputdatastr = "null") {
   std::map<std::string, TChain*> trs;
   // parse inputmc
-  auto inputmcs = xjjc::str_divide_trim(inputmcstr, ";");
-  auto inputmc_tex = inputmcs.size() > 1 ? inputmcs[1] : "";
-  trs["mc"] = xjjana::chain_files(xjjc::str_divide_trim(inputmcs[0], ","), "Tree");
-  if (!trs.at("mc")) { __XJJLOG<<"!! bad inputmc file "<<inputmcs[0]<<std::endl; return 2; }
+  const auto pi_inputmc = util::parse_input(inputmcstr);
+  trs["mc"] = xjjana::chain_files(xjjc::str_divide_trim(pi_inputmc.content, ","), "Tree");
+  if (!trs.at("mc")) {
+    __XJJLOG << "!! bad inputmc file " << pi_inputmc.content << ", abort." << std::endl;
+    return 2;
+  }
   save::mask_branch(trs.at("mc"));
 
-  auto inputdatas = xjjc::str_divide_trim(inputdatastr, ";");
-  auto inputdata_tex = inputdatas.size() > 1 ? inputdatas[1] : "";
-  trs["data"] = xjjana::chain_files(xjjc::str_divide_trim(inputdatas[0], ","), "Tree");
-  if (trs.at("data")) {
-    __XJJLOG << "?? no valid inputdata file: " << inputdatas[0] << ", only MC is used." << std::endl;
+  const auto pi_inputdata = util::parse_input(inputdatastr);
+  trs["data"] = xjjana::chain_files(xjjc::str_divide_trim(pi_inputdata.content, ","), "Tree");
+  if (!trs.at("data")) {
+    __XJJLOG << "?? no inputdata file, only MC is used." << std::endl;
   }
 
   // parse cut
-  auto cutevts = xjjc::str_divide_trim(cutevtstr, ";");
-  auto cutevt = cutevts[0], cutevt_mc = save::cut_adjust_to_mc(cutevt);
-  auto cutds = xjjc::str_divide_trim(cutdstr, ";");
-  auto cutd = cutds[0];
+  const auto pi_cutevt = util::parse_input(cutevtstr);
+  const auto cutevt = pi_cutevt.content, cutevt_mc = save::cut_adjust_to_mc(cutevt);
+  const auto pi_cutd = util::parse_input(cutdstr);
+  const auto cutd = pi_cutd.content;
   
   auto* outf = xjjroot::newfile("rootfiles/" + output + ".root");
-  auto* t = new TTree("info", "");
 
   std::map<std::string, TH3D*> h3;
   auto project = [&h3](TChain* tr, std::string key, std::string vars, std::string icut) {
@@ -45,38 +46,44 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
     return icut;
   };
 
+  auto* t = new TTree("info", "");
+  std::map<std::string, std::string> t_cont;
+  auto cast_branch = [&t, &t_cont]<typename T>(const std::string& name, const T& x) {
+    t_cont[name] = xjjc::to_string(x);
+    t->Branch(name.c_str(), &(t_cont[name]));
+  };
+
   auto cut_eff_num = project(trs.at("mc"), "_eff_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333" + " && " + cutd);
-  t->Branch("cut_eff_num", &cut_eff_num);
+  cast_branch("cut_eff_num", cut_eff_num);
   auto cut_reco_num = project(trs.at("mc"), "_reco_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && Dgen==23333 && fabs(Dtrk1Eta) < 2.4 && fabs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5");
-  t->Branch("cut_reco_num", &cut_reco_num);
+  cast_branch("cut_reco_num", cut_reco_num);
   auto cut_acc_num = project(trs.at("mc"), "_acc_num", "nTrackInAcceptanceHP:Gpt:Gy", cutevt_mc + " && GisSignalCalc && fabs(Gtk1eta) < 2.4 && fabs(Gtk2eta) < 2.4 && Gtk1pt > 0.5 && Gtk2pt > 0.5");
-  t->Branch("cut_acc_num", &cut_acc_num);
+  cast_branch("cut_acc_num", cut_acc_num);
   auto cut_eff_den = project(trs.at("mc"), "_eff_den", "nTrackInAcceptanceHP:Gpt:Gy", cutevt_mc + " && GisSignalCalc");
-  t->Branch("cut_eff_den", &cut_eff_den);
+  cast_branch("cut_eff_den", cut_eff_den);
   std::string cut_data_signalwin = cutevt + " && " + cutd + " && fabs(Dmass-1.8648) < 0.03",
     cut_data_sideband = cutevt + " && " + cutd + " && fabs(Dmass-1.8648) > 0.09 && fabs(Dmass-1.8648) < 0.12";
   if (trs["data"]) {
-    t->Branch("cut_data_signalwin", &cut_data_signalwin);
-    t->Branch("cut_data_sideband", &cut_data_sideband);
+    cast_branch("cut_data_signalwin", cut_data_signalwin);
+    cast_branch("cut_data_sideband", cut_data_sideband);
     project(trs.at("data"), "_data_signalwin", "nTrackInAcceptanceHP:Dpt:Dy", cut_data_signalwin);
     project(trs.at("data"), "_data_sideband", "nTrackInAcceptanceHP:Dpt:Dy", cut_data_sideband);
   }
   
-  t->Branch("inputmc", &(inputmcs[0]));
-  t->Branch("inputmc_tex", &inputmc_tex);
+  cast_branch("inputmc", pi_inputmc.content);
+  cast_branch("inputmc_tex", pi_inputmc.tex);
   if (trs.at("data")) {
-    t->Branch("inputdata", &(inputdatas[0]));
-    t->Branch("inputdata_tex", &inputdata_tex);
+    cast_branch("inputdata", pi_inputdata.content);
+    cast_branch("inputdata_tex", pi_inputdata.tex);
   }
-  t->Branch("cutevt", &cutevt);
-  t->Branch("cutevt_mc", &cutevt_mc);
-  t->Branch("cutevt_tex", &(cutevts[1]));
-  t->Branch("cutd", &cutd);
-  t->Branch("cutd_tex", &(cutds[1]));
+  cast_branch("cutevt", cutevt);
+  cast_branch("cutevt_mc", cutevt_mc);
+  cast_branch("cutevt_tex", pi_cutevt.tex);
+  cast_branch("cutd", cutd);
+  cast_branch("cutd_tex", pi_cutd.tex);
+
   t->Fill();
   t->Write();
-  outf->cd();
-
   xjjroot::closefile(outf);
   
   return 0; 

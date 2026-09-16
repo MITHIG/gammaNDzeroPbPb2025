@@ -36,7 +36,16 @@ namespace bins {
   const int ny = 4; const float miny = -2, maxy = 2;
   const int npt = 1; const float minpt = 2, maxpt = 5;
 #endif
-  
+
+#if defined(__BINS_PTY_PLACEHOLDER__)
+  void print() {
+    __XJJLOG << ">> current y binning:" << std::endl;
+    xjjc::print_vec_h(ybins);
+    __XJJLOG << ">> current pt binning:" << std::endl;
+    xjjc::print_vec_h(ptbins);
+  }
+#endif
+
 }
 
 #endif

@@ -1,28 +1,30 @@
 #include <TH3D.h>
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 
 #include "../include/save.h"
-#define __BINS_PTY_ANA__
+#define __BINS_PTY_PLACEHOLDER__
 #define __BINS_MASS__
 #include "../include/bins.h"
 
-int macro(std::string inputstr, std::string cutstr, std::string output, int isdata = 1) {
+int macro(const std::string& inputstr, const std::string& cutstr, const std::string& output, int is_template = 0) {
   // parse input
-  auto inputs = xjjc::str_divide_trim(inputstr, ";");
-  auto* trs = xjjana::chain_files(xjjc::str_divide_trim(inputs[0], ","), "Tree");
-  if (!trs) { __XJJLOG<<"!! bad input file "<<inputs[0]<<std::endl; return 2; }
+  const auto pinput = xjjroot::parse_input(inputstr);
+  // __XJJLOG << ">> " << pinput.content << std::endl;
+  auto* trs = xjjana::chain_files(xjjc::str_divide_trim(pinput.content, ","), "Tree");
+  if (!trs) { __XJJLOG << "!! bad input file, abort." << std::endl; return 2; }
   save::mask_branch(trs);
 
+  const auto is_mc = xjjana::ismc_runnum(trs);
+  __XJJLOG << ">> is_mc : " << is_mc << std::endl;
+
   // parse cut
-  auto cuts = xjjc::str_divide_trim(cutstr, ";");
-  auto cut = cuts[0];
-  if (!isdata) cut = save::cut_adjust_to_mc(cut);
+  const auto pcut = xjjroot::parse_input(cutstr);
+  auto cut = pcut.content;
+  if (is_mc) cut = save::cut_adjust_to_mc(cut);
 
   // parse binning
-  __XJJLOG << ">> current y binning:" << std::endl;
-  xjjc::print_vec_h(bins::ybins, 0);
-  __XJJLOG << ">> current pt binning:" << std::endl;
-  xjjc::print_vec_h(bins::ptbins, 0);
+  bins::print();
   auto massbins = xjjc::fixedbin_to_edges(bins::nmass, bins::minmass, bins::maxmass);
 
   auto* outf = xjjroot::newfile("rootfiles/" + output + ".root");
@@ -39,30 +41,33 @@ int macro(std::string inputstr, std::string cutstr, std::string output, int isda
     xjjroot::writehist(h3[key]);
   };
 
-  project((isdata ? "_data" : ""), cut);
-  if (!isdata) {
+  if (is_template) {
     project("_mc-match", cut + " && Dgen==23333");
     project("_mc-swap", cut + " && Dgen==23344");
     project("_mc-kk", cut + " && DisSignalKK");
     project("_mc-pipi", cut + " && DisSignalpipi");
+  } else {
+    project("_data", cut);
   }
-  
+
   auto* t = new TTree("info", "");
-  t->Branch("input", &(inputs[0]));
-  auto input_tex = inputs.size() > 1 ? inputs[1] : "";
-  t->Branch("input_tex", &input_tex);
-  auto input_tag = inputs.size() > 2 ? inputs[2] : "";
-  t->Branch("input_tag", &input_tag);
-  t->Branch("cut", &cut);
-  auto cut_tex = cuts.size() > 1 ? cuts[1] : "";
-  t->Branch("cut_tex", &cut_tex);
-  auto cut_tag = cuts.size() > 2 ? cuts[2] : "";
-  t->Branch("cut_tag", &cut_tag);
+  std::map<std::string, std::string> t_cont;
+  auto cast_branch = [&t, &t_cont]<typename T>(const std::string& name, const T& x) {
+    t_cont[name] = xjjc::to_string(x);
+    t->Branch(name.c_str(), &(t_cont[name]));
+  };
+  cast_branch("input", pinput.content);
+  cast_branch("input_tex", pinput.tex);
+  cast_branch("input_tag", pinput.tag);
+  cast_branch("cut", pcut.content);
+  cast_branch("cut_tex", pcut.tex);
+  cast_branch("cut_tag", pcut.tag);
+  cast_branch("is_mc", is_mc);
+  cast_branch("is_template", is_template);
   t->Fill();
   t->Write();
-  outf->cd();
 
-  outf->Close();
+  xjjroot::closefile(outf);
   
   return 0; 
 }
@@ -73,14 +78,5 @@ int main(int argc, char* argv[]) {
     bins::ptbins = xjjc::str_convert_vector<double>(argv[5], ",");
     return macro(argv[1], argv[2], argv[3], atoi(argv[6]));
   }
-  if (argc == 6) {
-    bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
-    return macro(argv[1], argv[2], argv[3], atoi(argv[5]));
-  }
-  if (argc == 5) {
-    bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
-    return macro(argv[1], argv[2], argv[3]);
-  }
   return 1;
 }
-

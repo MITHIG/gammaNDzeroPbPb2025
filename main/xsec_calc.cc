@@ -2,8 +2,8 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
-#include "../include/measurements.h"
-#include "../include/draw.h"
+#include "measurements.h"
+#include "draw.h"
 
 namespace global {
   float BR_DtoKpi = 0.03936, err_BR_DtoKpi = 0.030*1.e-2;

@@ -2,7 +2,7 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
-#define __BINS_PTY_ANA__
+#define __BINS_PTY_PLACEHOLDER__
 #include "../include/bins.h"
 
 #include "../include/draw.h"
@@ -15,10 +15,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   __XJJLOG << "++ info" << std::endl;
   xjjc::print_tab(info, -1);
 
-  __XJJLOG << "++ y binning" << std::endl;
-  xjjc::print_vec_h(bins::ybins);
-  __XJJLOG << "++ pt binning" << std::endl;
-  xjjc::print_vec_h(bins::ptbins);
+  bins::print();
   
   std::map<std::string, TH3D*> h3s;
   std::map<std::string, TH2D*> h2s;
@@ -64,12 +61,14 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   
   std::map<std::string, std::string> ts_formula;
   auto make_eff = [&h2s, &h1pts, &h1ys, &ts_formula](const std::string& name_new, const std::string& name_num, const std::string& name_den,
-                                                     const std::string& title, const std::string& formula) {
+                                                     const std::string& title, const std::string& formula, float maxz = 1.) {
     __XJJLOG << ">> " << name_new << std::endl;
     for (const std::string& suffix : { "-y-pt", "-y-pt__rebin" }) {
       h2s[name_new + suffix] = (TH2D*)h2s.at(name_num + suffix)->Clone(xjjc::str_replaceall(h2s.at(name_num + suffix)->GetName(), name_num, name_new).c_str());
       h2s[name_new + suffix]->Divide(h2s.at(name_den + suffix));
       h2s[name_new + suffix]->GetZaxis()->SetTitle(title.c_str());
+      h2s[name_new + suffix]->SetMinimum(0);
+      h2s[name_new + suffix]->SetMaximum(maxz);
     }
     for (int j=0; j<h1pts.at(name_num + "-y__rebin").size(); j++) {
       auto* heff_j = (TH1D*)h1pts.at(name_num+"-y__rebin")[j]->Clone(xjjc::str_replaceall(h1pts.at(name_num+"-y__rebin")[j]->GetName(), name_num, name_new).c_str());
@@ -92,7 +91,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   make_eff("effsel", "eff_num", "reco_num", xjjroot::CMS::DzDzbar + "#scale[0.4]{ }#LT#epsilon_{sel}#GT",
            "#frac{"+Nreco+"(All selections)}{"+Nreco+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}");
   make_eff("effreco", "reco_num", "acc_num", xjjroot::CMS::DzDzbar + "#scale[0.4]{ }#LT#epsilon_{reco}#GT",
-           "#frac{"+Nreco+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}{"+Ngen+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}");
+           "#frac{"+Nreco+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}{"+Ngen+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}", 1.2);
   make_eff("acc", "acc_num", "eff_den", xjjroot::CMS::DzDzbar + "#scale[0.4]{ }#LT#alpha#GT",
            "#frac{"+Ngen+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}{"+Ngen+"}");
 

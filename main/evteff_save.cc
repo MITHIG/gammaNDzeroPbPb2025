@@ -1,23 +1,19 @@
 #include <TTreeFormula.h>
 #include <TH2D.h>
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 
 #include "../include/save.h"
-#define __BINS_PTY_ANA__
+#define __BINS_PTY_PLACEHOLDER__
 #define __BINS_MASS__
 #include "../include/bins.h"
-#include "../include/util.h"
-
-// #include <cstdlib>
 
 int macro(const std::string& inputstr, const std::string& cutstr_evt, const std::string& cutstr_d,
           const std::string& output) {
-  __XJJLOG << ">> current y binning:" << std::endl;
-  xjjc::print_vec_h(bins::ybins, 0);
-  __XJJLOG << ">> current pt binning:" << std::endl;
-  xjjc::print_vec_h(bins::ptbins, 0);
+
+  bins::print();
   
-  const auto pinput = util::parse_input(inputstr);
+  const auto pinput = xjjroot::parse_input(inputstr);
   auto* inf = TFile::Open(pinput.content.c_str());
   if (!inf || inf->IsZombie()) {
     __XJJLOG << "!! failed to open input file, abort." << std::endl;
@@ -41,9 +37,9 @@ int macro(const std::string& inputstr, const std::string& cutstr_evt, const std:
   std::vector<float>* Dpt = nullptr; tree->SetBranchAddress("Dpt", &Dpt);
   std::vector<float>* Dy = nullptr; tree->SetBranchAddress("Dy", &Dy);
   // cuts
-  auto pcut_evt = util::parse_input(cutstr_evt);
+  auto pcut_evt = xjjroot::parse_input(cutstr_evt);
   if (is_mc) pcut_evt.content = save::cut_adjust_to_mc(pcut_evt.content);
-  auto pcut_d = util::parse_input(cutstr_d);
+  const auto pcut_d = xjjroot::parse_input(cutstr_d);
   xjjc::print_tab(std::map<std::string, std::string>{
       { "cut_evt", pcut_evt.content },
       { "cut_d", pcut_d.content } }, -1);
