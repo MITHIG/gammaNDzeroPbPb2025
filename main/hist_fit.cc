@@ -1,16 +1,17 @@
 #include <TH3D.h>
 
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
 
-#include "../include/dfitter.h"
-#include "../include/draw.h"
-#include "../include/util.h"
+#include "dfitter.h"
+#include "draw.h"
 
-int macro(const std::string& input_data, const std::string& input_template, const std::string& outputname, const std::string& fit_opt = "3", int save_png = 1) {
+int macro(const std::string& input_data, const std::string& input_template, const std::string& outputname,
+          const std::string& fit_opt = "3G", int save_png = 1) {
   std::cout<<std::endl;
 
-  const auto fitopt = util::parse_input(fit_opt);
+  const auto fitopt = xjjroot::parse_input(fit_opt);
   __XJJLOG << ">> fitting option : " << fit_opt << " -> " << fitopt.content << std::endl;
   xjjc::info info_fit = {
     { "fitopt", fitopt.content },

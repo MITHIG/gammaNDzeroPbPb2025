@@ -1,5 +1,4 @@
-#ifndef _XJJROOT_DFITTER_H_
-#define _XJJROOT_DFITTER_H_
+#pragma once
 
 /*******************************************************************************************
  * Class : xjjroot::dfitter                                                                * 
@@ -10,9 +9,10 @@
  *                                                                                         * 
  * Options supported are listed below                                                      * 
  *                                                                                         * 
- *   "3"  : Using 3-Gaussian function to model signal (default is 2-Gaussian function)     * 
- *   "P"  : Have peaky background                                                          *
- *   "S"  : Draw significance info and lines at signal region                              * 
+ *   "3G"  : Using 3-Gaussian function to model signal (default is 2-Gaussian function)    *
+ *   "Peaky"  : Have peaky background                                                      *
+ *   "Exp"  : Have peaky background                                                        *
+ *   "Sig"  : Draw significance info and lines at signal region                            *
  *   "V"  : Switch off Quiet mode of fitting                                               * 
  *                                                                                         * 
  * The core function of this class is                                                      * 
@@ -96,6 +96,7 @@ namespace xjjroot {
     std::string option_;
     bool opt_3gaus_;
     bool opt_haskkpipi_;
+    bool opt_expbkg_;
     bool opt_sig_;
     bool opt_verbose_;
 
@@ -126,9 +127,10 @@ xjjroot::dfitter::dfitter(Option_t* option) :
 }
 
 void xjjroot::dfitter::parse_opt() {
-  opt_3gaus_ = xjjc::str_contains(option_, "3");
-  opt_haskkpipi_ = xjjc::str_contains(option_, "P");
-  opt_sig_ = xjjc::str_contains(option_, "S");
+  opt_3gaus_ = xjjc::str_contains(option_, "3G");
+  opt_expbkg_ = xjjc::str_contains(option_, "Exp");
+  opt_haskkpipi_ = xjjc::str_contains(option_, "Peaky");
+  opt_sig_ = xjjc::str_contains(option_, "Sig");
   opt_verbose_ = xjjc::str_contains(option_, "V");
 }
 
@@ -197,10 +199,14 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
   }
 
   fitted_ = true;
-  
-  std::string str_fun_f = 
-    "[0]*([7]*([9]*TMath::Gaus(x,[1],[2]*(1+[11]))/(sqrt(2*3.14159)*[2]*(1+[11]))+(1-[9])*([12]*TMath::Gaus(x,[1],[10]*(1+[11]))/(sqrt(2*3.14159)*[10]*(1+[11]))+(1-[12])*TMath::Gaus(x,[1],[13]*(1+[11]))/(sqrt(2*3.14159)*[13]*(1+[11]))))+[15]*TMath::Gaus(x,[14],[8]*(1+[11]))/(sqrt(2*3.14159)*[8]*(1+[11]))+[16]*ROOT::Math::crystalball_pdf(x,[19],[20],[18],[17])+(1-[7]-[15]-[16])*ROOT::Math::crystalball_pdf(-x,[23],[24],[22],-[21]))+[3]+[4]*x+[5]*x*x+[6]*x*x*x";
 
+  const std::string str_fun_f_signal = "[9]*TMath::Gaus(x,[1],[2]*(1+[11]))/(sqrt(2*3.14159)*[2]*(1+[11])) + (1-[9])*( [12]*TMath::Gaus(x,[1],[10]*(1+[11]))/(sqrt(2*3.14159)*[10]*(1+[11])) + (1-[12])*TMath::Gaus(x,[1],[13]*(1+[11]))/(sqrt(2*3.14159)*[13]*(1+[11])))",
+    str_fun_f_swap = "TMath::Gaus(x,[14],[8]*(1+[11]))/(sqrt(2*3.14159)*[8]*(1+[11]))",
+    str_fun_f_KK = "ROOT::Math::crystalball_pdf(x,[19],[20],[18],[17])",
+    str_fun_f_pipi = "ROOT::Math::crystalball_pdf(-x,[23],[24],[22],-[21])";
+  const std::string str_fun_f_background = opt_expbkg_ ? " + [3] + [4]*exp(-x*[5]) + [6]" : " + [3] + [4]*x + [5]*x*x + [6]*x*x*x";
+  const std::string str_fun_f = "[0] * ([7]*("+str_fun_f_signal+") + [15]*("+str_fun_f_swap+") + [16]*("+str_fun_f_KK+") + (1-[7]-[15]-[16])*("+str_fun_f_pipi+"))" + str_fun_f_background;
+  
   fun_f_ = new TF1(Form("f_%s", xjjc::unique_str().c_str()), str_fun_f.c_str(), xmin_, xmax_);
   fun_f_->SetNpx(2000);
   xjjroot::setthgrstyle(fun_f_, fstyle.at("f"));
@@ -403,6 +409,7 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
   fun_f_->ReleaseParameter(4);
   fun_f_->ReleaseParameter(5);
   fun_f_->ReleaseParameter(6);
+  if (opt_expbkg_) fun_f_->FixParameter(6, 0);
   
   h->Fit(fun_f_->GetName(), "q", "", xmin_, xmax_);
   h->Fit(fun_f_->GetName(), "q", "", xmin_, xmax_);
@@ -574,8 +581,9 @@ TF1* xjjroot::dfitter::f_background(const std::string& name) const {
     __XJJLOG << "!! not fitted yet" << std::endl;
     return nullptr;
   }
-  std::string fname = name.empty() ? Form("%s_background", fun_f_->GetName()) : name;
-  auto* fun = new TF1(fname.c_str(), "[0]+[1]*x+[2]*x*x+[3]*x*x*x", fun_f_->GetXmin(), fun_f_->GetXmax());
+  const std::string fname = name.empty() ? Form("%s_background", fun_f_->GetName()) : name;
+  const std::string str_fun_f_background = opt_expbkg_ ? "[0] + [1]*exp(-x*[2]) + [3]" : "[0] + [1]*x + [2]*x*x + [3]*x*x*x";  
+  auto* fun = new TF1(fname.c_str(), str_fun_f_background.c_str(), fun_f_->GetXmin(), fun_f_->GetXmax());
   std::map<int, int> params = {
     { 0, 3 }, { 1, 4 }, { 2, 5 }, { 3, 6 }
   };
@@ -593,8 +601,9 @@ TF1* xjjroot::dfitter::f_notmatch(const std::string& name) const {
     __XJJLOG << "!! not fitted yet" << std::endl;
     return nullptr;
   }
-  std::string fname = name.empty() ? Form("%s_notmatch", fun_f_->GetName()) : name;
-  auto* fun = new TF1(fname.c_str(), "[0]*([2]*TMath::Gaus(x,[1],[3]*(1+[4]))/(sqrt(2*3.14159)*[3]*(1+[4]))+[9]*ROOT::Math::crystalball_pdf(x,[12],[13],[11],[10])+(1-[14]-[2]-[9])*ROOT::Math::crystalball_pdf(-x,[17],[18],[16],-[15]))+[5]+[6]*x+[7]*x*x+[8]*x*x*x", fun_f_->GetXmin(), fun_f_->GetXmax());
+  const std::string fname = name.empty() ? Form("%s_notmatch", fun_f_->GetName()) : name;
+  const std::string str_fun_f_background = opt_expbkg_ ? "[5] + [6]*exp(-x*[7]) + [8]" : "[5] + [6]*x + [7]*x*x + [8]*x*x*x";
+  auto* fun = new TF1(fname.c_str(), Form("[0]*([2]*TMath::Gaus(x,[1],[3]*(1+[4]))/(sqrt(2*3.14159)*[3]*(1+[4]))+[9]*ROOT::Math::crystalball_pdf(x,[12],[13],[11],[10])+(1-[14]-[2]-[9])*ROOT::Math::crystalball_pdf(-x,[17],[18],[16],-[15])) + %s", str_fun_f_background.c_str()), fun_f_->GetXmin(), fun_f_->GetXmax());
   std::map<int, int> params = {
     { 0, 0 }, { 1, 14 }, { 2, 15 }, { 3, 8 }, { 4, 11 },
     { 5, 3 }, { 6, 4 }, { 7, 5 }, { 8, 6 },
@@ -698,4 +707,3 @@ void xjjroot::dfitter::draw_params(float x, float y, float tsize, float lspacesc
   xjjroot::drawtexgroup(x, y, rtex, tsize, 13, 42, lspacescale);
 }
 
-#endif
