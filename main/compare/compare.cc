@@ -5,9 +5,11 @@
 #include "util.h"
 
 int macro(const std::vector<std::string>& inputnames, const std::string& outputname,
-          const std::string& tags = "", const std::string& excepth = "") {
+          const std::string& tags = "", const std::string& title = "",
+          const std::string& excepth = "",
+          float legdx = 0, float legdy = 0) {
   __XJJLOG << ">> " << inputnames.size() << std::endl;
-  const std::vector<Color_t> colors = { kBlack, xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"] };
+  const std::vector<Color_t> colors = { kBlack, xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"], xjjroot::mycolor_middle["magenta"], xjjroot::mycolor_middle["cyan"], xjjroot::mycolor_middle["violet"] };
   const float cr = 2./3, ytop = 0.84, lspace = 1.2, tsize = 0.038, tsize_up = 0.038/cr;
 
   std::vector<std::regex> excepts;
@@ -24,6 +26,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   } else if (h2_bins) {
     tbins.seth(h2_bins, 0, 1);
   }
+  
   std::map<std::string, std::vector<TH1D*>> hs, hratios;
   TLegend* leg = nullptr;
   for (int i=0; i<inputnames.size(); i++) {
@@ -50,7 +53,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     auto ih1s = vec_to_map(xjjana::getobj_regexp<TH1D>(inf));
     auto cc = colors[i%colors.size()];
     for (auto& [_, h] : ih1s) {
-      xjjroot::setthgrstyle(h, cc, 21, 1.5, cc, 1, 1);
+      xjjroot::setthgrstyle(h, cc, xjjroot::markerlist_solid[i%xjjroot::markerlist_solid.size()], 1.5, cc, 1, 1);
     }
     if (hs.empty()) { // push based on ih1s key
       for (auto& [key, h] : ih1s)
@@ -65,7 +68,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       }
     }
     if (!leg) {
-      leg = new TLegend(0.60, ytop-tsize_up*lspace*inputnames.size(), 0.85, ytop);
+      leg = new TLegend(0.60+legdx, ytop+legdy-tsize_up*lspace*inputnames.size(), 0.85+legdx, ytop+legdy);
       xjjroot::setleg(leg, tsize_up);
     }
     leg->AddEntry(ih1s.begin()->second, inputp.tex.c_str(), "p");
@@ -120,7 +123,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       labels.push_back(tbins.label_y(index_y));
     }
     xjjroot::drawtexgroup(0.24, ytop-(lspace-1)*tsize_up/2, labels, tsize_up, 13, 42, lspace);
-    xjjroot::drawCMS(xjjroot::CMS::internal, "", 1./cr);
+    xjjroot::drawCMS(xjjroot::CMS::internal, title, 1./cr);
 
     pads.back()->cd();
     hratios[key].front()->Draw("axis");
@@ -142,11 +145,14 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 
 int main(int argc, char* argv[]) {
   __XJJLOG << ">> argc" << argc << std::endl;
+  if (argc == 8) {
+    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5], std::atof(argv[6]), std::atof(argv[7]));
+  }
+  if (argc == 6) {
+    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5]);
+  }
   if (argc == 5) {
     return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4]);
-  }
-  if (argc == 4) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3]);
   }
   if (argc == 3) {
     return macro(xjjc::str_divide_trim(argv[1], ","), argv[2]);
