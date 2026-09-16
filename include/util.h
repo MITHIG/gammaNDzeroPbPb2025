@@ -1,26 +1,26 @@
-#include "xjjcuti.h"
+/**
+   auto* t = new TTree("info", "");
+   std::map<std::string, std::string> t_cont;
+   auto cast_branch = [&t, &t_cont]<typename T>(const std::string& name, const T& x) {
+   t_cont[name] = xjjc::to_string(x);
+   t->Branch(name.c_str(), &(t_cont[name]));
+   };
+   cast_branch("input", pinput.content);
+   t->Fill();
+   t->Write();
 
-namespace util {
-  struct Inputpar {
-    std::string content;
-    std::string tex;
-    std::string tag;
-    // std::vector<std::string> parse;
-  };
+   auto* t = new TTree("info", "");
+   for (auto& [key, content] : info) {
+   t->Branch(key.c_str(), &content);
+   }
+   t->Fill();
+   t->Write();
+   xjjroot::closefile(outf);
+**/
 
-  Inputpar parse_input(std::string inputname);
-}
-
-util::Inputpar util::parse_input(std::string inputname) {
-  auto parse = xjjc::str_divide_trim(inputname, ";");
-  Inputpar p = { .content = "", .tex = "", .tag = "" };
-  if (parse.size() > 0)
-    p.content = parse[0];
-  if (parse.size() > 1)
-    p.tex = parse[1];
-  if (parse.size() > 2)
-    p.tag = parse[2];
-
-  return p;
-}
+/**
+   auto info = xjjana::getval_regexp(static_cast<TTree*>(inf->Get("info")));
+   __XJJLOG << "++ info" << std::endl;
+   xjjc::print_tab(info, -1);
+**/
 
