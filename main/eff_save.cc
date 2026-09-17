@@ -1,7 +1,7 @@
 #include <TH3D.h>
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 
-#include "../include/util.h"
 #include "../include/save.h"
 #define __BINS_PTY_EFF__
 #define __BINS_MULT__
@@ -10,7 +10,7 @@
 int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, std::string output, std::string inputdatastr = "null") {
   std::map<std::string, TChain*> trs;
   // parse inputmc
-  const auto pi_inputmc = util::parse_input(inputmcstr);
+  const auto pi_inputmc = xjjroot::parse_input(inputmcstr);
   trs["mc"] = xjjana::chain_files(xjjc::str_divide_trim(pi_inputmc.content, ","), "Tree");
   if (!trs.at("mc")) {
     __XJJLOG << "!! bad inputmc file " << pi_inputmc.content << ", abort." << std::endl;
@@ -18,16 +18,16 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
   }
   save::mask_branch(trs.at("mc"));
 
-  const auto pi_inputdata = util::parse_input(inputdatastr);
+  const auto pi_inputdata = xjjroot::parse_input(inputdatastr);
   trs["data"] = xjjana::chain_files(xjjc::str_divide_trim(pi_inputdata.content, ","), "Tree");
   if (!trs.at("data")) {
     __XJJLOG << "?? no inputdata file, only MC is used." << std::endl;
   }
 
   // parse cut
-  const auto pi_cutevt = util::parse_input(cutevtstr);
+  const auto pi_cutevt = xjjroot::parse_input(cutevtstr);
   const auto cutevt = pi_cutevt.content, cutevt_mc = save::cut_adjust_to_mc(cutevt);
-  const auto pi_cutd = util::parse_input(cutdstr);
+  const auto pi_cutd = xjjroot::parse_input(cutdstr);
   const auto cutd = pi_cutd.content;
   
   auto* outf = xjjroot::newfile("rootfiles/" + output + ".root");
