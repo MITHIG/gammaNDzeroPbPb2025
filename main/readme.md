@@ -7,6 +7,10 @@ cd cd main/
 # run result (will take some time to finish):
 ./run_main.sh 3 1 3 3 1
 ```
+- The 5 steps are
+```
+./run_main.sh [event efficiency] [save mass templates] [fill data histograms and fit] [D efficiency] [calculate xsec] 
+```
 - Check figures in
 ```
 figspdf/gammaN-0nXn-25_Dbdt-gammaN/
