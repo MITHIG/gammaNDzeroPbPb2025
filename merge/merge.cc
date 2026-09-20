@@ -5,7 +5,7 @@
 
 #include "merge.h"
 
-enum class skimPreset { BRANCH = 0, ZDCOR, ZDCXORJET, DSIZE };
+enum class skimPreset { BRANCH = 0, ZDCOR, ZDCXORJET, DSIZE, DEFF };
 
 namespace globals {
   const std::vector<std::string> trees_regexp =
@@ -18,7 +18,8 @@ namespace globals {
     { skimPreset::BRANCH, "BRANCH" },
     { skimPreset::ZDCOR, "ZDCOR" },
     { skimPreset::ZDCXORJET, "ZDCXORJET" },
-    { skimPreset::DSIZE, "DSIZE" }
+    { skimPreset::DSIZE, "DSIZE" },
+    { skimPreset::DEFF, "DEFF" }
   };
 }
 void recursive_enter(TDirectory*, const std::string&, std::vector<std::string>&, const std::regex&);
@@ -61,10 +62,14 @@ int macro(std::string outputname, std::string filelist, int ntotal = -1) {
   int Dsize; nt->SetBranchAddress("Dsize", &Dsize);
   bool isL1ZDCOr; nt->SetBranchAddress("isL1ZDCOr", &isL1ZDCOr);
   bool isL1ZDCXORJet8; nt->SetBranchAddress("isL1ZDCXORJet8", &isL1ZDCXORJet8);
+  int Gsize; nt->SetBranchAddress("Gsize", &Gsize);
+  std::vector<bool>* GisSignalCalc = nullptr; nt->SetBranchAddress("GisSignalCalc", &GisSignalCalc);
+  std::vector<float>* Gpt = nullptr; nt->SetBranchAddress("Gpt", &Gpt);
 
-  auto has_skim_ZDCOR = has_skim(skimPreset::ZDCOR),
+  const auto has_skim_ZDCOR = has_skim(skimPreset::ZDCOR),
     has_skim_ZDCXORJET = has_skim(skimPreset::ZDCXORJET),
-    has_skim_DSIZE = has_skim(skimPreset::DSIZE);
+    has_skim_DSIZE = has_skim(skimPreset::DSIZE),
+    has_skim_DEFF = has_skim(skimPreset::DEFF);
   
   m.CloneTree();
   const auto nentries = m.GetEntries();
@@ -77,6 +82,16 @@ int macro(std::string outputname, std::string filelist, int ntotal = -1) {
     if (has_skim_ZDCOR && !(isL1ZDCOr) ) continue;
     if (has_skim_ZDCXORJET && !(isL1ZDCXORJet8) ) continue;
     if (has_skim_DSIZE && !(Dsize > 0) ) continue;
+    if (has_skim_DEFF) {
+      bool there_is_Gsignal = false;
+      for (int j=0; j<Gsize; j++) {
+        if (GisSignalCalc->at(j) && Gpt->at(j) > 2) {
+          there_is_Gsignal = true;
+          break;
+        }
+      }
+      if (!there_is_Gsignal && !(Dsize > 0)) continue;
+    }
 
     m.Fill();
   }
