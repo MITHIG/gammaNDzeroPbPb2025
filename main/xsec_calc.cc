@@ -74,15 +74,23 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 
   xjjroot::print_tab(h1pts, 0);
   for (int j=0; j<tbins.npt(); j++) {
-    auto* h_corr = (TH1D*)h1pts.at("y_yield")[j]->Clone(xjjc::str_replaceall(h1pts.at("y_yield")[j]->GetName(), "yield", "corr").c_str());
+    const auto* h_yield = h1pts.at("y_yield")[j];
+
+    auto* h_yieldlumi = (TH1D*)h_yield->Clone(xjjc::str_replaceall(h_yield->GetName(), "yield", "yield-lumi").c_str());
+    h_yieldlumi->Scale(1./(lumi*1.e6));
+    h_yieldlumi->GetYaxis()->SetTitle("Raw Yield / Luminosity [mb]");
+    h1pts["y_yield-lumi"].push_back(h_yieldlumi);
+
+    auto* h_corr = (TH1D*)h_yield->Clone(xjjc::str_replaceall(h_yield->GetName(), "yield", "corr").c_str());
     h_corr->Divide(h1pts.at("y_eff__rebin")[j]);
     h_corr->GetYaxis()->SetTitle("Corrected Yield");
     h1pts["y_corr"].push_back(h_corr);
+
     auto* h_xsec = (TH1D*)h_corr->Clone(xjjc::str_replaceall(h_corr->GetName(), "corr", "xsec").c_str());
     h_xsec->Divide(h1pts.at("y_evteff")[j]);
     h_xsec->Scale(0.5/global::BR_DtoKpi/(lumi*1.e6)/tbins.binwidth_pt(j)/*dpt*/, "width");
     h_xsec->GetYaxis()->SetTitle("#frac{d^{2}#sigma}{d#it{y}d#it{p}_{T}} [mb/GeV]");
-    xjjroot::sethempty(h_xsec, 0, 0.2);
+    xjjroot::sethempty(h_xsec, 0, 0.2); // closer to axis than other hists
     if (tbins.npt() == 1)
       xjjroot::setthgrstyle(h_xsec, xjjroot::mycolor_middle["red"], -1, -1, xjjroot::mycolor_middle["red"]);
     h1pts["y_xsec"].push_back(h_xsec);
@@ -132,7 +140,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     leg->AddEntry(h1pts.at("y_yield")[i], tbins.label_pt(i).c_str(), "p");
   leg->Draw();
 
-  for (auto& t : { "y_yield", "y_eff__rebin", "y_evteff", "y_corr", "y_xsec" }) {
+  for (auto& t : { "y_yield", "y_yield-lumi", "y_eff__rebin", "y_evteff", "y_corr", "y_xsec" }) {
     pdf->prepare();
     xjjana::sethsmin(h1pts.at(t), 0.);
     xjjana::sethsmax(h1pts.at(t), 1.8);
