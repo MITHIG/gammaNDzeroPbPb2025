@@ -22,7 +22,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   std::map<std::string, std::vector<TH1D*>> h1pts, h1ys;
 
   for (auto* h3 : xjjana::getobj_regexp<TH3D>(inf, "h3_.+")) {
-    auto name = xjjc::str_eraseall(h3->GetName(), "h3_");
+    auto name = xjjc::str_eraseall(h3->GetName(), { "h3_" });
     h3->Sumw2();
     h3s[name] = h3;
     h3->GetZaxis()->SetRange(0, h3->GetZaxis()->GetNbins() + 1); // include multiplicity overflow

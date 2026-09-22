@@ -8,7 +8,6 @@ TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.'
 # TAG_BINNING="b-incl" ; BINNING_Y='-2., 2.' ; BINNING_PT='2., 5.' ;
 
 fitopt="3G-Peaky;Triple gaus signal;"
-# fitopt="Peaky-Exp;Exponential background;_f-exp"
 
 INPUTS_DATA=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025
@@ -18,28 +17,28 @@ INPUTS_DATA=(
 )
 CUTEVTS=( # lumi is nb-1 - directly from brilcalc
     # # --- 2025 0nXn ZDCOr
-    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN);gammaN-0nXn-25;0.060361"
-    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma);Ngamma-0nXn-25;0.060361"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN);0nXn-gammaN-25;0.060361"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma);0nXn-Ngamma-25;0.060361"
     # # --- 2025 0nXn ZB
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN) ZB;gammaN-0nXn-25-ZB;0.0082426"
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma) ZB;Ngamma-0nXn-25-ZB;0.0082426"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN) ZB;0nXn-gammaN-25-ZB;0.0082426"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma) ZB;0nXn-Ngamma-25-ZB;0.0082426"
     # # --- 2025 0nAn -> need to change inputs
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100 && HFEMaxPlus_eta5 < 16;An0n (#gammaN) ZeroBias;gammaN-0nAn-25-ZB;0.0082426"
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumMinus < 1000 && HFEMaxMinus_eta5 < 16;0nAn (N#gamma) ZeroBias;Ngamma-0nAn-25-ZB;0.0082426"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100 && HFEMaxPlus_eta5 < 16;An0n (#gammaN) ZeroBias;0nAn-gammaN-25-ZB;0.0082426"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumMinus < 1000 && HFEMaxMinus_eta5 < 16;0nAn (N#gamma) ZeroBias;0nAn-Ngamma-25-ZB;0.0082426"
     # # --- 2025 0n0n -> need to change inputs
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100 && ZDCsumMinus < 1000 && HFEMaxPlus_eta5 < 16 && HFEMaxMinus_eta5 < 16;0n0n (Both gap);gammaN-0n0n-2gap-25;0.0082426"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100 && ZDCsumMinus < 1000 && HFEMaxPlus_eta5 < 16 && HFEMaxMinus_eta5 < 16;0n0n (Both gap);0n0n-2gap-25;0.0082426"
     # # --- 2023
-    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 9.2 && ClusterCompatibilityFilter && nVtx <= 3;#gammaN (23);gammaN-0nXn-23;0.007803"
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 9.2 && ClusterCompatibilityFilter && nVtx <= 3;#gammaN (23);0nXn-gammaN-23;0.007803"
 )
 INPUTS_TEMPLATE=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamA_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamB_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
 )
 INPUTS_MC=(
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamB"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamB"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260814-yinclbdt_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260814-yinclbdt_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
 )
@@ -50,7 +49,7 @@ INPUTS_MC_EVT=( # only one sample work for each cut
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
 )
 CUT_BASE="TMath::Abs(Dtrk1PtErr/Dtrk1Pt)<0.1 && TMath::Abs(Dtrk2PtErr/Dtrk2Pt)<0.1 && TMath::Abs(Dtrk1Eta) < 2.4 && TMath::Abs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5 && Dchi2cl > 0.05 && (DsvpvDistance/DsvpvDisErr) > 1. && DsvpvDisErr>1.e-8 && DsvpvDisErr_2D>1.e-8"
-CUT_SIGNALWIN="Dmass > 1.83 && Dmass < 1.9"
+CUT_SIGNALWIN="Dmass > 1.83 && Dmass < 1.9" # for event selection efficiency
 CUTDS=(
     "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN"
     "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.143) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma"
@@ -192,6 +191,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
         done
     done 
 done
+wait
 
 # TAG_BINNING="_b-yextend" ; BINNING_Y='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ; BINNING_PT='2., 5.' ;
 # TAG_BINNING="_b-ptlow" ; BINNING_Y='-2., 2.' ; BINNING_PT='1., 2., 3., 4., 5.' ;

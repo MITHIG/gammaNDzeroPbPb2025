@@ -20,7 +20,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   std::map<std::string, std::vector<TH1D*>> h1pts;
 
   for (auto* h2 : xjjana::getobj_regexp<TH2D>(inf, "h2_.+")) {
-    const auto name = xjjc::str_eraseall(h2->GetName(), "h2_");
+    const auto name = xjjc::str_eraseall(h2->GetName(), { "h2_" });
     h2->Sumw2();
     h2s[name] = h2;
     if (!xjjc::str_contains(name, "eff")) continue;

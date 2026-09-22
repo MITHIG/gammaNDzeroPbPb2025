@@ -4,6 +4,7 @@
 
 #include "measurements.h"
 #include "draw.h"
+#include "util.h"
 
 namespace global {
   float BR_DtoKpi = 0.03936, err_BR_DtoKpi = 0.030*1.e-2;
@@ -24,8 +25,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   //
   std::string tag = "xsec";
   auto get_h1pts = [&h1pts, &infos, &tag](const std::string &inputname, const std::string &category,
-                                                    const std::vector<std::string>& h1names,
-                                                    const std::vector<std::string>& infots) {
+                                          const std::vector<std::string>& h1names,
+                                          const std::vector<std::string>& infots) {
     __XJJLOG << "[" << category << "] " << inputname << std::endl;
     auto* inf = TFile::Open(inputname.c_str());
     auto itag = xjjc::str_tag_from_file(inputname);
@@ -48,15 +49,17 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
         auto cc = vh.size() > 1 ? colors[i] : kBlack;
         xjjroot::setthgrstyle(vh[i], cc, 21, 1.6, cc, 1, 1);
       }
-      h1pts[xjjc::str_eraseall(name, "h1_")] = vh;
+      h1pts[xjjc::str_eraseall(name, { "h1_" })] = vh;
     }
     // info
     for (auto& tr : infots) {
       auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
       auto name = category;
-      if (name != "info")
-        name += ("_" + xjjc::str_eraseall(tr, "/info"));
+      if (tr != "info")
+        name += ("_" + xjjc::str_eraseall(tr, { "/info" }));
       infos[name] = info;
+      __XJJLOG << ">> [info] " << name << std::endl;
+      xjjc::print_tab(info, -1);
     }
     return 0;
   };
@@ -155,6 +158,28 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf");
   }
 
+  pdf->draw_cover({
+      "#bf{Data}",
+      "#bf{Input} " + infos.at("raw_data")["input"],
+      "#bf{Cut} " + infos.at("raw_data")["cut"],
+    }, 0.038);
+  pdf->draw_cover({
+      "#bf{Mass template}",
+      "#bf{Input} " + infos.at("raw_template")["input"],
+      "#bf{Cut} " + infos.at("raw_template")["cut"],
+    }, 0.038);
+  pdf->draw_cover({
+      "#bf{D efficiency}",
+      "#bf{Input} " + infos.at("effd")["inputmc"],
+      "#bf{Numerator} " + infos.at("effd")["cut_eff_num"],
+      "#bf{Denominator} " + infos.at("effd")["cut_eff_den"],
+    }, 0.038);
+  pdf->draw_cover({
+      "#bf{Event selection efficiency}",
+      "#bf{D cut} " + infos.at("effevent")["cut_d"],
+      "#bf{Event selection} " + infos.at("effevent")["cut_evt"],
+    }, 0.038);
+
   pdf->close();
 
   auto* outf = xjjroot::newfile("rootfiles/" + outputdir + "/" + tag + ".root");
@@ -163,12 +188,34 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     for (auto& h : hh)
       xjjroot::writehist(h);
   xjjroot::writehist(h3_bins);
-  // auto* t = new TTree("info", "");
-  // for (auto& [key, content] : info) {
-  //   t->Branch(key.c_str(), &content);
-  // }
-  // t->Fill();
-  // t->Write();
+
+  util::Writeinfo tinfo;
+  tinfo.init("info");
+  tinfo.cast_branch("lumi", lumi);
+  tinfo.cast_branch("event_is", static_cast<int>(event_is));
+  tinfo.cast_branch("data_input", infos.at("raw_data")["input"]);
+  tinfo.cast_branch("data_input_tex", infos.at("raw_data")["input_tex"]);
+  tinfo.cast_branch("data_cut", infos.at("raw_data")["cut"]);
+  tinfo.cast_branch("data_cut_tex", infos.at("raw_data")["cut_tex"]);
+  tinfo.cast_branch("template_input", infos.at("raw_template")["input"]);
+  tinfo.cast_branch("template_input_tex", infos.at("raw_template")["input_tex"]);
+  tinfo.cast_branch("template_cut", infos.at("raw_template")["cut"]);
+  tinfo.cast_branch("template_cut_tex", infos.at("raw_template")["cut_tex"]);
+  tinfo.cast_branch("effd_input", infos.at("effd")["inputmc"]);
+  tinfo.cast_branch("effd_input_tex", infos.at("effd")["inputmc_tex"]);
+  tinfo.cast_branch("deff_cutd", infos.at("effd")["cutd"]);
+  tinfo.cast_branch("deff_cutd_tex", infos.at("effd")["cutd_tex"]);
+  tinfo.cast_branch("deff_cutevt", infos.at("effd")["cutevt"]);
+  tinfo.cast_branch("deff_cutevt_tex", infos.at("effd")["cutevt_tex"]);
+  tinfo.cast_branch("deff_cuteffnum", infos.at("effd")["cut_eff_num"]);
+  tinfo.cast_branch("deff_cuteffden", infos.at("effd")["cut_eff_den"]);
+  tinfo.cast_branch("evteff_cutd", infos.at("effevent")["cut_d"]);
+  tinfo.cast_branch("evteff_cutd_tex", infos.at("effevent")["cut_d_tex"]);
+  tinfo.cast_branch("evteff_cutevt", infos.at("effevent")["cut_evt"]);
+  tinfo.cast_branch("evteff_cutevt_tex", infos.at("effevent")["cut_evt_tex"]);
+  // tinfo.cast_branch("", infos.at("")[""]);
+  tinfo.close();
+
   xjjroot::closefile(outf);
   
   return 0;

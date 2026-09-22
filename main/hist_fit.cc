@@ -34,7 +34,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
 
   auto read_hists = [&h3s, &h1ptys](TFile* inf) {
     for (auto* h3 : xjjana::getobj_regexp<TH3D>(inf, "h3_.+")) { 
-      auto name = xjjc::str_eraseall(h3->GetName(), "h3_"); 
+      auto name = xjjc::str_eraseall(h3->GetName(), { "h3_" }); 
       if (h3s.find(name) != h3s.end()) { 
         __XJJLOG << "!! error: name " << name << " already in the map." << std::endl; 
         xjjroot::print_tab(h3s, 0); 
