@@ -66,7 +66,7 @@ CUTDS=(
 echo "usage: ./run_main.sh [evt eff (2)] [template (1)] [hist (2)] [D eff (2)] [calc xsec]"
 echo "                         1             2              3           4          5"
 
-make evteff_save.exe evteff_calc.exe hist_save.exe hist_fit.exe eff_save.exe eff_calc.exe xsec_calc.exe || exit 1
+make evteff_save.exe evteff_calc.exe hist_save.exe hist_fit.exe eff_save.exe eff_calc.exe xsec_calc.exe xsec_collect.exe || exit 1
 
 # loop event selections
 for cutevtstr in "${CUTEVTS[@]}" ; do
@@ -175,16 +175,24 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     ####################
                     # Cross-section    #
                     ####################
-                    # itag_xsec=$cut_tag"/xsec_"${itag_data_fit##*/}"_"${itag_deff##*/}"_null_null"$TAG_BINNING
+                    itag_xsec=$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}'_'$itag_fprompt
                     echo "    itag_data_fit:  "$itag_data_fit
                     echo "    itag_deff:      "$itag_deff_calc
                     echo "    itag_evteff:    "$itag_evteff_calc
                     echo "    itag_fprompt:   "$itag_fprompt
                     echo "    lumi:           "$cutevt_lumi" nb-1"
-                    # echo "                ==> "$itag_xsec
+                    echo "                ==> "$itag_xsec
                     [[ ${5:-0} -eq 1 ]] && {
                         echo "    -> calculate cross sections"
-                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $cutevt_lumi $cut_tag"/"$TAG_BINNING
+                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $cutevt_lumi $itag_xsec
+                    }
+
+                    [[ $cutevt_tag == *Ngamma* ]] || continue
+                    file_Ngamma='rootfiles/'$itag_xsec'.root'
+                    file_gammaN=${file_Ngamma//Ngamma/gammaN} ; file_gammaN=${file_gammaN//BeamB/BeamA} ;
+                    outputname=${itag_xsec//-Ngamma/} ; outputname=${outputname//-BeamB/} ;
+                    [[ -f $file_gammaN && -f $file_Ngamma ]] && {
+                        ./xsec_collect.exe "${file_gammaN},${file_Ngamma}" $outputname 0
                     }
                 done
             done

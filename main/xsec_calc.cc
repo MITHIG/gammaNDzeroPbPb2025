@@ -23,14 +23,11 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     return 2;
   draw::bintex tbins(h3_bins, 0, 2);
   //
-  std::string tag = "xsec";
-  auto get_h1pts = [&h1pts, &infos, &tag](const std::string &inputname, const std::string &category,
+  auto get_h1pts = [&h1pts, &infos](const std::string &inputname, const std::string &category,
                                           const std::vector<std::string>& h1names,
                                           const std::vector<std::string>& infots) {
     __XJJLOG << "[" << category << "] " << inputname << std::endl;
     auto* inf = TFile::Open(inputname.c_str());
-    auto itag = xjjc::str_tag_from_file(inputname);
-    tag += ("_" + itag);
     if (!inf) {
       __XJJLOG << "?? no " << category << " input file: " << inputname << ", skip." << std::endl;
       return 2;
@@ -69,8 +66,9 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   get_h1pts(inputname_effevent, "effevent", { "h1_y_evteff" }, { "info" });
   get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
 
-  Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "#gammaN") ? Event::gammaN :
-    (xjjc::str_contains(infos.at("raw_data").at("cut_tex"), "N#gamma") ? Event::Ngamma : Event::Other);
+  Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tag"), "gammaN") ? Event::gammaN :
+    (xjjc::str_contains(infos.at("raw_data").at("cut_tag"), "Ngamma") ? Event::Ngamma : Event::Other);
+  __XJJLOG << ">> event_is, by " << infos.at("raw_data").at("cut_tag") << " : " << static_cast<int>(event_is) << std::endl;
   // auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
   // __XJJLOG << "++ info" << std::endl;
   // xjjc::print_tab(info, -1);
@@ -100,7 +98,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   }
 
   xjjroot::setgstyle(1);
-  auto* pdf = new xjjroot::mypdf("figspdf/" + outputdir + "/" + tag + ".pdf");
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputdir + ".pdf");
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" }});
 
   auto draw_global = [&infos, &lumi](bool divide2) {
@@ -182,7 +180,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 
   pdf->close();
 
-  auto* outf = xjjroot::newfile("rootfiles/" + outputdir + "/" + tag + ".root");
+  auto* outf = xjjroot::newfile("rootfiles/" + outputdir + ".root");
   // for (auto& [_, h] : h2s) xjjroot::writehist(h);
   for (auto& [_, hh] : h1pts)
     for (auto& h : hh)

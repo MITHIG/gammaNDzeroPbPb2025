@@ -2,7 +2,7 @@
 
 isNgamma=${1}
 
-make evteff_save.exe evteff_calc.exe hist_save.exe hist_fit.exe eff_save.exe eff_calc.exe xsec_calc.exe || exit 1
+make evteff_save.exe evteff_calc.exe hist_save.exe hist_fit.exe eff_save.exe eff_calc.exe xsec_calc.exe xsec_collect.exe || exit 1
 
 parse_input_tag() {
     IFS=';' ; inputs=($1) ; unset IFS ;
@@ -62,7 +62,7 @@ cutdtopos=(
 
 fitopts=(
     '3G-Peaky;;'
-    # '3G-Peaky-Exp;;_f-exp'
+    '3G-Peaky-Exp;;_f-exp'
 )
 
 make_zdccut_string() {

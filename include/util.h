@@ -1,10 +1,12 @@
 #pragma once
 
 namespace util {
-  xjjc::info read_info(TDirectory* inf, const std::string& treename = "info", bool verbose = true) {
+  xjjc::info read_info(TDirectory* inf, const std::string& treename = "info", bool verbose = false) {
     auto info = xjjana::getval_regexp(static_cast<TTree*>(inf->Get(treename.c_str())));
-    __XJJLOG << "++ info" << std::endl;
-    xjjc::print_tab(info, -1);
+    if (verbose) {
+      __XJJLOG << "++ info" << std::endl;
+      xjjc::print_tab(info, -1);
+    }
     return info;
   }
   
@@ -22,6 +24,26 @@ namespace util {
     TTree* t_;
     std::map<std::string, std::string> t_cont_;
   };
+
+  int mirrorswap_hist(TH1 *h) {
+    const auto nbins = h->GetNbinsX();
+    if (nbins%2 != 0) {
+      __XJJLOG << "!! the histogram can't be mirror swapped, abort." << std::endl;
+      return 1;
+    }
+    for (int i = 1; i <= nbins / 2; ++i) {
+      int j = nbins + 1 - i;
+      const auto content_i = h->GetBinContent(i);
+      const auto error_i   = h->GetBinError(i);
+      const auto content_j = h->GetBinContent(j);
+      const auto error_j   = h->GetBinError(j);
+      h->SetBinContent(i, content_j);
+      h->SetBinError(i, error_j);
+      h->SetBinContent(j, content_i);
+      h->SetBinError(j, error_i);
+    }
+    return 0;
+  }
 }
 
 /** solution to use lambda

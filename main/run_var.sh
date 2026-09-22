@@ -3,8 +3,9 @@
 LABELS_DIR=('gammaN' 'Ngamma')
 
 isNgamma=${1:-0}
-evtcut_tag_DEFAULT='0nXn-'${LABELS_DIR[$isNgamma]}'-25'
 execu=${2:-00000}
+
+evtcut_tag_DEFAULT='0nXn-'${LABELS_DIR[$isNgamma]}'-25'
 evtzdc=${3:-"ZDCgammaN;;"} ## !!
 IFS=';' evtzdcs=($evtzdc)
 evtgap=${4:-"HFEMax_eta5 < 16;;"} ; [[ $isNgamma -eq 0 ]] && evtgap=${evtgap/HFEMax/HFEMaxPlus} || evtgap=${evtgap/HFEMax/HFEMaxMinus} ;
@@ -19,8 +20,8 @@ runlevel=${7:-0}
 ##
 
 SAVE_PNG=0
-TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
+# TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
+TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
 LUMINOSITY=0.060361
 
 INPUT_DATA="/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb"
@@ -121,11 +122,27 @@ itag_fprompt='null'
 ####################
 # Cross-section    #
 ####################
+itag_xsec=$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}'_'$itag_fprompt
 echo "  itag_data_fit:     "$itag_data_fit
 echo "  itag_deff_calc:    "$itag_deff_calc
 echo "  itag_evteff_calc:  "$itag_evteff_calc
 echo "  itag_fprompt:      "$itag_fprompt
 echo "  lumi:              "$LUMINOSITY" nb-1"
-# echo "              ==> "$itag_xsec
+echo "              ==> "$itag_xsec
 
-[[ $runlevel -gt 1 ]] && ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $LUMINOSITY $cut_tag"/"$TAG_BINNING
+[[ $runlevel -gt 1 ]] && {
+    ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $LUMINOSITY $itag_xsec
+    [[ $isNgamma -eq 1 ]] && {
+        file_Ngamma='rootfiles/'$itag_xsec'.root'
+        file_gammaN=${file_Ngamma//Ngamma/gammaN} ; file_gammaN=${file_gammaN//BeamB/BeamA} ;
+        outputname=${itag_xsec//-Ngamma/} ; outputname=${outputname//-BeamB/} ;
+        ls $file_gammaN
+        ls $file_Ngamma
+        echo $outputname
+        [[ -f $file_gammaN && -f $file_Ngamma ]] && {
+            set -x
+            ./xsec_collect.exe "${file_gammaN},${file_Ngamma}" $outputname 0
+            set +x
+        }
+    }
+}
