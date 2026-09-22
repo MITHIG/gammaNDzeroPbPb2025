@@ -1,5 +1,4 @@
-#ifndef __BINS__
-#define __BINS__
+#pragma once
 
 namespace bins {
 
@@ -24,7 +23,7 @@ namespace bins {
 #endif
 
 #ifdef __BINS_MULT__
-  const int nmult = 50; const float minmult = 0, maxmult = 50;
+  const int nmult = 100; const float minmult = 0, maxmult = 100;
 #endif
 
 #ifdef __BINS_MASS__
@@ -47,5 +46,3 @@ namespace bins {
 #endif
 
 }
-
-#endif
