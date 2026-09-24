@@ -5,6 +5,8 @@
 #include "draw.h"
 #include "util.h"
 
+#include "theory.h"
+
 struct Property {
   std::string tex;
 };
@@ -43,7 +45,7 @@ TGraphAsymmErrors* CombineErrors(
   return gtotal;
 }
 
-const float ytop = 0.84, lspace = 1.2, tsize = 0.036;
+const float ytop = 0.84, lspace = 1.2, tsize = 0.038;
 float ypos(float i = 0, float margin = 0) { return ytop+margin-i*(tsize*lspace); }
 
 int macro(const std::vector<std::string>& inputnames, const std::string& outputname, const std::string& tags) {
@@ -57,7 +59,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 
   const std::map<std::string, Property> texs = {
     { "gammaN", { .tex = "Xn0n (#gammaN)" } },
-    { "Ngamma", { .tex = "Xn0n (N#gamma) (#it{y} #rightarrow -#it{y})" } },
+    { "NgammaRef", { .tex = "Xn0n (N#gamma) (#it{y} #rightarrow -#it{y})" } },
     { "sum", { .tex = "Xn0n + 0nXn (#it{y} #rightarrow -#it{y})" } }
   };
   TLegend *leg = nullptr;
@@ -95,16 +97,24 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   };
   
   xjjroot::setgstyle(1);
+  TLegend* leg_fonll = nullptr;
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   for (int j=0; j<tbins.npt(); j++) {
+    fonll::DrawSets ds("../data/FONLL_all_predictions_vs_y_21Sept2026_CTEQ18_with_pt_2_5.root", tbins.edgelow_pt(j), tbins.edgeup_pt(j));
+    const auto ymax = ds.ymaximum();
     for (const auto& [key, prop] : texs) {
+      if (key == "sum")
+        hs.at(key)[j]->SetMaximum(ymax*1.3);
       pdf->prepare();
       hs.at(key)[j]->Draw("axis");
+      if (ds.valid() && key == "sum") ds.draw()->Draw();
       drawh1_X0(hs.at(key)[j]);
       gs_syst.at(key)[j]->Draw("5 same");
-      xjjroot::drawtexgroup(0.23, ypos(-0.2), { prop.tex,  }, tsize, 13);
-      xjjroot::drawtexgroup(0.90, ypos(-0.2), { tbins.label_pt(j) }, tsize, 33);
+      // gs_syst.at(key)[j]->Draw("[] same");
+      xjjroot::drawtexgroup(0.23, ypos(-0.2), { prop.tex, tbins.label_pt(j) }, tsize, 13);
+      xjjroot::drawtexgroup(0.90, ypos(-0.2), { xjjroot::CMS::DzDzbar2 }, tsize, 33);
       xjjroot::drawCMS(xjjroot::CMS::internal, "PbPb (5.36 TeV)");
+      gPad->RedrawAxis();
       pdf->write();
     }
   }

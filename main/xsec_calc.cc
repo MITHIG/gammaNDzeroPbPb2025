@@ -11,8 +11,8 @@ namespace global {
 }
 
 int macro(const std::string& inputname_raw, const std::string& inputname_effd,
-          const std::string& inputname_effevent, const std::string inputname_fprompt = "null",
-          float lumi = 1., const std::string& outputdir = "") {
+          const std::string& inputname_effevent, const std::string inputname_fprompt,
+          float lumi, const std::string& outputdir, int save_png = 0) {
 
   __XJJLOG << ">> lumi: " << lumi << " nb-1" << std::endl;
   std::map<std::string, std::vector<TH1D*>> h1pts;
@@ -44,7 +44,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
       for (int i=0; i<vh.size(); i++) {
         xjjroot::sethempty(vh[i], 0, 0.4);
         auto cc = vh.size() > 1 ? colors[i] : kBlack;
-        xjjroot::setthgrstyle(vh[i], cc, 21, 1.6, cc, 1, 1);
+        xjjroot::setthgrstyle(vh[i], cc, 20, 1.6, cc, 1, 1);
       }
       h1pts[xjjc::str_eraseall(name, { "h1_" })] = vh;
     }
@@ -130,7 +130,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   legvs23->Draw();
   xjjroot::drawtex(legvs23->GetX1() + 0.008, legvs23->GetY2()+tlsize*0.5 - 0.005, "This analysis", tsize, 12);
   xjjroot::drawtex(legvs23->GetX1() + 0.008, legvs23->GetY1()+tlsize*1.5 - 0.005, "2023 PbPb (HIN-25-002)", tsize, 12);
-  pdf->write(name_png + "_xsec_vs23.pdf");
+  pdf->write();
 
   for (auto& h : h1pts.at("y_xsec"))
     xjjroot::print_th(h);
@@ -153,7 +153,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     }
     leg->Draw();
     draw_global(xjjc::str_contains(t, "xsec"));
-    pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf");
+    pdf->write();
+    // pdf->write(name_png + xjjc::str_replaceall(t, "y_", "_") + ".pdf", save_png ? "" : "X");
   }
 
   pdf->draw_cover({
@@ -220,6 +221,9 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 8) {
+    return macro(argv[1], argv[2], argv[3], argv[4], atof(argv[5]), argv[6], std::atoi(argv[7]));
+  }
   if (argc == 7) {
     return macro(argv[1], argv[2], argv[3], argv[4], atof(argv[5]), argv[6]);
   }

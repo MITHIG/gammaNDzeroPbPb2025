@@ -2,7 +2,7 @@ enum Event { gammaN, Ngamma, Other };
 
 namespace measurement {
   const auto color_dimmer = xjjroot::color_alpha(kBlack, 0.3);
-  xjjroot::thgrstyle style = { color_dimmer, 20, 1.6, 0, 0, 0, color_dimmer, 1., 3004 };
+  xjjroot::thgrstyle style = { color_dimmer, 21, 1.6, 0, 0, 0, color_dimmer, 1., 3004 };
   TGraphErrors* get_style() {
     auto* gdump = new TGraphErrors();
     xjjroot::setthgrstyle(gdump, style);

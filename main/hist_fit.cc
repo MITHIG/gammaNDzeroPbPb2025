@@ -8,7 +8,7 @@
 #include "draw.h"
 
 int macro(const std::string& input_data, const std::string& input_template, const std::string& outputname,
-          const std::string& fit_opt = "3G", int save_png = 1) {
+          const std::string& fit_opt = "3G-Peaky", int save_png = 0) {
   std::cout<<std::endl;
 
   const auto fitopt = xjjroot::parse_input(fit_opt);
@@ -153,7 +153,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
     auto cc = xjjroot::grayscales_alpha(tbins.npt());
     for (int j=0; j<tbins.npt(); j++) {
       xjjroot::sethempty(h1pts.at(p)[j], 0, 0.5);
-      xjjroot::setthgrstyle(h1pts.at(p)[j], kBlack, 21, 1.5, kBlack, 1, 1, -1, -1, -1, cc[j], cc[j]);
+      xjjroot::setthgrstyle(h1pts.at(p)[j], kBlack, xjjroot::mstylelist_solid(j), 1.5, kBlack, 1, 1, -1, -1, -1, cc[j], cc[j]);
       leg->AddEntry(h1pts.at(p)[j], tbins.label_pt(j).c_str(), "p");
     }
     h1pts.at(p).front()->Draw("axis");
@@ -165,7 +165,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
       }, 0.035, 13, 42, 1.25);
     xjjroot::drawCMS(xjjc::str_contains(p, "mc") ? xjjroot::CMS::simulation : xjjroot::CMS::internal,
                      xjjc::str_contains(p, "mc") ? info_template.at("input_tex") : info_data.at("input_tex"));
-    auto save_indi = save_png && (p == "width68mc-y");
+    auto save_indi = save_png && (p == "width68mc-y" || p == "yield-y");
     pdf->write(Form("%s_%s.pdf", name_png.c_str(), p.c_str()), save_indi ? "" : "X");
   }
   
