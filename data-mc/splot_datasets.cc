@@ -7,6 +7,7 @@
 #include "RooAbsPdf.h"
 
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
 
 #include "../include/util.h"
@@ -18,7 +19,7 @@ std::vector<std::pair<RooRealVar*, bool>> fix_shape_parameters(RooAbsPdf* pdf, R
 void restore_parameter_states(const std::vector<std::pair<RooRealVar*, bool>> &old_states);
 
 int macro(std::string inputname, std::string outputname) {
-  const auto inputfile = util::parse_input(inputname).content;
+  const auto inputfile = xjjroot::parse_input(inputname).content;
   auto* inf = TFile::Open(inputfile.c_str());
   if (!inf || inf->IsZombie()) {
     __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
@@ -27,7 +28,7 @@ int macro(std::string inputname, std::string outputname) {
   std::map<std::string, xjjc::info> infos;
   for (std::string tr : { "data/info", "template/info" }) {
     auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
-    infos[xjjc::str_eraseall(tr, "/info")] = info;
+    infos[xjjc::str_eraseall(tr, { "/info" })] = info;
   }
   for (auto& [key, info] : infos) {
     __XJJLOG << "++ infos [" << key << "]" << std::endl;

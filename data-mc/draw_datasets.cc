@@ -1,7 +1,7 @@
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
 
-#include "../include/util.h"
 #include "../include/draw.h"
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
@@ -30,8 +30,8 @@ struct hName {
 hName parse_hname(std::string hname, bool verbose = false);
 
 // double scale_sideband = 0.5;
-int macro(std::string inputname, std::string outputname) {
-  const auto inputfile = util::parse_input(inputname).content;
+int macro(const std::string& inputname, const std::string& outputname) {
+  const auto inputfile = xjjroot::parse_input(inputname).content;
   auto* inf = TFile::Open(inputfile.c_str());
   if (!inf || inf->IsZombie()) {
     __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
@@ -40,7 +40,7 @@ int macro(std::string inputname, std::string outputname) {
   std::map<std::string, xjjc::info> infos;
   for (std::string tr : { "data/info", "template/info" }) {
     auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
-    infos[xjjc::str_eraseall(tr, "/info")] = info;
+    infos[xjjc::str_eraseall(tr, { "/info" })] = info;
   }
   for (auto& [key, info] : infos) {
     __XJJLOG << "++ infos [" << key << "]" << std::endl;
@@ -166,7 +166,7 @@ int macro(std::string inputname, std::string outputname) {
   
   for (auto& [name, _] : h1ys_data_main) {
     pdf->draw_cover({ "#bf{" + name + "}" }, 0.05);
-    const auto the_var = var_by_name(xjjc::str_eraseall(name, "_norm"));
+    const auto the_var = var_by_name(xjjc::str_eraseall(name, { "_norm" }));
     if (the_var.varname.empty()) continue;
 
     // preparations
@@ -332,11 +332,11 @@ hName parse_hname(std::string hname, bool verbose) {
   hName result;
   result.index_y = std::atoi(xjjc::str_erasestar(hname, "*__y-").c_str());
   auto t_noy_noh1 = xjjc::str_erasestar(hname, "__y-*");
-  t_noy_noh1 = xjjc::str_eraseall(t_noy_noh1, "h1_");
+  t_noy_noh1 = xjjc::str_eraseall(t_noy_noh1, { "h1_" });
   auto strs = xjjc::str_divide_trim(t_noy_noh1, "_");
   if (strs.size() > 0) {
     result.type = strs.back();
-    result.varname = xjjc::str_eraseall(t_noy_noh1, "_"+result.type);
+    result.varname = xjjc::str_eraseall(t_noy_noh1, { "_" + result.type });
   }
   // h1_DsvpvDistance_2D_data-sideband__y-3
   if (verbose)

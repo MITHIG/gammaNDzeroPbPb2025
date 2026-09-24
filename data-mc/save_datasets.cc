@@ -3,26 +3,29 @@
 #include "RooRealVar.h"
 
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 #define __BINS_MASS__
 #include "../include/bins.h"
-#include "../include/util.h"
 
 struct Flatten {
   std::vector<float> *br;
   RooRealVar *roov;
 };
 
-enum class ECutPreset { none = 0, gammaN = 1, Ngamma = 2, twoDirs = 3 };
-std::vector<std::string> ecut_name = { "none", "gammaN", "Ngamma", "gammaN + Ngamma" }; // only for display
+enum class EcutPreset { none = 0, gammaN = 1, Ngamma = 2, twoDirs = 3 };
+std::vector<std::string> ecut_name = { "none", "gammaN", "Ngamma", "gammaN + Ngamma" }; // only for print out
 enum class GCutPreset { none = 0, match = 1, swap = 2 };
 std::vector<std::string> gcut_name = { "none", "match", "swap" };
+enum class DcutPreset { none = 0, BDT = 1, Loose = 2 };
+std::vector<std::string> dcut_name = { "none", "Analysis BDT cut", "Loose cut" }; // only for print out
 
-std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPreset ecut, GCutPreset gcut = GCutPreset::none) {
+std::unique_ptr<RooDataSet> make_dataset(TTree* tree, const std::string& name, EcutPreset ecut, DcutPreset dcut, GCutPreset gcut = GCutPreset::none) {
   __XJJLOG << ">>                     name: " << name << std::endl;
   __XJJLOG << ">> event selection category: " << ecut_name[static_cast<int>(ecut)] << std::endl;
+  __XJJLOG << ">> event selection category: " << dcut_name[static_cast<int>(dcut)] << std::endl;
   __XJJLOG << ">> gen-match       category: " << gcut_name[static_cast<int>(gcut)] << std::endl;  
 
   tree->SetBranchStatus("*", 0);
@@ -81,11 +84,11 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
 
     if (!selectedVtxFilter) continue;
     if (Run > 10 && !(isL1ZDCOr && cscTightHalo2015Filter)) continue;
-    bool pass_gammaN = ZDCgammaN && HFEMaxPlus_eta5 < 16;
-    bool pass_Ngamma = ZDCNgamma && HFEMaxMinus_eta5 < 16;
-    if (ecut == ECutPreset::gammaN && !pass_gammaN) continue;
-    if (ecut == ECutPreset::Ngamma && !pass_Ngamma) continue;
-    if (ecut == ECutPreset::twoDirs && !(pass_gammaN || pass_Ngamma)) continue;
+    bool evt_pass_gammaN = ZDCgammaN && HFEMaxPlus_eta5 < 16;
+    bool evt_pass_Ngamma = ZDCNgamma && HFEMaxMinus_eta5 < 16;
+    if (ecut == EcutPreset::gammaN && !evt_pass_gammaN) continue;
+    if (ecut == EcutPreset::Ngamma && !evt_pass_Ngamma) continue;
+    if (ecut == EcutPreset::twoDirs && !(evt_pass_gammaN || evt_pass_Ngamma)) continue;
 
     // std::cout<<Dsize<<std::endl;
     
@@ -104,20 +107,27 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
              VAL(Dtrk1Pt) > 0.5 && VAL(Dtrk2Pt) > 0.5 &&
              VAL(Dchi2cl) > 0.05 && (VAL(DsvpvDistance)/VAL(DsvpvDisErr)) > 1. )) continue;
 
-      bool pass_BDT_gammaN = pass_gammaN && ((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098));
-      bool pass_BDT_Ngamma = pass_Ngamma && ((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098));
+      bool d_pass_gammaN = true;
+      if (dcut == DcutPreset::BDT) d_pass_gammaN = ((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098));
+      else if (dcut == DcutPreset::Loose) d_pass_gammaN = VAL(Dmva_BDT) > 0.;
+      bool d_pass_Ngamma = true;
+      if (dcut == DcutPreset::BDT) d_pass_Ngamma = ((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098));
+      else if (dcut == DcutPreset::Loose) d_pass_Ngamma = VAL(Dmva_BDT) > 0.;
+
+      const bool all_pass_gammaN = evt_pass_gammaN && d_pass_gammaN;
+      const bool all_pass_Ngamma = evt_pass_Ngamma && d_pass_Ngamma;
       
-      if (ecut == ECutPreset::gammaN && !pass_BDT_gammaN) continue;
-      if (ecut == ECutPreset::Ngamma && !pass_BDT_Ngamma) continue;
-      if (ecut == ECutPreset::twoDirs && !(pass_BDT_gammaN || pass_BDT_Ngamma)) continue;
+      if (ecut == EcutPreset::gammaN && !all_pass_gammaN) continue;
+      if (ecut == EcutPreset::Ngamma && !all_pass_Ngamma) continue;
+      if (ecut == EcutPreset::twoDirs && !(all_pass_gammaN || all_pass_Ngamma)) continue;
 
       // set dataset values
       for (auto& [_, v] : vars) {
         if (v.br) {
           v.roov->setVal( v.br->at(j) );
-          if (ecut == ECutPreset::twoDirs && pass_Ngamma) {
+          if (ecut == EcutPreset::twoDirs && evt_pass_Ngamma) {
             bool need_refl = false;
-            for (const std::string str_vref : { "Dy", "Eta" }) {
+            for (const std::string& str_vref : { "Dy", "Eta" }) {
               if (xjjc::str_contains(v.roov->GetName(), str_vref)) {
                 need_refl = true;
                 break;
@@ -144,13 +154,15 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, std::string name, ECutPres
   return data;
 }
 
-int macro(std::string inputstr, std::string outputname, std::string ecutstr, int ismcref) {
+int macro(const std::string& inputstr, const std::string& outputname, const std::string& ecutstr, const std::string& dcutstr, int ismcref) {
   // parse cut
-  auto ecuts = util::parse_input(ecutstr);
-  auto ecut = static_cast<ECutPreset>(std::atoi(ecuts.content.c_str()));
+  auto ecuts = xjjroot::parse_input(ecutstr);
+  auto ecut = static_cast<EcutPreset>(std::atoi(ecuts.content.c_str()));
+  auto dcuts = xjjroot::parse_input(dcutstr);
+  auto dcut = static_cast<DcutPreset>(std::atoi(dcuts.content.c_str()));
 
   // parse inputs
-  auto inputs = util::parse_input(inputstr);
+  auto inputs = xjjroot::parse_input(inputstr);
   const auto infname = inputs.content;
   auto* inf = TFile::Open(infname.c_str());
   if (!inf || inf->IsZombie()) {
@@ -165,22 +177,25 @@ int macro(std::string inputstr, std::string outputname, std::string ecutstr, int
 
   std::vector<std::unique_ptr<RooDataSet>> datasets;
   if (ismcref) {
-    datasets.push_back( make_dataset(tree, "mc_match", ecut, GCutPreset::match) );
-    datasets.push_back( make_dataset(tree, "mc_swap", ecut, GCutPreset::swap) );
+    datasets.push_back( make_dataset(tree, "mc_match", ecut, dcut, GCutPreset::match) );
+    datasets.push_back( make_dataset(tree, "mc_swap", ecut, dcut, GCutPreset::swap) );
   } else {
-    datasets.push_back( make_dataset(tree, "data_main", ecut) );
+    datasets.push_back( make_dataset(tree, "data_main", ecut, dcut) );
   }
 
-  auto* outf = xjjroot::newfile(outputname + ".root");
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
   for (auto& d : datasets)
     d->Write(d->GetName());
   auto* t = new TTree("info", "");
   t->Branch("input", &inputs.content);
   t->Branch("input_tex", &inputs.tex);
   t->Branch("input_tag", &inputs.tag);
-  t->Branch("cut", &ecuts.content);
-  t->Branch("cut_tex", &ecuts.tex);
-  t->Branch("cut_tag", &ecuts.tag);
+  t->Branch("ecut", &ecuts.content);
+  t->Branch("ecut_tex", &ecuts.tex);
+  t->Branch("ecut_tag", &ecuts.tag);
+  t->Branch("dcut", &dcuts.content);
+  t->Branch("dcut_tex", &dcuts.tex);
+  t->Branch("dcut_tag", &dcuts.tag);
   t->Fill();
   t->Write();
   xjjroot::closefile(outf);
@@ -189,7 +204,7 @@ int macro(std::string inputstr, std::string outputname, std::string ecutstr, int
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 5) {
-    return macro(argv[1], argv[2], argv[3], std::atoi(argv[4]));
+  if (argc == 6) {
+    return macro(argv[1], argv[2], argv[3], argv[4], std::atoi(argv[5]));
   }
 }

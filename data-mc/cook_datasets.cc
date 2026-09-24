@@ -1,23 +1,22 @@
 #include "RooDataSet.h"
 
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
-
-#include "../include/util.h"
 
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
-#define __BINS_PTY_DATAMCCOMP__
+#define __BINS_PTY_PLACEHOLDER__
 #include "../include/bins.h"
 
-int macro(std::string inputname, std::string outputname) {
+int macro(const std::string& inputname, const std::string& outputname) {
   // parse binning
-  xjjc::print_vec_h(bins::ybins, 0);
+  bins::print();
   auto* h2_bins = new TH2D("h2_bins_y-pt", ";y;#it{p}_{T}",
                            bins::ybins.size()-1, bins::ybins.data(),
-                           bins::npt, xjjc::fixedbin_to_edges(bins::npt, bins::minpt, bins::maxpt).data());
+                           bins::ptbins.size()-1, bins::ptbins.data());
 
-  const auto inputfile = util::parse_input(inputname).content;
+  const auto inputfile = xjjroot::parse_input(inputname).content;
   auto* inf = TFile::Open(inputfile.c_str());
   if (!inf || inf->IsZombie()) {
     __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
@@ -53,7 +52,7 @@ int macro(std::string inputname, std::string outputname) {
     }
   }
   
-  auto* outf = xjjroot::newfile(outputname + ".root");
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
   xjjroot::writehist(h2_bins);
   for (auto& [_, vds] : datays)
     for (auto& ds : vds)
@@ -72,14 +71,9 @@ int macro(std::string inputname, std::string outputname) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 4) {
-    __XJJLOG << ">> argv[3] (y binning) : " << argv[3] << std::endl;
-    auto overwrite_bins = xjjc::str_convert_vector<double>(argv[3], ",");
-    if (overwrite_bins.size() > 1)
-      bins::ybins = overwrite_bins;
-    return macro(argv[1], argv[2]);
-  }
-  if (argc == 3) {
+  if (argc == 5) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[3], ",");
+    bins::ptbins = xjjc::str_convert_vector<double>(argv[4], ",");
     return macro(argv[1], argv[2]);
   }
   return 1;

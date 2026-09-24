@@ -5,22 +5,22 @@
 #include "RooHist.h"
 
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
 
 #define __BINS_MASS__
 #include "../include/bins.h"
 
-#include "../include/util.h"
 #include "../include/droofitter.h"
 #include "../include/draw.h"
 
-int macro(std::string inputname_data, std::string inputname_template, std::string outputname) {
+int macro(const std::string& inputname_data, const std::string& inputname_template, const std::string& outputname) {
 
   std::map<std::string, std::vector<RooDataSet*>> datays;
   TH2D* h2_bins = nullptr;
   std::map<std::string, xjjc::info> infos;
   auto read_file = [&datays, &infos, &h2_bins](std::string inputname, std::string dname, std::string infoname = "") {
-    const auto inputfile = util::parse_input(inputname).content;
+    const auto inputfile = xjjroot::parse_input(inputname).content;
     auto* inf = TFile::Open(inputfile.c_str());
     if (!inf || inf->IsZombie()) {
       __XJJLOG << "!! bad file: " << inputfile << ", abort." << std::endl;
