@@ -2,13 +2,14 @@
 #include <TTree.h>
 #include <TH3D.h>
 #include "xjjrootuti.h"
+#include "xjjstruct.h"
 #include "variables.h"
 
-#define __BINS_PTY_BDT__
-#include "../include/bins.h"
+#define __BINS_PTY_INCL__
+#include "bins.h"
 
-int macro(std::string inputname, std::string cutstr,
-          std::string varname, std::string output)
+int macro(const std::string& inputstr, const std::string& cutstr,
+          const std::string& varname, const std::string& output)
 {
   // parse var
   auto it_var = std::find_if(vars.begin(), vars.end(), [&varname](const xjjana::variable& v) {
@@ -26,22 +27,20 @@ int macro(std::string inputname, std::string cutstr,
   const auto varbins = xjjc::fixedbin_to_edges(the_var.nbin, the_var.varmin, the_var.varmax);
 
   // parse cut
-  auto cuts = xjjc::str_divide_trim(cutstr, ";");
-  auto cut = cuts[0], cut_tex = cuts[1];
-  // cut = cut + " && isL1ZDCOr";
+  auto const pcut = xjjroot::parse_input(cutstr);
+  auto cut = pcut.content;
 
   // parse input
-  auto inputs = xjjc::str_divide_trim(inputname, ";");
-  auto input = inputs[0], input_tex = inputs[1];
-  auto* nt = xjjana::chain_files(xjjc::str_divide_trim(input, ","), "Tree");
+  const auto pinput = xjjroot::parse_input(inputstr);
+  auto* nt = xjjana::chain_files(xjjc::str_divide_trim(pinput.content, ","), "Tree");
   if (!nt) {
-    __XJJLOG << "!! bad input file: " << input << std::endl; 
+    __XJJLOG << "!! bad input file, abort." << std::endl; 
     return 2;
   }
+  const auto nentries = nt->GetEntries();
 
   // output
   auto* outf = xjjroot::newfile(output + ".root");
-  // /eos/user/c/cmsdqm/www/CAF/certification/Collisions23HI/Cert_Collisions2023HI_374288_375823_Good_ZDC_Golden.json
   TH3D* h3;
   if (isDvar || isGvar) {
     h3 = new TH3D("h3_y_var_pt", Form(";y;%s;p_{T} [GeV]", the_var.vartex.c_str()),
@@ -59,16 +58,23 @@ int macro(std::string inputname, std::string cutstr,
   nt->Project(h3->GetName(), str_proj.c_str(), cut.c_str());
   xjjroot::writehist(h3);
 
-  auto* tinfo = new TTree("info", "");
-  tinfo->Branch("varname", &varname);
-  tinfo->Branch("cut", &cut);
-  tinfo->Branch("cut_tex", &cut_tex);
-  tinfo->Branch("input", &input);
-  tinfo->Branch("input_tex", &input_tex);
-  tinfo->Fill();
-  tinfo->Write();
+  auto* t = new TTree("info", "");
+  std::map<std::string, std::string> t_cont;
+  auto cast_branch = [&t, &t_cont]<typename T>(const std::string& name, const T& x) {
+    t_cont[name] = xjjc::to_string(x);
+    t->Branch(name.c_str(), &(t_cont[name]));
+  };
+  cast_branch("varname", varname);
+  cast_branch("cut", pcut.content);
+  cast_branch("cut_tex", pcut.tex);
+  cast_branch("input", pinput.content);
+  cast_branch("input_tex", pinput.tex);
+  cast_branch("nentries", nentries);
+  t->Fill();
+  t->Write();
+  
+  xjjroot::closefile(outf);
 
-  outf->Close();
   return 0;
 }
 

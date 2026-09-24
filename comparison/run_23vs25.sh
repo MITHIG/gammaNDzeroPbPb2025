@@ -1,26 +1,30 @@
 #!/bin/bash
 
-INPUTS=(
-    # Event variables
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward0_Dpt-2_Trig-2.root,/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward1_Dpt-2_Trig-2.root,/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward2_Dpt-2_Trig-2.root;2023 (Jan24 Reco);d23-rJan24;"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward0_Dpt-2_Trig-2.root,/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward1_Dpt-2_Trig-2.root,/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward2_Dpt-2_Trig-2.root;2023 (Feb25 Reco);d23-rFeb25;"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward0_Dpt-2.root;2025;d25-rp;"
+DRAW_PNG=1
 
-    # D mesons
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward_Dpt-2_Trig-2_Dsize_xbr.root;2023 (Jan24 Reco);d23-rJan24"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward_Dpt-2_Trig-2_Dsize.root;2023 (Feb25 Reco);d23-rFeb25"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_12ePD.root;2025;d25-rp"
+INPUTS=(
+    # ZeroBias
+    '/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_HiForest_260218_HIPhysicsRawPrime0-5_HIRun2023A_ZB_374970.root;2023 ZB (374970);d23-rp'
+    '/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_HiForest_260218_HIPhysicsRawPrime0-10_HIRun2025A_highrZB_399766.root;2025 ZB (399766);d25-rp'
+
+    # # Empty BX
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_HiForest_260218_HIEmptyBX_HIRun2023A_PromptReco_v2.root;2023 EmptyBX;d23-rp"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_HiForest_260218_HIEmptyBX_HIRun2025A_PromptReco_v1.root;2025 EmptyBX;d25-rp"
 )
 
 VARS=(
-    # ZDCsumPlus
-    # ZDCsumMinus
+    'ZDCsumPlus;1'
+    'ZDCsumMinus;1'
+
+    # 'ZDCsumPlus-low;1'
+    # 'ZDCsumMinus-low;1'
+    # 'HFEMaxPlusforest-zoom;1'
+    # 'HFEMaxMinusforest-zoom;1'
+
     # HFEMaxPlusforest
     # HFEMaxMinusforest
-    # HFEMaxPlusforest-zoom
-    # HFEMaxMinusforest-zoom
     # nTrackInAcceptanceHP
-    nVtx
+    # nVtx
     
     #
     # Dmass
@@ -37,11 +41,8 @@ VARS=(
 )
 
 CUTEVTS=(
-    "isL1ZDCOr && ZDCgammaN && HFEMaxPlus_forest < 16 && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight;gammaN;2025"
-    "isL1ZDCOr && ZDCgammaN && gapgammaN && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight;gammaN;2023"
-    "isL1ZDCOr && ZDCgammaN && gapgammaN && selectedBkgFilter && selectedVtxFilter;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp for 2023;gammaN-wccf;2023"
-    # "isL1ZDCOr && ZDCgammaN && gapgammaN && selectedBkgFilter && selectedVtxFilter && nVtx <= 3;ZDC Xn0n (#gammaN), gap, |v_{z}| < 15, cscHaloTight%%clusComp, nVtx <= 3 for 2023;gammaN-wccf-nvtx3;2023"
-    # "isL1ZDCOr && ZDCgammaN && cscTightHalo2015Filter && selectedVtxFilter;ZDC Xn0n (#gammaN), |v_{z}| < 15, cscHaloTight;gammaN-nogap;" # for HFEMax
+    "1;Zero Bias;zerobias;"
+    # "isNotBptxOR;HLT_HIL1NotBptxOR;isNotBptxOR;"
 )
 ##
 
@@ -58,7 +59,8 @@ make savehist.exe calchists.exe drawhists.exe || exit 1
 for cutdstr in "${CUTDS[@]}" ; do
     IFS=';' ; cutdtags=($cutdstr) ; unset IFS ; cutd=${cutdtags[0]} ; cutd_tex=${cutdtags[1]} ; cutd_tag=${cutdtags[2]} ; 
 
-    for var in "${VARS[@]}" ; do
+    for varp in "${VARS[@]}" ; do
+        IFS=';' ; varps=(${varp}) ; unset IFS ; var=${varps[0]} ; noratio=${varps[1]} ;
         [[ ($var == D* && ${cutd} != 1) || ($var != D* && ${cutd} == 1) ]] || { continue ; }
 
         # event cut
@@ -102,19 +104,16 @@ for cutdstr in "${CUTDS[@]}" ; do
             echo $compare_list
             echo $tag_list
             [[ ${3:-0} -eq 1 ]] && {
-                ./drawhists.exe "$compare_list" "$tag_list" 1
+                ./drawhists.exe "$compare_list" "$tag_list" $DRAW_PNG $noratio
             }
         done
 
         echo
         echo "--> manual_draw_list" 
         manual_draw_list=(
-            gammaN${cutd_tag}__d23-rJan24,gammaN${cutd_tag}__d23-rFeb25,gammaN${cutd_tag}__d25-rp";"1';'1
-            # gammaN${cutd_tag}__d23-rJan24,gammaN${cutd_tag}__d23-rFeb25";"1
-            gammaN-wccf${cutd_tag}__d23-rJan24,gammaN-wccf${cutd_tag}__d23-rFeb25";"1';'1
         )
         for items in "${manual_draw_list[@]}" ; do
-            IFS=';' ; draw_opts=($items) ; unset IFS ; do_save_png=${draw_opts[1]} ; no_ratio=${draw_opts[2]} ;
+            IFS=';' ; draw_opts=($items) ; unset IFS ; do_save_png=${draw_opts[1]}
 
             compare_list=
             tag_list=
@@ -130,7 +129,7 @@ for cutdstr in "${CUTDS[@]}" ; do
             echo $compare_list
             echo $tag_list
             [[ ${4:-0} -eq 1 ]] && {
-                ./drawhists.exe "$compare_list" "$tag_list" $do_save_png $no_ratio
+                ./drawhists.exe "$compare_list" "$tag_list" $do_save_png
             }
         done
         echo

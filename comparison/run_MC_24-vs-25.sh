@@ -2,16 +2,29 @@
 
 INPUTS=(
     # D mesons
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;2024 MC (#gammaN);mc24-BeamA"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;2025 MC (#gammaN);mc25-BeamA"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;2024 MC (#gammaN);mc24-BeamA;48043545"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;2025 MC (#gammaN);mc25-BeamA;49423261"
 
     # Gen D mesons & Event variables
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;2024 MC (#gammaN);mc24-BeamA"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root;2025 MC (#gammaN);mc25-BeamA"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root;2024 MC (#gammaN);mc24-BeamA;48043545"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root;2025 MC (#gammaN);mc25-BeamA;49423261"
+
+    # # 2025 RECO - Vary digi
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_gt-141X_RECO_cmssw-1512_gt-151X_era-2025_Drej-genmatched_Dpt-2.root;Digi GT-141X;2024-pri-BeamA-Reco25-Digi-cmssw1512-gt141X-era25;-1"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_RECO_cmssw-1512_gt-151X_era-2025_Drej-genmatched_Dpt-2.root;Digi GT-151X;2024-pri-BeamA-Reco25-Digi-cmssw1512-gt151X-era25;-1"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_SiPixelQuality-24_RECO_cmssw-1512_gt-151X_era-2025_Drej-genmatched_Dpt-2.root;Digi GT-151X (24 SiPixelQuality);2024-pri-BeamA-Reco25-Digi-cmssw1512-gt151X-era25-SiPixelQuality24;-1"
+    # # 2025 digi + GT-141X - Vary RECO
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_gt-141X_RECO_cmssw-1512_gt-141X_era-2025_Drej-genmatched_Dpt-2.root;RECO GT-141X;2024-pri-BeamA-Digi25-gt141X-Reco-cmssw1512-gt141X-era25;-1"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_gt-141X_RECO_cmssw-1512_gt-151X_era-2025_Drej-genmatched_Dpt-2.root;RECO GT-151X;2024-pri-BeamA-Digi25-gt141X-Reco-cmssw1512-gt151X-era25;-1"
+    # # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_gt-141X_RECO_mssw-1512_gt-151X_era-2025_SiPixelTemplate-24_Drej-genmatched_Dpt-2.root;RECO GT-151X (24 SiPixelTemplate);2024-pri-BeamA-Digi25-gt141X-Reco-cmssw1512-gt151X-era25-SiPixelTemplate24;-1"
+    # 2025 digi - Vary RECO
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_RECO_cmssw-1512_gt-141X_era-2025_Drej-genmatched_Dpt-2.root;RECO GT-141X;2024-pri-BeamA-Reco25-gt141X-Digi-cmssw1512-gt151X-era25;-1"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPbMC/Dzero_260714-gen_HiForest_260328_pri_pr-GNucleusToD0-BeamA-Kpi_24UPCGS_Digi25_RECO_cmssw-1512_gt-151X_era-2025_Drej-genmatched_Dpt-2.root;RECO GT-151X;2024-pri-BeamA-Reco25-Digi-cmssw1512-gt151X-era25;-1"
+    
 )
 
 VARS=(
-    # Dmva_BDT
+    Dmva_BDT
     Dmass
     Dalpha
     Ddls
@@ -23,6 +36,10 @@ VARS=(
     Dtrk2ptrel
     Dpt
     Dy
+    Dtrk1nhit
+    Dtrk2nhit
+    Dtrk1Eta
+    Dtrk2Eta
 
     # ZDCsumPlus
     # ZDCsumMinus
@@ -74,7 +91,7 @@ for cutdstr in "${CUTDS[@]}" ; do
             compare_list=''
             tag_list=''
             for inputstr in "${INPUTS[@]}" ; do
-                IFS=';' ; inputtags=($inputstr) ; unset IFS ; input_tag=${inputtags[2]} ; 
+                IFS=';' ; inputtags=($inputstr) ; unset IFS ; input_tag=${inputtags[2]} ; lumi=${inputtags[3]}
                 [[ x$input_tag == x ]] && { echo "warning: missed input_tag. skip." ; continue ; }
 
                 echo -e "    \033[33m"$var" \033[33;2m("$input_tag")\033[0m"
@@ -87,7 +104,7 @@ for cutdstr in "${CUTDS[@]}" ; do
                 }
 
                 [[ ${2:-0} -eq 1 ]] && {
-                    ./calchists.exe $itag".root"
+                    ./calchists.exe $itag".root" $lumi
                 }
 
                 itag=${itag/_savehist/_calchist}

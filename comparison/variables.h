@@ -1,8 +1,12 @@
 #include "xjjanauti.h"
 
 std::vector<xjjana::variable> vars = {
-  { .varname = "ZDCsumPlus", .var = "ZDCsumPlus", .vartex = "Offline ZDC Plus Energy [GeV]", .varmin = 0, .varmax = 9000, .nbin = 100, .logy = 1 },
-  { .varname = "ZDCsumMinus", .var = "ZDCsumMinus", .vartex = "Offline ZDC Minus Energy [GeV]", .varmin = 0, .varmax = 9000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumPlus", .var = "ZDCsumPlus", .vartex = "Offline ZDC Plus Energy [GeV]", .varmin = 0, .varmax = 10000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumMinus", .var = "ZDCsumMinus", .vartex = "Offline ZDC Minus Energy [GeV]", .varmin = 0, .varmax = 10000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumPlus-zero", .var = "ZDCsumPlus", .vartex = "Offline ZDC Plus Energy [GeV]", .varmin = -1000, .varmax = 4000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumMinus-zero", .var = "ZDCsumMinus", .vartex = "Offline ZDC Minus Energy [GeV]", .varmin = -1000, .varmax = 4000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumPlus-low", .var = "ZDCsumPlus", .vartex = "Offline ZDC Plus Energy [GeV]", .varmin = 0, .varmax = 3000, .nbin = 100, .logy = 1 },
+  { .varname = "ZDCsumMinus-low", .var = "ZDCsumMinus", .vartex = "Offline ZDC Minus Energy [GeV]", .varmin = 0, .varmax = 3000, .nbin = 100, .logy = 1 },
   { .varname = "nTrackInAcceptanceHP", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta|<2.4, p_{T}>0.5 GeV)", .varmin = 0, .varmax = 40, .nbin = 40, .logy = 1 },
   { .varname = "HFEMaxPlusforest", .var = "HFEMaxPlus_forest", .vartex = "Leading HF+ PF (3 < |#eta| < 6) E_{max} [GeV]", .varmin = 0, .varmax = 40, .nbin = 100, .logy = 1 },
   { .varname = "HFEMaxPlusforest-zoom", .var = "HFEMaxPlus_forest", .vartex = "Leading HF+ PF (3 < |#eta| < 6) E_{max} [GeV]", .varmin = 0, .varmax = 25, .nbin = 100, .logy = 1 },
@@ -20,8 +24,10 @@ std::vector<xjjana::variable> vars = {
   { .varname = "Dtrk2Pt", .var = "Dtrk2Pt", .vartex = "Track 2 p_{T} [GeV]", .varmin = 0, .varmax = 5, .nbin = 50, .logy = 0 },
   { .varname = "Dtrk1Eta", .var = "Dtrk1Eta", .vartex = "Track 1 #eta", .varmin = -2.4, .varmax = 2.4, .nbin = 48, .logy = 0 },
   { .varname = "Dtrk2Eta", .var = "Dtrk2Eta", .vartex = "Track 2 #eta", .varmin = -2.4, .varmax = 2.4, .nbin = 48, .logy = 0 },
-  { .varname = "Dtrk1ptrel", .var = "Dtrk1PtErr/Dtrk1Pt", .vartex = "Track 1 #sigma(p_{T})/p_{T}", .varmin = 0, .varmax = 0.4, .nbin = 40, .logy = 1 },
-  { .varname = "Dtrk2ptrel", .var = "Dtrk2PtErr/Dtrk2Pt", .vartex = "Track 2 #sigma(p_{T})/p_{T}", .varmin = 0, .varmax = 0.4, .nbin = 40, .logy = 1 },
+  // { .varname = "Dtrk1ptrel", .var = "Dtrk1PtErr/Dtrk1Pt", .vartex = "Track 1 #sigma(p_{T})/p_{T}", .varmin = 0, .varmax = 0.4, .nbin = 40, .logy = 1 },
+  // { .varname = "Dtrk2ptrel", .var = "Dtrk2PtErr/Dtrk2Pt", .vartex = "Track 2 #sigma(p_{T})/p_{T}", .varmin = 0, .varmax = 0.4, .nbin = 40, .logy = 1 },
+  { .varname = "Dtrk1ptrel", .var = "Dtrk1PtErr/Dtrk1Pt", .vartex = "Track 1 #sigma(p_{T})/p_{T}", .varmin = 0, .varmax = 0.2, .nbin = 20, .logy = 1 },
+  { .varname = "Dtrk2ptrel", .var = "Dtrk2PtErr/Dtrk2Pt", .vartex = "Track 2 #sigma(p_{T})/p_{T}", .varmin = 0, .varmax = 0.2, .nbin = 20, .logy = 1 },
   { .varname = "Dtrk1nhit", .var = "Dtrk1PixelHit+Dtrk1StripHit", .vartex = "Track 1 number of hits", .varmin = 2, .varmax = 32, .nbin = 30, .logy = 0 },
   { .varname = "Dtrk2nhit", .var = "Dtrk2PixelHit+Dtrk2StripHit", .vartex = "Track 2 number of hits", .varmin = 2, .varmax = 32, .nbin = 30, .logy = 0 },
   { .varname = "Dmva_BDT", .var = "Dmva_BDT", .vartex = "BDT", .varmin = -0.5, .varmax = 0.4, .nbin = 30, .logy = 0 },

@@ -1,6 +1,6 @@
 #include "xjjanauti.h"
 
-int macro(std::string input)
+int macro(std::string input, float lumi = -1.)
 {
   auto* inf = TFile::Open(input.c_str());
   if (!inf) {
@@ -11,8 +11,13 @@ int macro(std::string input)
   // 
   auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
   __XJJLOG << "++ info" << std::endl;
-  info["input_tag"] = xjjc::str_eraseall(xjjc::str_tag_from_file(input), "save_");
+  info["input_tag"] = xjjc::str_eraseall(xjjc::str_tag_from_file(input), { "save_" });
   xjjc::print_tab(info, -1);
+  int lumi_is_nevt = 0;
+  if (lumi < 0) {
+    lumi_is_nevt = 1;
+    lumi = std::atof(info.at("nentries").c_str());
+  }
 
   //
   auto h3s = xjjana::getobj_regexp<TH3D>(inf, "h3_.+_.+_.+");
@@ -21,7 +26,7 @@ int macro(std::string input)
     return 2;
   }
   auto* h3 = h3s.front();
-  auto axisvars = xjjc::str_divide_trim(xjjc::str_eraseall(h3->GetName(), "h3_"), "_");
+  auto axisvars = xjjc::str_divide_trim(xjjc::str_eraseall(h3->GetName(), { "h3_" }), "_");
 
   //
   std::map<std::string, TH1D*> h1s;
@@ -44,14 +49,24 @@ int macro(std::string input)
       xjjroot::writehist(h);
 
   auto* tinfo = xjjana::write_info(info);
+  std::map<std::string, std::string> t_cont;
+  auto cast_branch = [&tinfo, &t_cont]<typename T>(const std::string& name, const T& x) {
+    t_cont[name] = xjjc::to_string(x);
+    tinfo->Branch(name.c_str(), &(t_cont[name]));
+  };
+  cast_branch("lumi", lumi);
+  cast_branch("lumi_is_nevt", lumi_is_nevt);
   tinfo->Fill();
   tinfo->Write();
-  outf->Close();
+  xjjroot::closefile(outf);
 
   return 0;
 }
 
 int main(int argc, char* argv[]) {
+  if (argc==3) {
+    return macro(argv[1], std::atof(argv[2]));
+  }
   if (argc==2) {
     return macro(argv[1]);
   }
