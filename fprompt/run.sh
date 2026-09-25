@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SAVE_PNG=1
+SAVE_PNG=0
 
 TAG_TARGET_BINNING="b-default" ; TARGET_BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; TARGET_BINNING_PT='2., 5.' ;
 # TAG_TARGET_BINNING="b-ptdiff" ; TARGET_BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; TARGET_BINNING_PT='2., 3., 4., 5.' ;
