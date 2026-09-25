@@ -22,7 +22,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
     __XJJLOG << "!! no directory dir_.+, abort." << std::endl;
     return 2;
   }
-  const auto var = xjjc::str_eraseall(dir_var->GetName(), "dir_");
+  const auto var = xjjc::str_eraseall(dir_var->GetName(), { "dir_" });
   
   std::map<std::string, xjjc::info> infos;
   for (const std::string name : { "data", "prompt", "nonprompt" } ) {
@@ -90,7 +90,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
         auto *h1_mc_prompt = h1sfs_mc.at("mc-prompt")[k], *h1_mc_nonprompt = h1sfs_mc.at("mc-nonprompt")[k];
         xjjc::progressslide(k, nsf, 2);
 
-        auto* fitter = new fpfitter(h1_data, h1_mc_prompt, h1_mc_nonprompt, "-" + xjjc::str_eraseall(type_data, "data-"), "-sf-" + xjjc::to_string(k));
+        auto* fitter = new fpfitter(h1_data, h1_mc_prompt, h1_mc_nonprompt, "-" + xjjc::str_eraseall(type_data, { "data-" }), "-sf-" + xjjc::to_string(k));
         if (fitter->status() > 0)
           continue;
         fitter->fit();
@@ -112,7 +112,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
         pdf->prepare();
         auto pads = fitter->draw(pdf->getc());
         pads.front()->cd();
-        xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)", 1./fpfitter::pratio);
+        xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data")["input_tex"] + " (5.36 TeV)", 1./fpfitter::pratio);
         xjjroot::drawtexgroup(fpfitter::xleft - 0.01, fpfitter::ytop - 0.005, {
             style_data(type_data).title.c_str(),
             tbins.label_pt(-1), tbins.label_y(i),
@@ -134,7 +134,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       pdf->prepare();
       h1_chi2->Draw("p");
       xjjroot::drawline(h1_chi2->GetBinCenter(ibin_best), h1_chi2->GetMinimum(), h1_chi2->GetBinCenter(ibin_best), h1_chi2->GetBinContent(ibin_best), kGray+3, 2, 2);
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)");
+      xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data")["input_tex"] + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.55, fpfitter::ytop - 0.005, {
           style_data(type_data).title.c_str(),
           tbins.label_pt(-1), tbins.label_y(i),
@@ -146,7 +146,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       h1_fprompt->Draw("pe1");
       gr_fprompt->Draw("pe1 same");
       xjjroot::drawline(h1_fprompt->GetBinCenter(ibin_best), h1_fprompt->GetMinimum(), h1_fprompt->GetBinCenter(ibin_best), h1_fprompt->GetBinContent(ibin_best), kGray+3, 2, 2);
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)");
+      xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data")["input_tex"] + " (5.36 TeV)");
       xjjroot::drawtexgroup(0.55, fpfitter::ytop - 0.005, {
           style_data(type_data).title.c_str(),
           tbins.label_pt(-1), tbins.label_y(i),

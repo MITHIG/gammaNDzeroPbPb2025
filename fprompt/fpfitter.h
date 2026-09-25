@@ -27,6 +27,7 @@ public:
   double fprompt_err_par() const { return fitresult_->ParError(0); }
   double fprompt_err_low() const { return fprompt_err_low_; }
   double fprompt_err_high() const { return fprompt_err_high_; }
+  void set_fprompt_err_asymm(double err_low, double err_high) { fprompt_err_low_ = err_low; fprompt_err_high_ = err_high; }
   int ndf() const { return (ibin_fit_max_ - ibin_fit_min_ + 1)/*nbins fitted*/ - 1/*npars*/; }
   double chi2() const { return chi2_; }
 
@@ -257,7 +258,7 @@ std::vector<TPad*> fpfitter::draw(TPad* c, Qual q) {
   xjjroot::setleg(leg, tsizes);
   leg->AddEntry(hdata_, "Data (signal extracted)", "pe");
   leg->AddEntry(htotal_fitted_, "Fit", "l");
-  xjjroot::addentrybystyle(leg, "Prompt", "f", { .lcolor = 0, .lstyle = 0, .lwidth = 0, .fcolor = htotal_fitted_->GetFillColor(), .falpha = 0.3 });
+  xjjroot::addentrybystyle(leg, "Prompt", "f", xjjroot::thgrstyle{ .lcolor = 0, .lstyle = 0, .lwidth = 0, .fcolor = htotal_fitted_->GetFillColor(), .falpha = 0.3 });
   leg->AddEntry(hnonprompt_fitted_, "Nonprompt", "f");
   
   auto pads = xjjroot::twopads(c, hdata_, h_low, pratio);

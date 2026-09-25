@@ -3,7 +3,7 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
-#include "../include/draw.h"
+#include "draw.h"
 
 #define __COOK_NAME__
 #define __DRAW_STYLE__
@@ -29,7 +29,9 @@ Fprompt init(TDirectory* dir, const std::string& name) {
     auto* h1_nonprompt_fitted = xjjana::getobj_regexp_first<TH1D>(dir_fit, "h1_norm_.+_mc-nonprompt.+");
     auto* h1_total_fitted = xjjana::getobj_regexp_first<TH1D>(dir_fit, "h1_norm_.+_total.+");
     auto* h1_pull = xjjana::getobj_regexp_first<TH1D>(dir_fit, "h1_norm_.+_pull-.+");
+    h1_pull->GetXaxis()->SetNdivisions(505);
     auto* h1_ratio = xjjana::getobj_regexp_first<TH1D>(dir_fit, "h1_norm_.+_ratio-.+");
+    h1_ratio->GetXaxis()->SetNdivisions(505);
     auto* fitresult = xjjana::getobj_regexp_first<TFitResult>(dir_fit, ".+");
     fp.frs[wp] = new fpfitter(h1_data, h1_total_fitted, h1_nonprompt_fitted, fitresult, h1_pull, h1_ratio);
     fp.ibin_wp[wp] = index_sf(h1_total_fitted) + 1;
@@ -48,7 +50,7 @@ Fprompt init(TDirectory* dir, const std::string& name) {
   return fp;
 }
 
-int macro(const std::string& inputname, const std::string& outputname) {
+int macro(const std::string& inputname, const std::string& outputname, int save_png) {
   //
   auto* inf = TFile::Open(inputname.c_str());
   auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
@@ -140,23 +142,23 @@ int macro(const std::string& inputname, const std::string& outputname) {
   }
 
   xjjroot::setgstyle(1);
-  gStyle->SetLineScalePS(1.5);
-  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf", "c", xjjroot::mypdf::w_default*2, xjjroot::mypdf::h_default);
+  // gStyle->SetLineScalePS(1.5);
+  auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+  auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
 
   auto draw_global = [&infos, &tbins, &var_tex](int ibin_y = -1) {
     xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)");
     std::vector<std::string> tlist = {
       tbins.label_pt(-1),
-      infos.at("data").at("cut_tex"),
+      infos.at("data").at("ecut_tex"),
+      // infos.at("data").at("dcut_tex"),
       "Fit on#scale[0.5]{ }#bf{" + var_tex + "}",
     };
     if (ibin_y >= 0) tlist.insert(tlist.begin() + 1, tbins.label_y(ibin_y));
     xjjroot::drawtexgroup(0.24, 0.86, tlist, 0.038, 13, 42, 1.2);
   };
-  
+
   pdf->prepare();
-  pdf->getc()->Divide(2, 1);
-  pdf->getc()->cd(1);
   h1sfs_fprompt.begin()->second.front()->Draw("axis");
   for (auto& [_, vhs] : h1sfs_fprompt) {
     for (auto& h : vhs)
@@ -181,13 +183,6 @@ int macro(const std::string& inputname, const std::string& outputname) {
   }
   leg1->Draw();
   pdf->getc()->RedrawAxis();
-  pdf->getc()->cd(2);
-  pdf->draw_cover_onpad({
-      "#bf{Data} " + infos.at("data")["input"],
-      "#bf{Prompt} " + infos.at("prompt")["input"],
-      "#bf{Nonprompt} " + infos.at("nonprompt")["input"],
-    }, 0.035);
-  pdf->getc()->cd();
   pdf->write();
 
   auto* leg2 = new TLegend(0.24, 0.86-0.01-0.038*1.2*(3+2), 0.5, 0.86-0.01-0.038*1.2*3);
@@ -196,9 +191,6 @@ int macro(const std::string& inputname, const std::string& outputname) {
     leg2->AddEntry(h, style_data(key).title.c_str(), "p");
 
   pdf->prepare();
-  pdf->getc()->Divide(2, 1);
-  pdf->getc()->cd(1);
-  // std::cout<<gPad->GetWNDC()<<", "<<gPad->GetHNDC()<<std::endl;
   h1s_alpha["best"]["data-sub"]->Draw("axis");
   xjjroot::drawbox(h1s_alpha["best"]["data-sub"]->GetXaxis()->GetXmin(), h1_bins_sf->GetBinCenter(1),
                    h1s_alpha["best"]["data-sub"]->GetXaxis()->GetXmax(), h1_bins_sf->GetBinCenter(h1_bins_sf->GetNbinsX()), kGray, 0.1);
@@ -206,8 +198,9 @@ int macro(const std::string& inputname, const std::string& outputname) {
     h->Draw("pl same");
   leg2->Draw();
   draw_global();
+  pdf->write();
 
-  pdf->getc()->cd(2);
+  pdf->prepare();
   h1s_chi2["best"]["data-sub"]->Draw("axis");
   xjjroot::drawbox(h1s_chi2["best"]["data-sub"]->GetXaxis()->GetXmin(), 0.8,
                    h1s_chi2["best"]["data-sub"]->GetXaxis()->GetXmax(), 1.2, kGray, 0.1);
@@ -216,16 +209,12 @@ int macro(const std::string& inputname, const std::string& outputname) {
   draw_global();
   leg2->Draw();
   pdf->getc()->RedrawAxis();
-  pdf->getc()->cd();
   pdf->write();
 
   for (int i=0; i<ny; i++) {
-    pdf->prepare();
-    pdf->getc()->Divide(2, 1);
     std::vector<TH1D*> hlist;
 
-    pdf->getc()->cd(1);
-    hlist.clear();
+    pdf->prepare();
     for (auto& [_, fp] : fpys) {
       hlist.push_back(fp[i].h1s.at("chi2-sf"));
     }
@@ -241,8 +230,9 @@ int macro(const std::string& inputname, const std::string& outputname) {
     for (auto& h : hlist) h->Draw("p same");
     draw_global(i);
     xjjroot::moveleg_n_draw(leg2, -1, 0.86-0.01-0.038*1.2*4);
+    pdf->write(Form("%s/scan_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
 
-    pdf->getc()->cd(2);
+    pdf->prepare();
     hlist.clear();
     for (auto& [_, fp] : fpys) {
       hlist.push_back(fp[i].h1s.at("fprompt-sf"));
@@ -266,17 +256,18 @@ int macro(const std::string& inputname, const std::string& outputname) {
       }, 0.038, 33, 42, 1.2, 1, 0.2, { kBlack, kGray });
     xjjroot::cloneleg_n_draw(leg2, 0.6, 0.5);
 
-    pdf->getc()->cd();
     pdf->write();
 
+    // fitting plots
     for (auto& [type_data, fp] : fpys) {
       for (auto q : { Qual::pull, Qual::ratio }) {
-        pdf->prepare();
-        pdf->getc()->Divide(2, 1);
-        int kp = 1;
         for (const std::string wp : { "fix", "best" }) {
+          auto* g_fprompt = grs_fprompt.at(wp)[type_data];
+          pdf->prepare();
           auto* fitter = fp[i].frs.at(wp);
-          auto pads = fitter->draw(static_cast<TPad*>(pdf->getc()->cd(kp)), q);
+          // !! give high error and low error
+          fitter->set_fprompt_err_asymm(g_fprompt->GetErrorYlow(i), g_fprompt->GetErrorYhigh(i));
+          auto pads = fitter->draw(static_cast<TPad*>(pdf->getc()), q);
           pads[0]->cd();
           xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)", 1./fpfitter::pratio);
           xjjroot::drawtexgroup(fpfitter::xleft - 0.01, fpfitter::ytop - 0.005, {
@@ -287,13 +278,18 @@ int macro(const std::string& inputname, const std::string& outputname) {
           xjjroot::drawtexgroup(fpfitter::xleft+0.2, fpfitter::ybottom-0.03, {
               "#bf{" + style_data(wp).title + "}"
             }, fpfitter::tsize/fpfitter::pratio, 13);
-          kp++;
+          pdf->getc()->cd();
+          pdf->write(Form("%s/fit_%s_%s_y-%d.pdf", name_png.c_str(), type_data.c_str(), wp.c_str(), i), save_png ? "" : "X");
         }
-        pdf->getc()->cd();
-        pdf->write();
       }
     }
-  }
+  } // y bins
+
+  pdf->draw_cover_onpad({
+      "#bf{Data} " + infos.at("data")["input"],
+      "#bf{Prompt} " + infos.at("prompt")["input"],
+      "#bf{Nonprompt} " + infos.at("nonprompt")["input"],
+    }, 0.035);
   
   pdf->close();
 
@@ -335,8 +331,9 @@ int macro(const std::string& inputname, const std::string& outputname) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 3) {
-    return macro(argv[1], argv[2]);
+  std::cout<<"argc : "<<argc<<std::endl;
+  if (argc == 4) {
+    return macro(argv[1], argv[2], std::atoi(argv[3]));
   }
   return 1;
 }

@@ -1,11 +1,14 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
 
-#include "../include/draw.h"
+#include "draw.h"
 
 #define __COOK_NAME__
 #define __DRAW_STYLE__
 #include "style.h"
+
+#define __BINS_PTY_PLACEHOLDER__
+#include "bins.h"
 
 struct Input {
   draw::bintex tbins;
@@ -28,7 +31,7 @@ Fprompt init(TDirectory* dir) {
       "alpha.+_best",
       "chi2.+_best",
     }) {
-    const auto name = xjjc::str_eraseall(key, ".+");
+    const auto name = xjjc::str_eraseall(key, { ".+" });
     auto* h = xjjana::getobj_regexp_first<TH1D>(dir, "h1_.*" + key, "", false);
     if (h) fp.h1s[name] = h;
     if (xjjc::str_contains(key, "fprompt")) {
@@ -69,7 +72,11 @@ void style_fp(Fprompt& fp, const xjjroot::thgrstyle& ss) {
   }
 }
 
-int macro(const std::vector<std::string>& inputnames, const std::string& outputname) {
+void envelope_to_hist(const std::vector<TGraphAsymmErrors*>& gs, TH1D* h);
+
+int macro(const std::vector<std::string>& inputnames, const std::string& outputname,
+          const std::string& newbintag, int save_png) {
+  bins::print();
   //
   std::map<std::string, std::vector<Fprompt>> fps;
   std::vector<Input> inputs;
@@ -95,11 +102,39 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       fps[type_data].push_back(fp);
     }
   }
+
   const auto nvar = inputs.size();
   const auto& fp_dump = fps["sub"].front();
+
+  auto* h1_fprompt = (TH1D*)fp_dump.h1s_fprompt_sf.front()->Clone("h1_fprompt");
+  h1_fprompt->Reset("ICES");
+  std::vector<TGraphAsymmErrors*> h1s_best;
+  for (auto& [_, vfp] : fps) {
+    for (auto& fp : vfp)
+      h1s_best.push_back(fp.grs.at("fprompt_best"));
+  }
+  envelope_to_hist(h1s_best, h1_fprompt);
+  auto* h1_fprompt_rebin = new TH1D("h1_fprompt_rebin", "", bins::ybins.size()-1, bins::ybins.data());
+  xjjroot::setthgrstyle(h1_fprompt_rebin, kBlack, 47, 1.4, kGray+2, 1, 1, kGray, 0.5, 1001);
+  auto* h2_fprompt_rebin = new TH2D("h2_fprompt_rebin", ";y;#it{p}_{T} (GeV)",
+                                    bins::ybins.size()-1, bins::ybins.data(),
+                                    bins::ptbins.size()-1, bins::ptbins.data());
+  for (int i = 0; i < h2_fprompt_rebin->GetNbinsX(); i++) {
+    const double x = h1_fprompt_rebin->GetBinCenter(i+1);
+    const int k = h1_fprompt->FindBin(x);
+    const auto content = h1_fprompt->GetBinContent(k),
+      error = h1_fprompt->GetBinError(k);
+    h1_fprompt_rebin->SetBinContent(i+1, content);
+    h1_fprompt_rebin->SetBinError  (i+1, error);
+    for (int j=0; j < h2_fprompt_rebin->GetNbinsY(); j++) {
+      h2_fprompt_rebin->SetBinContent(i+1, j+1, content);
+      h2_fprompt_rebin->SetBinError  (i+1, j+1, error);
+    }
+  }
+  
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
-
+  auto name_png = draw::png_name(pdf);
   std::vector<std::string> titles_var; std::vector<Color_t> colors_var;
   auto* leg1 = new TLegend(0.47, 0.35-2*0.038*1.2, 0.85, 0.35);
   xjjroot::setleg(leg1, 0.038);
@@ -129,7 +164,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     xjjroot::drawCMS(xjjroot::CMS::internal, inputs.front().infos.at("data").at("input_tex") + " (5.36 TeV)");
     xjjroot::drawtexgroup(0.24, 0.86, {
         inputs.front().tbins.label_pt(-1),
-        inputs.front().infos.at("data").at("cut_tex"),
+        inputs.front().infos.at("data").at("ecut_tex"),
         "#bf{" + style_data(htype).title + "}",
       }, 0.038, 13, 42, 1.2);
     xjjroot::drawtexgroup(0.91, 0.86, {
@@ -138,9 +173,20 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     leg1->Draw();
     for (auto& t : gtex1) t->Draw();
     pdf->getc()->RedrawAxis();
-    pdf->write();
+    pdf->write(Form("%s/fprompt_best.pdf", name_png.c_str()), save_png && htype == "best" ? "" : "X");
   }
 
+  pdf->prepare();
+  fp_dump.h1s_fprompt_sf.front()->Draw("axis");
+  h1_fprompt_rebin->Draw("pe2 same");
+  xjjroot::drawCMS(xjjroot::CMS::internal, inputs.front().infos.at("data").at("input_tex") + " (5.36 TeV)");
+  xjjroot::drawtexgroup(0.24, 0.86, {
+      inputs.front().tbins.label_pt(-1),
+      inputs.front().infos.at("data").at("ecut_tex"),
+    }, 0.038, 13, 42, 1.2);
+  pdf->getc()->RedrawAxis();
+  pdf->write(Form("%s/fprompt_syst.pdf", name_png.c_str()), save_png ? "" : "X");
+  
   for (const std::string& xvar : { "chi2", "alpha" }) {
     pdf->prepare();
     auto* h_dump = fp_dump.h1s.at(xvar + "_best");
@@ -153,24 +199,53 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     xjjroot::drawCMS(xjjroot::CMS::internal, inputs.front().infos.at("data").at("input_tex") + " (5.36 TeV)");
     xjjroot::drawtexgroup(0.24, 0.86, {
         inputs.front().tbins.label_pt(-1),
-        inputs.front().infos.at("data").at("cut_tex"),
+        inputs.front().infos.at("data").at("ecut_tex"),
         // "#bf{" + style_data("best").title + "}",
       }, 0.038, 13, 42, 1.2);
     xjjroot::moveleg_n_draw(leg1, -1, 0.75);
     xjjroot::movetexgroup_n_draw(gtex1, -1, 0.75-0.005);
     pdf->getc()->RedrawAxis();
-    pdf->write();
+    pdf->write(Form("%s/%s.pdf", name_png.c_str(), xvar.c_str()), save_png ? "" : "X");
   }
 
   pdf->close();
 
+  auto* outf = xjjroot::newfile("rootfiles/" + outputname + "/" + newbintag.c_str() + ".root");
+  xjjroot::writehist(h2_fprompt_rebin);
+  xjjroot::closefile(outf);
+  
   return 0;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 3) {
+  if (argc == 7) {
+    bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
+    bins::ptbins = xjjc::str_convert_vector<double>(argv[5], ",");
     const auto inputs = xjjc::str_divide_trim(argv[1], ",");
-    return macro(inputs, argv[2]);
+    return macro(inputs, argv[2], argv[3], std::atoi(argv[6]));
   }
+  // if (argc == 3) {
+  //   const auto inputs = xjjc::str_divide_trim(argv[1], ",");
+  //   return macro(inputs, argv[2]);
+  // }
   return 1;
+}
+
+void envelope_to_hist(const std::vector<TGraphAsymmErrors*>& gs, TH1D* h) {
+  for (int i = 0; i < h->GetNbinsX(); ++i) {
+    double ymin =  std::numeric_limits<double>::infinity();
+    double ymax = -std::numeric_limits<double>::infinity();
+    for (const auto* g : gs) {
+      if (!g || i >= g->GetN())
+        continue;
+
+      const double y = g->GetPointY(i);
+      ymin = std::min(ymin, y);
+      ymax = std::max(ymax, y);
+    }
+    if (!std::isfinite(ymin))
+      continue;
+    h->SetBinContent(i + 1, 0.5 * (ymax + ymin));
+    h->SetBinError  (i + 1, 0.5 * (ymax - ymin));
+  }
 }
