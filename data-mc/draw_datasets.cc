@@ -2,7 +2,7 @@
 #include "xjjstruct.h"
 #include "xjjmypdf.h"
 
-#include "../include/draw.h"
+#include "draw.h"
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 
@@ -30,7 +30,7 @@ struct hName {
 hName parse_hname(std::string hname, bool verbose = false);
 
 // double scale_sideband = 0.5;
-int macro(const std::string& inputname, const std::string& outputname) {
+int macro(const std::string& inputname, const std::string& outputname, int save_png = 0) {
   const auto inputfile = xjjroot::parse_input(inputname).content;
   auto* inf = TFile::Open(inputfile.c_str());
   if (!inf || inf->IsZombie()) {
@@ -163,6 +163,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
 
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+  const auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   
   for (auto& [name, _] : h1ys_data_main) {
     pdf->draw_cover({ "#bf{" + name + "}" }, 0.05);
@@ -188,8 +189,8 @@ int macro(const std::string& inputname, const std::string& outputname) {
     auto draw_global = [&btex, &infos](int ibin_y = -1) {
       xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
       // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
-      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(ibin_y), btex.label_pt() }, 0.038, 13);
-      xjjroot::drawtexgroup(0.525, 0.86, { infos["data"]["cut_tex"] }, 0.038, 13);
+      xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(ibin_y), btex.label_pt(), infos["data"].at("dcut_tex") }, 0.038, 13);
+      xjjroot::drawtexgroup(0.525, 0.86, { infos["data"].at("ecut_tex") }, 0.038, 13);
     };
     
     for (int i=0; i<ny; i++) {
@@ -212,7 +213,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       h1ys_norm_data_sub.at(name)[i]->Draw("pe1 same");
       leg_norm->Draw();
       draw_global(i);
-      pdf->write();
+      pdf->write(Form("%s/%s_datamc_y-%d.pdf", name_png.c_str(), name.c_str(), i), save_png ? "" : "X");
     }
     
     if (name == "Dy") { // overlay Dy
@@ -231,7 +232,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       }
       leg_norm_Dy->Draw();
       draw_global(-1);
-      pdf->write();
+      pdf->write(Form("%s/%s_datamc.pdf", name_png.c_str(), name.c_str()), save_png ? "" : "X");
     }
 
     for (int i=0; i<ny; i++) {
@@ -253,7 +254,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       h1ys_data_sub.at(name)[i]->Draw("pe1 same");
       leg_sub->Draw();
       draw_global(i);
-      pdf->write();
+      pdf->write(Form("%s/%s_sideband_y-%d.pdf", name_png.c_str(), name.c_str(), i), save_png ? "" : "X");
     }
     
   }
@@ -294,8 +295,8 @@ int macro(const std::string& inputname, const std::string& outputname) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 3) {
-    return macro(argv[1], argv[2]);
+  if (argc == 4) {
+    return macro(argv[1], argv[2], std::atoi(argv[3]));
   }
   return 1;
 }

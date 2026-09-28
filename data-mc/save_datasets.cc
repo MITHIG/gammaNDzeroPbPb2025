@@ -19,8 +19,8 @@ enum class EcutPreset { none = 0, gammaN = 1, Ngamma = 2, twoDirs = 3 };
 std::vector<std::string> ecut_name = { "none", "gammaN", "Ngamma", "gammaN + Ngamma" }; // only for print out
 enum class GCutPreset { none = 0, match = 1, swap = 2 };
 std::vector<std::string> gcut_name = { "none", "match", "swap" };
-enum class DcutPreset { none = 0, BDT = 1, Loose = 2 };
-std::vector<std::string> dcut_name = { "none", "Analysis BDT cut", "Loose cut" }; // only for print out
+enum class DcutPreset { none = 0, BDT = 1, Loose = 2, Pzero = 3 };
+std::vector<std::string> dcut_name = { "none", "Analysis BDT cut", "Loose cut", "BDT > 0" }; // only for print out
 
 std::unique_ptr<RooDataSet> make_dataset(TTree* tree, const std::string& name, EcutPreset ecut, DcutPreset dcut, GCutPreset gcut = GCutPreset::none) {
   __XJJLOG << ">>                     name: " << name << std::endl;
@@ -109,10 +109,12 @@ std::unique_ptr<RooDataSet> make_dataset(TTree* tree, const std::string& name, E
 
       bool d_pass_gammaN = true;
       if (dcut == DcutPreset::BDT) d_pass_gammaN = ((VAL(Dy)<-1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)>=-1 && VAL(Dy)<0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)>=0 && VAL(Dy)<1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)>=1 && VAL(Dmva_BDT)>0.098));
-      else if (dcut == DcutPreset::Loose) d_pass_gammaN = VAL(Dmva_BDT) > 0.;
+      else if (dcut == DcutPreset::Pzero) d_pass_gammaN = VAL(Dmva_BDT) > 0.;
+      else if (dcut == DcutPreset::Loose) d_pass_gammaN = VAL(Dmva_BDT) > 0.02;
       bool d_pass_Ngamma = true;
       if (dcut == DcutPreset::BDT) d_pass_Ngamma = ((VAL(Dy)>=1 && VAL(Dmva_BDT)>0.143) || (VAL(Dy)<1 && VAL(Dy)>=0 && VAL(Dmva_BDT)>0.142) || (VAL(Dy)<0 && VAL(Dy)>=-1 && VAL(Dmva_BDT)>0.123) || (VAL(Dy)<-1 && VAL(Dmva_BDT)>0.098));
-      else if (dcut == DcutPreset::Loose) d_pass_Ngamma = VAL(Dmva_BDT) > 0.;
+      else if (dcut == DcutPreset::Pzero) d_pass_Ngamma = VAL(Dmva_BDT) > 0.;
+      else if (dcut == DcutPreset::Loose) d_pass_gammaN = VAL(Dmva_BDT) > 0.02;
 
       const bool all_pass_gammaN = evt_pass_gammaN && d_pass_gammaN;
       const bool all_pass_Ngamma = evt_pass_Ngamma && d_pass_Ngamma;

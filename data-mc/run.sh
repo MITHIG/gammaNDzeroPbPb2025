@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SAVE_PNG=1
+
 echo -e "usage: \033[32m./run.sh\033[0m \033[36;1m[data ds]\033[0m \033[2m(1: save, 2: cook, 3: save + cook)\033[0m \033[36;1m[mc ds]\033[0m \033[2m(1: save, 2: cook, 3: save + cook)\033[0m \033[36;1m[fit] [splot]\033[0m \033[2m(1: make, 2: draw, 3: make + draw)\033[0m"
 
 TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
@@ -10,19 +12,22 @@ INPUTS_DATA=(
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8 #gammaN;BeamAclose" # !! to replace by the one without gmatch filter
 )
 CUTEVTS=(
-    "1;#gammaN (Xn0n);0nXn-gammaN-25"
-    # "2;N#gamma (0nXn);0nXn-Ngamma-25"
-    "3;Xn0n + 0nXn (reflected);0nXn-twodirs-25" # reflect y for Ngamma
+    # "1;#gammaN (Xn0n);0nXn-gammaN-25"
+    "2;N#gamma (0nXn);0nXn-Ngamma-25"
+    # "3;Xn0n + 0nXn (reflected);0nXn-twodirs-25" # reflect y for Ngamma
 )
 CUTDS=(
     "1;Analysis BDT cut;Dbdt"
     # "2;Loose cut;Dloose"
+    # "3;BDT > 0;Dpzero"
 
 )
 INPUTS_MC=(
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.8]{YTHIA}8 #gammaN;BeamA-prompt"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.8]{YTHIA}8 N#gamma;BeamB-prompt"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_nonprompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Nonprompt P#scale[0.8]{YTHIA}8 #gammaN;BeamA-nonprompt"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamA-2025-prompt"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);BeamB-2025-prompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.8]{YTHIA}8 #gammaN;BeamA-prompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.8]{YTHIA}8 N#gamma;BeamB-prompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_nonprompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Nonprompt P#scale[0.8]{YTHIA}8 #gammaN;BeamA-nonprompt"
 )
 
 make save_datasets.exe cook_datasets.exe fit_datasets.exe splot_datasets.exe draw_datasets.exe || exit 1
@@ -73,13 +78,13 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
 
                 itag_roofit=$cut_tag'/'$TAG_BINNING'/roofit_'$data_tag'_'$mc_tag
                 [[ ${3:-0} -eq 1 ]] && {
-                    ./fit_datasets.exe 'rootfiles/'$itag_cook_data'.root' 'rootfiles/'$itag_cook_mc'.root' $itag_roofit
+                    ./fit_datasets.exe 'rootfiles/'$itag_cook_data'.root' 'rootfiles/'$itag_cook_mc'.root' $itag_roofit $SAVE_PNG
                 }
 
                 itag_splot=${itag_roofit/\/roofit_/\/splot_}
                 [[ ${4:-0} -eq 1 || ${4:-0} -eq 3 ]] && ./splot_datasets.exe 'rootfiles/'$itag_roofit'.root' $itag_splot
                 itag_draw=${itag_splot/\/splot_/\/draw_}
-                [[ ${4:-0} -eq 2 || ${4:-0} -eq 3 ]] && ./draw_datasets.exe 'rootfiles/'$itag_splot'.root' $itag_draw
+                [[ ${4:-0} -eq 2 || ${4:-0} -eq 3 ]] && ./draw_datasets.exe 'rootfiles/'$itag_splot'.root' $itag_draw $SAVE_PNG
 
                 echo -e "  [fit/splot] \e[2m"$itag_splot"\e[0m"
                 

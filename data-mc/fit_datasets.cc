@@ -14,7 +14,8 @@
 #include "../include/droofitter.h"
 #include "../include/draw.h"
 
-int macro(const std::string& inputname_data, const std::string& inputname_template, const std::string& outputname) {
+int macro(const std::string& inputname_data, const std::string& inputname_template, const std::string& outputname, int save_png = 0) {
+  __XJJLOG << "save_png : " << save_png << std::endl;
 
   std::map<std::string, std::vector<RooDataSet*>> datays;
   TH2D* h2_bins = nullptr;
@@ -61,15 +62,16 @@ int macro(const std::string& inputname_data, const std::string& inputname_templa
   
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
-
+  const auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
+  
   for (int i=0; i<fitterys.size(); i++) {
     pdf->prepare();
     auto* frame_data_y = fitterys[i]->draw_data(bins::nmass);
     frame_data_y->Draw();
     fitterys[i]->leg()->Draw();
-    xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos.at("data").at("cut_tex") }, 0.035, 13);
+    xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos.at("data").at("ecut_tex"), infos.at("data").at("dcut_tex") }, 0.035, 13);
     xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)");
-    pdf->write();
+    pdf->write(Form("%s/fit_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
 
     pdf->prepare();
     auto* frame_mc_y = fitterys[i]->draw_mc_swap(bins::nmass);
@@ -109,8 +111,8 @@ int macro(const std::string& inputname_data, const std::string& inputname_templa
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 4) {
-    return macro(argv[1], argv[2], argv[3]);
+  if (argc == 5) {
+    return macro(argv[1], argv[2], argv[3], std::atoi(argv[4]));
   }
   return 1;
 }

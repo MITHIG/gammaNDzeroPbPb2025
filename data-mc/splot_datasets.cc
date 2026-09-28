@@ -8,9 +8,6 @@
 
 #include "xjjanauti.h"
 #include "xjjstruct.h"
-#include "xjjmypdf.h"
-
-#include "../include/util.h"
 #define __VARIABLES_ROOSPLOT__
 #include "variables.h"
 
@@ -18,7 +15,7 @@ double signal_effective_sigma(RooWorkspace *ws, double area_frac);
 std::vector<std::pair<RooRealVar*, bool>> fix_shape_parameters(RooAbsPdf* pdf, RooAbsData* data, const std::vector<std::string> &floating_yields);
 void restore_parameter_states(const std::vector<std::pair<RooRealVar*, bool>> &old_states);
 
-int macro(std::string inputname, std::string outputname) {
+int macro(const std::string& inputname, const std::string& outputname) {
   const auto inputfile = xjjroot::parse_input(inputname).content;
   auto* inf = TFile::Open(inputfile.c_str());
   if (!inf || inf->IsZombie()) {
@@ -41,13 +38,10 @@ int macro(std::string inputname, std::string outputname) {
     __XJJLOG << "!! inconsistent bin number: " << "ws__y-* vs h3_bins, abort." << std::endl;
     return 2;
   }
-  // draw::bintex btex(h3_bins, 0, 2);
+
   auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
   xjjroot::writehist(h3_bins);
   
-  // xjjroot::setgstyle(1);
-  // auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
-
   // std::map<std::string, std::vector<TH1D*>> h1ys;
   std::vector<std::map<std::string, TH1D*>> h1ys; 
   for (int i=0; i<wsys.size(); i++) {
