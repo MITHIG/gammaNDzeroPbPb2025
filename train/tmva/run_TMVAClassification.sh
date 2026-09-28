@@ -1,21 +1,14 @@
 #!/bin/bash
 
 ##
-trainlabel='260309-gammaN'
+trainlabel='260813-gammaN'
 
 # -- signal sample for training
-inputs=/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root
+inputs=/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/260212-hfle/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root
 
 # -- background sample for training
 bkgstrategy=sideband
-inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0-10-2_Dpt-2_ZDCgap-3_Dsize_xbr.root
-# inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Dpt-2_ZDCgap-3_Dsize_xbr.root
-
-# -- mva application sample
-inputms=(
-    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260212-hfle_PbPbUPC_HIForward0_Dpt-2_ZDCgap-3_Dsize_xbr.root
-)
-outputmvadir=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/mva_output_${trainlabel}/
+inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/260212-hfle/Dzero_260212-hfle_PbPbUPC_HIForward0-10-2_Dpt-2_ZDCgap-3_Dsize_xbr.root
 
 ##
 # -- PV + MET
@@ -33,7 +26,8 @@ cuts=$cut ; cutb=$cut ;
 cutb=$cutb" && isL1ZDCOr && ZDCgammaN && HFEMaxPlus_forest < 16 && cscTightHalo2015Filter"
 
 ##
-algo='BDT,BDTG,LD,CutsGA'
+# algo='BDT,BDTG,LD,CutsGA'
+algo='BDT,BDTG,LD'
 # algo='BDT'
 
 # stages='0,1,2,3,4,5,6,8,9,10,11' ; sequence=0 ; # see definition below #
@@ -145,11 +139,6 @@ done
 }
 # draw curve vs. var
 [[ ${2:-0} -eq 1 && $sequence -eq 1 ]] && ./guieffvar_${tmp}.exe $output "$algo" "$stages"
-
-# produce mva values
-for inputm in ${inputms[@]} ; do 
-    [[ ${3:-0} -eq 1 ]] && ./mvaprod_${tmp}.exe $inputm $output "$algo" "${stages}" $outputmvadir
-done
 
 ##
 rm *_${tmp}.exe

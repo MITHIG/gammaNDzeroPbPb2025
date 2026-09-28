@@ -10,7 +10,7 @@
 #include "../../include/dfitter.h"
 
 void style_hist(TH1D*);
-int macro(std::string inputname) {
+int macro(const std::string& inputname) {
   std::cout<<std::endl;
 
   auto* inf = TFile::Open(inputname.c_str());
@@ -22,23 +22,25 @@ int macro(std::string inputname) {
     __XJJLOG << "!! no good mva root files, abort." << std::endl;
     return 2;
   }
+  auto* leg = new TLegend(0.25, 0.5-0.04*(rmva.front()->hrocs().size() + 1), 0.5, 0.5);
+  xjjroot::setleg(leg, 0.038);
+  std::map<std::string, int> colors;
+  for (int i=0; i<rmva.size(); i++) {
+    int nmeth = 0;
+    for (auto& h : rmva.at(i)->hrocs()) {
+      auto method = xjjc::str_eraseall(xjjc::str_eraseall(h->GetName(), "MVA_"), "_rejBvsS");
+      if (colors.find(method) == colors.end()) {
+        colors[method] = xjjroot::colorlist_middle[nmeth]
+        xjjroot::addentrybystyle(leg, method, "l", xjjroot::thgrstyle{ .lcolor = cc, .lstyle = 1, .lwidth = 4 });
+      }
+      xjjroot::setthgrstyle(h, colors[method], 21, 1, colors[method], 1, 4);
+    }
+  }
+
   auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
   __XJJLOG << "++ info" << std::endl;
   xjjc::print_tab(info, -1);
 
-  std::vector<std::string> methods;
-  std::map<std::string, Color_t> colors;
-  for (int i=0; i<rmva.size(); i++) {
-    for (auto& h : rmva.at(i)->hrocs()) {
-      auto method = xjjc::str_eraseall(xjjc::str_eraseall(h->GetName(), "MVA_"), "_rejBvsS");
-      if (std::ranges::find(methods, method) == methods.end()) {
-        methods.push_back(method);
-        colors[method] = xjjroot::colorlist_middle.at(methods.size()-1);
-      }
-      xjjroot::setthgrstyle(h, colors.at(method), 21, 1, colors.at(method), 1, 4);
-    }
-  }
-  
   std::map<std::string, std::vector<TH1D*>> h1ys;
   for (const std::string &t : { "mass_Mass", "mass_S", "mass_Swap" }) {
     h1ys[t] = xjjana::getobj_regexp<TH1D>(inf, "h1_" + t + "__y-[0-9]*");
@@ -87,11 +89,6 @@ int macro(std::string inputname) {
     pdf->write();
   }
 
-  auto* leg = new TLegend(0.25, 0.5-0.04*(methods.size()+1), 0.5, 0.5);
-  xjjroot::setleg(leg, 0.038);
-  for (const auto& [mm, cc] : colors) {
-    xjjroot::addentrybystyle(leg, mm, "l", xjjroot::thgrstyle{ .lcolor = cc, .lstyle = 1, .lwidth = 4 });
-  }
   xjjroot::addentrybystyle(leg, info.at("labelcut"), "p", xjjroot::thgrstyle{ .mcolor = grys.at("roc_cut").front()->GetMarkerColor(), .mstyle = grys.at("roc_cut").front()->GetMarkerStyle(), .msize = grys.at("roc_cut").front()->GetMarkerSize() });
   auto tex = xjjroot::drawtex(0.25, 0.51, info.at("label2").c_str(), 0.038, 11);
 

@@ -9,9 +9,10 @@
 #include "TMVA/mvas.h"
 #include "TMVA/correlations.h"
 
-#include "mvaeffs.h"
-#include "TMVAClassification.h"
 #include "xjjcuti.h"
+#include "mvaeffs.h"
+#define __PRESET_TRAIN_YBINS
+#include "TMVAClassification.h"
 
 namespace mytmva
 {

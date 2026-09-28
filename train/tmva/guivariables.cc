@@ -8,8 +8,9 @@
 #include <TObjString.h>
 #include "TMVA/variables.h"
 
-#include "TMVAClassification.h"
 #include "xjjcuti.h"
+#define __PRESET_TRAIN_YBINS
+#include "TMVAClassification.h"
 
 namespace mytmva
 {
