@@ -33,6 +33,8 @@ evtgaps=(
     # 'HFEMax_eta5 < 6;Rap gap 6 GeV;-gap6'
     # 'HFEMax_eta5 < 5;Rap gap 5 GeV;-gap5'
     # 'HFEMax_eta5 < 4;Rap gap 4 GeV;-gap4'
+
+    'HFEMax_forest < 18;Rap gap in 3 < |#eta| < 5.2;-gapeta5p2'
 )
 
 make_dcut_string() {
@@ -44,22 +46,22 @@ make_dcut_string() {
 cutdtopos=(
     "`make_dcut_string 0.143,0.142,0.123,0.098`;;"
 
-    "`make_dcut_string 0.123,0.122,0.103,0.078`;BDT shift -0.02;-bdtsM0p02"
-    "`make_dcut_string 0.103,0.102,0.083,0.058`;BDT shift -0.04;-bdtsM0p04"
-    "`make_dcut_string 0.083,0.082,0.063,0.038`;BDT shift -0.06;-bdtsM0p06"
-    "`make_dcut_string 0.063,0.062,0.043,0.018`;BDT shift -0.08;-bdtsM0p08"
-    "`make_dcut_string 0.043,0.042,0.023,-0.002`;BDT shift -0.1;-bdtsM0p10"
-    "`make_dcut_string 0.023,0.022,0.003,-0.022`;BDT shift -0.12;-bdtsM0p12"
-    "`make_dcut_string 0.003,0.002,-0.017,-0.042`;BDT shift -0.14;-bdtsM0p14"
-    "`make_dcut_string -0.017,-0.018,-0.037,-0.062`;BDT shift -0.16;-bdtsM0p16"
-    "`make_dcut_string -0.037,-0.038,-0.057,-0.082`;BDT shift -0.18;-bdtsM0p18"
-    "`make_dcut_string -0.057,-0.058,-0.077,-0.102`;BDT shift -0.20;-bdtsM0p20"
+    # "`make_dcut_string 0.123,0.122,0.103,0.078`;BDT shift -0.02;-bdtsM0p02"
+    # "`make_dcut_string 0.103,0.102,0.083,0.058`;BDT shift -0.04;-bdtsM0p04"
+    # "`make_dcut_string 0.083,0.082,0.063,0.038`;BDT shift -0.06;-bdtsM0p06"
+    # "`make_dcut_string 0.063,0.062,0.043,0.018`;BDT shift -0.08;-bdtsM0p08"
+    # "`make_dcut_string 0.043,0.042,0.023,-0.002`;BDT shift -0.1;-bdtsM0p10"
+    # "`make_dcut_string 0.023,0.022,0.003,-0.022`;BDT shift -0.12;-bdtsM0p12"
+    # "`make_dcut_string 0.003,0.002,-0.017,-0.042`;BDT shift -0.14;-bdtsM0p14"
+    # "`make_dcut_string -0.017,-0.018,-0.037,-0.062`;BDT shift -0.16;-bdtsM0p16"
+    # "`make_dcut_string -0.037,-0.038,-0.057,-0.082`;BDT shift -0.18;-bdtsM0p18"
+    # "`make_dcut_string -0.057,-0.058,-0.077,-0.102`;BDT shift -0.20;-bdtsM0p20"
 
-    "`make_dcut_string 0.163,0.162,0.143,0.118`;BDT shift 0.02;-bdts0p02"
-    "`make_dcut_string 0.183,0.182,0.163,0.138`;BDT shift 0.04;-bdts0p04"
-    "`make_dcut_string 0.203,0.202,0.183,0.158`;BDT shift 0.06;-bdts0p06"
-    "`make_dcut_string 0.223,0.222,0.203,0.178`;BDT shift 0.08;-bdts0p08"
-    "`make_dcut_string 0.243,0.242,0.223,0.198`;BDT shift 0.10;-bdts0p10"
+    # "`make_dcut_string 0.163,0.162,0.143,0.118`;BDT shift 0.02;-bdts0p02"
+    # "`make_dcut_string 0.183,0.182,0.163,0.138`;BDT shift 0.04;-bdts0p04"
+    # "`make_dcut_string 0.203,0.202,0.183,0.158`;BDT shift 0.06;-bdts0p06"
+    # "`make_dcut_string 0.223,0.222,0.203,0.178`;BDT shift 0.08;-bdts0p08"
+    # "`make_dcut_string 0.243,0.242,0.223,0.198`;BDT shift 0.10;-bdts0p10"
 )
 
 fitopts=(

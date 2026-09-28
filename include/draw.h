@@ -5,6 +5,9 @@
 #include "TH3.h"
 
 namespace draw {
+  std::string png_name(const xjjroot::mypdf* pdf) {
+    return xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
+  }
   class bintex {
   public:
     explicit bintex(TH1* h = nullptr, int xyz_y = 0,  int xyz_pt = 0)

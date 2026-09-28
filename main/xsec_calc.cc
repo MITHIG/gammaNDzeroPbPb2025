@@ -11,7 +11,7 @@ namespace global {
 }
 
 int macro(const std::string& inputname_raw, const std::string& inputname_effd,
-          const std::string& inputname_effevent, const std::string inputname_fprompt,
+          const std::string& inputname_effevent, // const std::string inputname_fprompt,
           float lumi, const std::string& outputdir, int save_png = 0) {
 
   __XJJLOG << ">> lumi: " << lumi << " nb-1" << std::endl;
@@ -64,7 +64,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   get_h1pts(inputname_raw, "raw", { "h1_y_yield" }, { "data/info", "template/info" });
   get_h1pts(inputname_effd, "effd", { "h1_y_eff__rebin" }, { "info" });
   get_h1pts(inputname_effevent, "effevent", { "h1_y_evteff" }, { "info" });
-  get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
+  // get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
 
   Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tag"), "gammaN") ? Event::gammaN :
     (xjjc::str_contains(infos.at("raw_data").at("cut_tag"), "Ngamma") ? Event::Ngamma : Event::Other);
@@ -221,11 +221,12 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 8) {
-    return macro(argv[1], argv[2], argv[3], argv[4], atof(argv[5]), argv[6], std::atoi(argv[7]));
-  }
+  __XJJLOG << " [xsec_calc]" << std::endl;
   if (argc == 7) {
-    return macro(argv[1], argv[2], argv[3], argv[4], atof(argv[5]), argv[6]);
+    return macro(argv[1], argv[2], argv[3], atof(argv[4]), argv[5], std::atoi(argv[6]));
+  }
+  if (argc == 6) {
+    return macro(argv[1], argv[2], argv[3], atof(argv[4]), argv[5]);
   }
   return 1;
 }

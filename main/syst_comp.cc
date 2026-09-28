@@ -27,12 +27,15 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   auto* h3_bins = xjjana::getobj<TH3D>(Form("%s::h3_bins", xjjroot::parse_input(inputnames.front()).content.c_str()));
   draw::bintex tbins(h3_bins, 0, 2);
   const auto colors_y = xjjroot::grayscales_color(tbins.ny());
+  const auto info = util::read_info(TFile::Open(xjjroot::parse_input(inputnames.front()).content.c_str()), "info");
+  const auto lumi = std::atof(info.at("lumi").c_str())*1.e3;
 
   const std::map<std::string, Property> texs = {
     { "gammaN", { .tex = "Xn0n (#gammaN)" } },
-    { "NgammaRef", { .tex = "Xn0n (N#gamma) (#it{y} #rightarrow -#it{y})" } },
+    { "NgammaRef", { .tex = "0nXn (N#gamma) (#it{y} #rightarrow -#it{y})" } },
     { "sum", { .tex = "Xn0n + 0nXn (#it{y} #rightarrow -#it{y})" } }
   };
+  
   std::map<std::string, xjjc::array2D<TH1D*>> hys;
   std::map<std::string, xjjc::array2D<TGraphErrors*>> gs_scan;
   for (const auto& [key, prop] : texs) {
@@ -55,7 +58,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     leg_y->AddEntry(gs_scan.at("sum")[0][k], tbins.label_y(k).c_str(), "p");
   
   std::vector<double> xvals; 
-  TLegend *leg = nullptr;
+  TLegend *leg = nullptr; const auto ncol = inputnames.size() > 3 ? 2 : 1;
+  float x1 = ncol > 1 ? 0.2 : 0.4, x2 = ncol > 1 ? x1+0.7 : x1+0.4;
   for (int i=0; i<inputnames.size(); i++) {
     const auto inputp = xjjroot::parse_input(inputnames[i]);
     if (numscan && inputp.pars.size() < 4) {
@@ -82,8 +86,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     auto* hdump = hys.at("sum").front().back();
     // legend
     if (!leg) {
-      leg = new TLegend(0.25+legdx, ypos(1+std::ceil(inputnames.size()/2.), legdy), 0.85+legdx, ypos(1, legdy));
-      leg->SetNColumns(2);
+      leg = new TLegend(x1+legdx, ypos(1+std::ceil(inputnames.size()/ncol), legdy), x2+legdx, ypos(1, legdy));
+      leg->SetNColumns(ncol);
       xjjroot::setleg(leg, tsize);
     }
     leg->AddEntry(hdump, inputp.tex.c_str(), "p");
@@ -138,7 +142,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 
       auto* gr_err = new TGraphAsymmErrors(tbins.ny(), xs.data(), ys.data(), xserr.data(), xserr.data(), maxdev_low.data(), maxdev_up.data());
       gr_err->SetName(Form("gr-err_y_xsec_%s", key.c_str()));
-      xjjroot::setthgrstyle(gr_err, kBlack, 20, 1.5, kBlack, 1, 2, 0, 0, 0);
+      xjjroot::setthgrstyle(gr_err, kBlack, 20, 1.5, kBlack, 1, 1, kBlack, 0.1, 1001);
       gs_err[key].push_back(gr_err);
       auto* gr_rel = new TGraphAsymmErrors(tbins.ny(), xs.data(), y0.data(), xserr.data(), xserr.data(), maxrel_low.data(), maxrel_up.data());
       gr_rel->SetName(Form("gr-rel_y_xsec_%s", key.c_str()));
@@ -149,7 +153,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       gr_stats->SetName(Form("gr-stats_y_xsec_%s", key.c_str()));
       for (int k=0; k<tbins.ny(); k++) {
         gr_stats->SetPoint(k, h0->GetBinCenter(k+1), 0);
-        gr_stats->SetPointError(k, h0->GetBinWidth(k+1) / 2., h0->GetBinError(k+1));
+        gr_stats->SetPointError(k, h0->GetBinWidth(k+1) / 2., h0->GetBinError(k+1) / h0->GetBinContent(k+1));
       }
       xjjroot::setthgrstyle(gr_stats, kBlack, 20, 1.5, kBlack, 1, 1, xjjroot::color_alpha(kBlack, 0.05), 1, 1001);
       gs_stats[key].push_back(gr_stats);
@@ -171,21 +175,21 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       auto& vh = hys.at(key)[j];
       pdf->prepare();
       vh.front()->Draw("axis");
+      gs_err.at(key)[j]->Draw("2 same");
       for (auto& h : vh)
         h->Draw("pe1 same");
       vh.front()->Draw("pe1 same");      
-      gs_err.at(key)[j]->Draw("5 same");
       if (inputnames.size() < 10) leg->Draw();
       xjjroot::drawtexgroup(0.23, ypos(-0.2), { prop.tex,  }, tsize, 13);
       xjjroot::drawtexgroup(0.90, ypos(-0.2), { tbins.label_pt(j) }, tsize, 33);
       xjjroot::drawCMS(xjjroot::CMS::internal, "PbPb (5.36 TeV)");
-      pdf->write();
+      pdf->write(Form("%s_xsec_%s_pt-%d.pdf", name_png.c_str(), key.c_str(), j), save_png ? "" : "X");
     }
     for (const auto& [key, prop] : texs) {
       auto g = gs_rel.at(key)[j];
       auto gstats = gs_stats.at(key)[j];
-      const auto ymax = std::max(xjjana::gethwerrmaximum(g)*2, xjjana::gethwerrmaximum(gstats)*1.3),
-        ymin = std::min(xjjana::gethwerrminimum(g)*0.9, xjjana::gethwerrminimum(gstats)*0.95);
+      const auto ymax = std::max(xjjana::gethwerrmaximum(g)*2, xjjana::gethwerrmaximum(gstats)*1),
+        ymin = std::min(xjjana::gethwerrminimum(g)*1.1, xjjana::gethwerrminimum(gstats)*1.);
       auto* hempty = new TH2F(Form("hempty-rel_xsec_%s__pt-%d", key.c_str(), j), Form(";%s;Relative Uncertainty", hys.at(key).front().front()->GetXaxis()->GetTitle()),
                               10, hys.at(key).front().front()->GetXaxis()->GetXmin(), hys.at(key).front().front()->GetXaxis()->GetXmax(),
                               10, ymin < 0 ? ymin : -0.2, ymax > 0 ? ymax : 0.2);
@@ -204,7 +208,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       xjjroot::drawCMS(xjjroot::CMS::internal, "PbPb (5.36 TeV)");
       gPad->RedrawAxis();
       const auto to_savepng = save_png && key=="sum";
-      pdf->write(Form("%s_rel_pt-%d.pdf", name_png.c_str(), j), to_savepng ? "" : "X");
+      // const auto to_savepng = save_png;
+      pdf->write(Form("%s_rel_%s_pt-%d.pdf", name_png.c_str(), key.c_str(), j), to_savepng ? "" : "X");
     }
   }
 
@@ -217,6 +222,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
                                 10, xvals.front() - std::abs(xvals[1]-xvals[0]), xvals.back() + std::abs(xvals[1]-xvals[0]),
                                 10, 0, ymax * 1.8);
         xjjroot::sethempty(hempty, 0, 0.2);
+        hempty->GetXaxis()->SetNdivisions(505);
         pdf->prepare();
         hempty->Draw("axis");
         for (auto& g : vg) {
@@ -231,8 +237,9 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
         xjjroot::drawtexgroup(0.23, ypos(-0.2), { prop.tex }, tsize, 13);
         xjjroot::drawtexgroup(0.90, ypos(-0.2), { tbins.label_pt(j) }, tsize, 33);
         xjjroot::drawCMS(xjjroot::CMS::internal, "PbPb (5.36 TeV)");
-        const auto to_savepng = save_png && key=="sum";
-        pdf->write(Form("%s_scan_pt-%d.pdf", name_png.c_str(), j), to_savepng ? "" : "X");
+        // const auto to_savepng = save_png && key=="sum";
+        const auto to_savepng = save_png;
+        pdf->write(Form("%s_scan_%s_pt-%d.pdf", name_png.c_str(), key.c_str(), j), to_savepng ? "" : "X");
       }
     }
   }
@@ -250,6 +257,10 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     }
     outf->cd();
   }
+  util::Writeinfo tinfo("info");
+  tinfo.cast_branch("lumi", lumi);
+  tinfo.close();
+  
   xjjroot::closefile(outf);
   
   return 0;

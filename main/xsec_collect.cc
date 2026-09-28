@@ -5,19 +5,31 @@
 #include "draw.h"
 #include "util.h"
 
-int macro(const std::vector<std::string>& inputnames, const std::string& outputname, int save_png = 0) {
+int macro(const std::vector<std::string>& inputnames, const std::string& input_fprompt, const std::string& outputname,
+          int save_png = 0) {
   if (inputnames.size() != 2) {
     __XJJLOG << "!! inputnames should have two files, abort." << std::endl;
     return 2;
   }
 
-  enum class Cat { gammaN, Ngamma, NgammaRef, sum };
-  const std::vector<std::string> labels = { "gammaN", "Ngamma", "Ngamma-ref", "sum" };
-  const std::vector<std::string> texs = { "Xn0n (#gammaN)", "0nXn (N#gamma)", "0nXn (N#gamma)#scale[0.4]{ }#it{y}#scale[0.4]{ }#rightarrow -#it{y}", "Xn0n + 0nXn (#it{y} #rightarrow -#it{y})" };
-  const std::vector<Color_t> colors = { xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["red"], kBlack };
-  const auto ncat = labels.size();
+  TH2D* h2_fprompt = nullptr;
+  if (input_fprompt != "null") {
+    auto* inf = TFile::Open(input_fprompt.c_str());
+    if (inf && !inf->IsZombie()) {
+      h2_fprompt = xjjana::getobj<TH2D>(inf, "h2_fprompt_rebin");
+    }
+  }
+  const auto has_fprompt = static_cast<bool>(h2_fprompt);
+  __XJJLOG << ">> \e[1m[fprompt]\e[0m " << (has_fprompt ? "yes" : "no") << std::endl;
   
-  xjjc::array2D<TH1D*> hsxsec;
+  enum class Cat { gammaN, Ngamma, NgammaRef, sum };
+  const std::vector<std::string> labels = { "gammaN", "Ngamma", "Ngamma-ref", "sum" }; // 
+  const std::vector<Color_t> colors = { xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["red"], kBlack, kBlack, kBlack };
+  const std::vector<std::string> texs = { "Xn0n (#gammaN)", "0nXn (N#gamma)", "0nXn (N#gamma)#scale[0.4]{ }#it{y}#scale[0.4]{ }#rightarrow -#it{y}", "Xn0n + 0nXn (#it{y} #rightarrow -#it{y})" };
+  const auto nhist = labels.size() + (has_fprompt ? 1 : 0);
+  
+  xjjc::array2D<TH1D*> hsxsec; // [npt][nhist]
+  std::map<std::string, std::vector<TGraphErrors*>> gsxsec; // [npt]
   std::vector<std::string> tagspt;
   float lumi = -1.;
   TH3D* h3_bins = nullptr;
@@ -34,7 +46,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     if (!h3_bins) h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins");
     auto vh = xjjana::getobj_regexp<TH1D>(inf, "h1_y_xsec__pt-[0-9]+");
     if (hsxsec.empty()) {
-      hsxsec = xjjc::array2d<TH1D*>(vh.size(), ncat, nullptr);
+      hsxsec = xjjc::array2d<TH1D*>(vh.size(), nhist, nullptr);
       tagspt.resize(vh.size());
     }
     for (auto& h : vh) {
@@ -52,7 +64,9 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   }
   draw::bintex tbins(h3_bins, 0, 2);
 
-  for (auto& hs : hsxsec) {
+  // for (auto& hs : hsxsec) {
+  for (int j=0; j < hsxsec.size(); j++) {
+    auto& hs = hsxsec[j];
     auto *h_gammaN = hs[0], *h_Ngamma = hs[1];
     auto* h_NgammaRef = (TH1D*)h_Ngamma->Clone(xjjc::str_replaceall(h_Ngamma->GetName(), "Ngamma", "NgammaRef").c_str());
     if (util::mirrorswap_hist(h_NgammaRef)) return 2;
@@ -60,6 +74,24 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     auto* h_sum = (TH1D*)h_gammaN->Clone(xjjc::str_replaceall(h_gammaN->GetName(), "gammaN", "sum").c_str());
     h_sum->Add(h_NgammaRef);
     hs[3] = h_sum;
+
+    if (has_fprompt) {
+      auto* h_sum_prompt = (TH1D*)h_sum->Clone(xjjc::str_replaceall(h_sum->GetName(), "sum", "sum-prompt").c_str());
+      h_sum_prompt->GetYaxis()->SetTitle(Form("Prompt %s", h_sum->GetYaxis()->GetTitle()));
+      auto* g_sum_prompt_syst = new TGraphErrors(h_sum_prompt->GetNbinsX());
+      g_sum_prompt_syst->SetName(xjjc::str_replaceall(h_sum_prompt->GetName(), { { "h1_", "gr_" } }).c_str());
+      for (int i=0; i<h_sum_prompt->GetNbinsX(); i++) {
+        const auto fp = h2_fprompt->GetBinContent(i+1, j+1),
+          fp_err = h2_fprompt->GetBinError(i+1, j+1);
+        h_sum_prompt->SetBinContent(i+1, h_sum->GetBinContent(i+1) * fp);
+        h_sum_prompt->SetBinError(i+1, h_sum->GetBinError(i+1) * fp);
+        g_sum_prompt_syst->SetPoint(i, h_sum->GetBinCenter(i+1), h_sum->GetBinContent(i+1) * fp);
+        g_sum_prompt_syst->SetPointError(i, 0, h_sum->GetBinContent(i+1) * (fp_err/fp));
+      }
+      hs[4] = h_sum_prompt;
+      xjjroot::setthgrstyle(g_sum_prompt_syst, kBlack, 20, 1.5, kBlack, 1, 2);
+      gsxsec["sum-prompt"].push_back(g_sum_prompt_syst);
+    }
     for (int i=0; i<hs.size(); i++)
       xjjroot::setthgrstyle(hs[i], colors[i], 20, 1.5, colors[i], 1, 1);
   }
@@ -110,7 +142,6 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     pdf->write(Form("%s_symm_pt-%d.pdf", name_png.c_str(), j), save_png ? "" : "X");
 
     xjjroot::setthgrstyle(hsxsec[j][int(Cat::gammaN)], xjjroot::mycolor_middle["red"], -1, -1, xjjroot::mycolor_middle["red"]);
-
     for (const int i : { int(Cat::gammaN), int(Cat::Ngamma) }) {
       pdf->prepare();
       hsxsec[j][i]->Draw("axis");
@@ -120,12 +151,22 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       xjjroot::drawtexgroup(0.23, 0.85, { texs[i] }, 0.04, 13, 42, 1.25);
       pdf->write(Form("%s_%s_pt-%d.pdf", name_png.c_str(), labels[i].c_str(), j), save_png ? "" : "X");
     }
+    xjjroot::setthgrstyle(hsxsec[j][int(Cat::gammaN)], colors[int(Cat::gammaN)], -1, -1, colors[int(Cat::gammaN)]);
     
     pdf->prepare();
     draw_hs({ hsxsec[j][int(Cat::sum)] });
     draw_global();
     xjjroot::drawtexgroup(0.23, 0.85, { texs[int(Cat::sum)], tbins.label_pt(j) }, 0.04, 13, 42, 1.25);
     pdf->write();
+
+    if (has_fprompt) {
+      pdf->prepare();
+      draw_hs({ hsxsec[j][int(Cat::sum) + 1] });
+      gsxsec["sum-prompt"][j]->Draw("[] same");
+      draw_global();
+      xjjroot::drawtexgroup(0.23, 0.85, { texs[int(Cat::sum)], tbins.label_pt(j) }, 0.04, 13, 42, 1.25);
+      pdf->write();
+    }
   }
 
   pdf->close();
@@ -135,8 +176,12 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   for (int j=0; j<hsxsec.size(); j++) {
     auto* dir = outf->mkdir(Form("dir%s", tagspt[j].c_str()));
     dir->cd();
-    for (auto& h : hsxsec[j])
-      xjjroot::writehist(h);
+    for (auto& h : hsxsec[j]) {
+        xjjroot::writehist(h);
+    }
+    for (auto& [_, gs] : gsxsec)
+      for (auto& g : gs)
+        xjjroot::writehist(g);
 
     outf->cd();
   }
@@ -149,7 +194,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 }
 
 int main(int argc, char* argv[]) {
-  if (argc == 4) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], std::atoi(argv[3]));
+  if (argc == 5) {
+    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atoi(argv[4]));
   }
 }

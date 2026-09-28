@@ -53,6 +53,9 @@ input_mc_evt=${INPUTS_MC_EVT[$isNgamma]}
 CUT_BASE="TMath::Abs(Dtrk1PtErr/Dtrk1Pt)<0.1 && TMath::Abs(Dtrk2PtErr/Dtrk2Pt)<0.1 && TMath::Abs(Dtrk1Eta) < 2.4 && TMath::Abs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5 && Dchi2cl > 0.05 && (DsvpvDistance/DsvpvDisErr) > 1. && DsvpvDisErr>1.e-8 && DsvpvDisErr_2D>1.e-8"
 cutdstr=${CUT_BASE}' && '${cutdtopos[0]}';'${cutdtopos[1]}';'$dcut_tag_DEFAULT${cutdtopos[2]}
 CUT_SIGNALWIN="Dmass > 1.83 && Dmass < 1.9" # for event selection efficiency
+INPUT_FPROMPT='../fprompt/rootfiles/0nXn-twodirs-25_Dbdt/b-ycoarse/collect__2025PbPb_BeamA-prompt_BeamA-nonprompt_Dip3D-Dip3Dsig/'$TAG_BINNING'.root;;2024MC'
+IFS=';' ; fprompts=($INPUT_FPROMPT) ; unset IFS ; fprompt_tag=${fprompts[2]} ; fprompt_file=${fprompts[0]} ;
+[[ -f $fprompt_file ]] && { input_fprompt=$fprompt_file ; itag_fprompt=$fprompt_tag ; } || { itag_fprompt='null' ; input_fprompt='null' ; }
 
 # parse cuts
 cut_tag_DEFAULT=$evtcut_tag_DEFAULT'_'$dcut_tag_DEFAULT
@@ -128,32 +131,31 @@ run_level=${runlevel:4:1}
     echo -e "\033[33;2m"$cut_tag" / \033[0m\033[33m"$mc_tag"\033[0m \033[2m(D efficiency)\033[0m"
 }
 
-itag_fprompt='null'
-
 ####################
 # Cross-section    #
 ####################
-itag_xsec=$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}'_'$itag_fprompt
+itag_xsec=$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}
 echo "  itag_data_fit:     "$itag_data_fit
 echo "  itag_deff_calc:    "$itag_deff_calc
 echo "  itag_evteff_calc:  "$itag_evteff_calc
-echo "  itag_fprompt:      "$itag_fprompt
 echo "  lumi:              "$LUMINOSITY" nb-1"
-echo "              ==> "$itag_xsec
+echo "      ==> "$itag_xsec
+echo "  itag_fprompt:      "$itag_fprompt
 
 run_level=$runlevel
 [[ $run_level -gt 0 ]] && {
-    ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $itag_fprompt $LUMINOSITY $itag_xsec $SAVE_PNG
+    ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $LUMINOSITY $itag_xsec $SAVE_PNG
     [[ $isNgamma -eq 1 ]] && {
+        echo "  itag_fprompt:      "$itag_fprompt
         file_Ngamma='rootfiles/'$itag_xsec'.root'
         file_gammaN=${file_Ngamma//Ngamma/gammaN} ; file_gammaN=${file_gammaN//BeamB/BeamA} ;
-        outputname=${itag_xsec//-Ngamma/} ; outputname=${outputname//-BeamB/} ;
+        outputname=${itag_xsec//-Ngamma/} ; outputname=${outputname//-BeamB/} ; outputname=$outputname'_'$itag_fprompt
         ls $file_gammaN
         ls $file_Ngamma
         echo $outputname
         [[ -f $file_gammaN && -f $file_Ngamma ]] && {
             set -x
-            ./xsec_collect.exe "${file_gammaN},${file_Ngamma}" $outputname 0
+            ./xsec_collect.exe "${file_gammaN},${file_Ngamma}" "$input_fprompt" $outputname 0
             set +x
         }
     }

@@ -84,9 +84,11 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   auto png_name = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
   
   // TH2
+  gStyle->SetPaintTextFormat(".3f");
   for (std::string name : { "evteff" } ) {
+    h2s[name]->SetMarkerSize(1.2);
     pdf->prepare();
-    h2s[name]->Draw("colz");
+    h2s[name]->Draw("colz text");
     xjjroot::drawtexgroup(0.18, 0.85, {
         h2s.at(name)->GetZaxis()->GetTitle(),
       }, 0.04, 13);
