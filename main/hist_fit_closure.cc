@@ -7,7 +7,7 @@
 #include "xjjanauti.h"
 #include "xjjstruct.h"
 #include "xjjmypdf.h"
-#include "dfitter.h"
+#include "dfitter_cached.h"
 #include "draw.h"
 
 namespace {
@@ -73,11 +73,10 @@ int macro(const std::string& inputname, const std::string& outputname,
       auto* hpipi = get_mass_hist(input, "mc-pipi", ipt, iy);
       if (!hdata || !hmatch || !hswap || !hkk || !hpipi) return 4;
 
-      xjjroot::dfitter nominal_fit(fitopt.content.c_str());
-      nominal_fit.fit(hdata, hmatch, hswap, hkk, hpipi);
-      if (!nominal_fit.fitted()) return 5;
-      auto* truth_total = nominal_fit.f_f(Form("closure_total__pt-%d__y-%d", ipt, iy));
-      auto* truth_signal = nominal_fit.f_match(Form("closure_signal__pt-%d__y-%d", ipt, iy));
+      xjjroot::cached_dfitter cached_fit(fitopt.content);
+      if (!cached_fit.prepare(hdata, hmatch, hswap, hkk, hpipi)) return 5;
+      auto* truth_total = cached_fit.total_model(Form("closure_total__pt-%d__y-%d", ipt, iy));
+      auto* truth_signal = cached_fit.signal_model(Form("closure_signal__pt-%d__y-%d", ipt, iy));
       if (!truth_total || !truth_signal) return 6;
       truth_yield = truth_signal->Integral(hdata->GetXaxis()->GetXmin(),
                                            hdata->GetXaxis()->GetXmax()) /
@@ -87,11 +86,10 @@ int macro(const std::string& inputname, const std::string& outputname,
 
       for (toy = 0; toy < ntoys; ++toy) {
         auto* htoy = make_toy(hdata, truth_total, rng, toy, ipt, iy);
-        xjjroot::dfitter fit(fitopt.content.c_str());
-        fit.fit(htoy, hmatch, hswap, hkk, hpipi);
-        fit_ok = fit.fitted() ? 1 : 0;
-        yield = fit_ok ? fit.yield() : -1;
-        yield_err = fit_ok ? fit.yieldErr() : -1;
+        const auto fit = cached_fit.fit(htoy);
+        fit_ok = fit.fitted ? 1 : 0;
+        yield = fit_ok ? fit.yield : -1;
+        yield_err = fit_ok ? fit.yieldErr : -1;
         tree->Fill();
         delete htoy;
       }

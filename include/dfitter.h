@@ -47,6 +47,9 @@ namespace xjjroot {
 
     void fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1* hmassMCSwapped,
              const TH1* hmassMCKK, const TH1* hmassMCPiPi);
+    // Cache/restore the state after the template fits and before the data fit.
+    // This is used by toy studies to avoid repeating the template fits.
+    void fit_data_only(const TH1* hmass);
     bool fitted() const { return fitted_; }
     void reset();
 
@@ -84,6 +87,7 @@ namespace xjjroot {
     double yieldErr_;
 
     TF1* fun_f_;
+    TF1* fun_f_template_;
     TF1* fun_mc_match_; // need this member to save the parameters before changing by fitting on data
     TF1* fun_mc_swap_;
     TF1* fun_mc_kk_;
@@ -105,6 +109,8 @@ namespace xjjroot {
 
     const float tsize_ = 0.038;
     double xmin_ = 0, xmax_ = 0, binwidth_ = 0;
+    double template_norm_match_ = 0, template_norm_swap_ = 0;
+    double template_norm_kk_ = 0, template_norm_pipi_ = 0;
     double signal_region_l_ = 1.8649 - 0.045;
     double signal_region_h_ = 1.8649 + 0.045;
 
@@ -118,7 +124,7 @@ namespace xjjroot {
 }
 
 xjjroot::dfitter::dfitter(Option_t* option) :
-  option_(option), fun_f_(nullptr), fun_mc_match_(nullptr), fun_mc_swap_(nullptr),
+  option_(option), fun_f_(nullptr), fun_f_template_(nullptr), fun_mc_match_(nullptr), fun_mc_swap_(nullptr),
   fun_mc_kk_(nullptr), fun_mc_pipi_(nullptr) {
   vfun_mc_match_.clear();
   parse_opt();
@@ -143,6 +149,7 @@ void xjjroot::dfitter::reset() {
   yield_ = -1;
   yieldErr_ = -1;
   delete fun_f_; fun_f_ = nullptr;
+  delete fun_f_template_; fun_f_template_ = nullptr;
   delete fun_mc_match_; fun_mc_match_ = nullptr;
   delete fun_mc_swap_; fun_mc_swap_ = nullptr;
   delete fun_mc_kk_; fun_mc_kk_ = nullptr;
@@ -399,6 +406,17 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
   fun_f_->FixParameter(24, fun_f_->GetParameter(24));
 
   parse_fmc();
+
+  // Keep the exact state produced by all template fits.  The following data
+  // fit is deliberately left unchanged below; toy studies can restore this
+  // snapshot through fit_data_only().
+  fun_f_template_ = new TF1(*fun_f_);
+  fun_f_template_->SetName(Form("f_template_%s", xjjc::unique_str().c_str()));
+  fun_f_template_->AddToGlobalList(false);
+  template_norm_match_ = norm_mc_match;
+  template_norm_swap_ = norm_mc_swap;
+  template_norm_kk_ = norm_mc_kk;
+  template_norm_pipi_ = norm_mc_pipi;
   
   //  -- fit data
   const auto norm_mc_total = norm_mc_match + norm_mc_swap + norm_mc_kk + norm_mc_pipi;
@@ -451,6 +469,36 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
   fun_f_->Draw("same");
 }
 
+void xjjroot::dfitter::fit_data_only(const TH1* hmass) {
+  if (!fun_f_template_ || !hmass) { fitted_ = false; return; }
+  delete fun_f_; fun_f_ = new TF1(*fun_f_template_);
+  fun_f_->SetName(Form("f_toy_%s", xjjc::unique_str().c_str()));
+  gROOT->GetListOfFunctions()->Add(fun_f_);
+  const auto xmin = xmin_, xmax = xmax_;
+  const auto norm_mc_total = template_norm_match_ + template_norm_swap_ + template_norm_kk_ + template_norm_pipi_;
+  if (norm_mc_total == 0) { fitted_ = false; return; }
+  fun_f_->FixParameter(7, template_norm_match_/norm_mc_total);
+  fun_f_->FixParameter(15, template_norm_swap_/norm_mc_total);
+  fun_f_->FixParameter(16, template_norm_kk_/norm_mc_total);
+  fun_f_->ReleaseParameter(3); fun_f_->ReleaseParameter(4);
+  fun_f_->ReleaseParameter(5); fun_f_->ReleaseParameter(6);
+  if (opt_expbkg_) fun_f_->FixParameter(6, 0);
+  auto* h = static_cast<TH1F*>(hmass->Clone(Form("h_toy_%s", xjjc::unique_str().c_str())));
+  h->SetDirectory(nullptr); set_hist(h);
+  h->Fit(fun_f_->GetName(), "q", "", xmin, xmax);
+  h->Fit(fun_f_->GetName(), "q", "", xmin, xmax);
+  fun_f_->ReleaseParameter(1); fun_f_->SetParLimits(1, 1.86, 1.87);
+  h->Fit(fun_f_->GetName(), "L q", "", xmin, xmax);
+  h->Fit(fun_f_->GetName(), "L q", "", xmin, xmax);
+  h->Fit(fun_f_->GetName(), "L q", "", xmin, xmax);
+  r_ = h->Fit(fun_f_->GetName(), Form("%s S", opt_verbose_ ? "L m" : "L m q"), "", xmin, xmax);
+  auto* fun_match = f_match();
+  yield_ = fun_match->Integral(xmin, xmax)/binwidth_;
+  yieldErr_ = yield_ * fun_match->GetParError(0)/fun_match->GetParameter(0);
+  delete fun_match; delete h;
+  fitted_ = true;
+}
+
 std::vector<std::string> xjjroot::dfitter::draw_result(float x, float y, float tsize, float lspacescale) const {
   std::vector<std::string> text = {
     Form("N = %.0f#scale[0.5]{ }#pm %.0f", yield_, yieldErr_),
@@ -483,7 +531,6 @@ void xjjroot::dfitter::draw_fmc() const {
     fun_mc_pipi_->Draw("same");
   }
 }
-
 
 void xjjroot::dfitter::calculate_SnB() {
   if (!fitted_) {
@@ -706,4 +753,3 @@ void xjjroot::dfitter::draw_params(float x, float y, float tsize, float lspacesc
   }
   xjjroot::drawtexgroup(x, y, rtex, tsize, 13, 42, lspacescale);
 }
-

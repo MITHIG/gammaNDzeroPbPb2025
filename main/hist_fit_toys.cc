@@ -7,7 +7,7 @@
 #include "xjjanauti.h"
 #include "xjjstruct.h"
 #include "xjjmypdf.h"
-#include "dfitter.h"
+#include "dfitter_cached.h"
 #include "draw.h"
 
 namespace {
@@ -80,19 +80,18 @@ int macro(const std::string& inputname, const std::string& outputname,
         return 4;
       }
 
-      xjjroot::dfitter nominal_fit(fitopt.content.c_str());
-      nominal_fit.fit(hdata, hmatch, hswap, hkk, hpipi);
-      nominal_yield = nominal_fit.fitted() ? nominal_fit.yield() : -1;
-      nominal_yield_err = nominal_fit.fitted() ? nominal_fit.yieldErr() : -1;
+      xjjroot::cached_dfitter cached_fit(fitopt.content);
+      if (!cached_fit.prepare(hdata, hmatch, hswap, hkk, hpipi)) return 5;
+      nominal_yield = cached_fit.nominal_yield();
+      nominal_yield_err = cached_fit.nominal_yield_err();
       pt = ipt;
       y = iy;
 
       for (toy = 0; toy < ntoys; ++toy) {
         auto* htoy = make_toy(hdata, rng, toy, ipt, iy);
-        xjjroot::dfitter fit(fitopt.content.c_str());
-        fit.fit(htoy, hmatch, hswap, hkk, hpipi);
-        yield = fit.fitted() ? fit.yield() : -1;
-        yield_err = fit.fitted() ? fit.yieldErr() : -1;
+        const auto fit = cached_fit.fit(htoy);
+        yield = fit.fitted ? fit.yield : -1;
+        yield_err = fit.fitted ? fit.yieldErr : -1;
         tree->Fill();
         delete htoy;
       }
