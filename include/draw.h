@@ -1,4 +1,5 @@
 #include "xjjcuti.h"
+#include "xjjmypdf.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -8,6 +9,7 @@ namespace draw {
   std::string png_name(const xjjroot::mypdf* pdf) {
     return xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   }
+  const std::vector<Color_t> colors = { xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["green"] };
   class bintex {
   public:
     explicit bintex(TH1* h = nullptr, int xyz_y = 0,  int xyz_pt = 0)
