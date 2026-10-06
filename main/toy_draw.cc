@@ -154,10 +154,9 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     
       for (int iy = 0; iy < ny; ++iy) {
         const auto& s = data.stats[ipt][iy]; // 
-        // const auto y_width = tbins.binwidth_y(iy), edgelow_y = tbins.edgelow_y(iy), edgeup_y = tbins.edgeup_y(iy);
         const auto y_width = std::min(0.15, tbins.binwidth_y(iy)*1./(ndata+1)),
           y_center = tbins.edgelow_y(iy) + (tbins.binwidth_y(iy)-y_width*ndata)/2. + (idata+0.5)*y_width;
-        __XJJLOG << "y_width = " << y_width << ", ycenter = " << y_center << std::endl;
+        // __XJJLOG << "y_width = " << y_width << ", ycenter = " << y_center << std::endl;
 
         gr_gaus->SetPoint(iy, y_center, s.gaus_mean);
         gr_gaus->SetPointError(iy, 0, s.sigma);
