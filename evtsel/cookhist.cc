@@ -1,6 +1,7 @@
 #include <TFile.h>
 #include <TH3D.h>
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
 #include "util.h"
 #include "draw.h"
@@ -8,14 +9,12 @@
 #include "variables.h"
 
 int macro(const std::string& inputname, const std::string& outputname) {
-  const auto inputp = util::parse_input(inputname);
+  const auto inputp = xjjroot::parse_input(inputname);
   auto* inf = TFile::Open(inputp.content.c_str());
   auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins");
   const auto ny = h3_bins->GetXaxis()->GetNbins(), npt = h3_bins->GetZaxis()->GetNbins();
   const draw::bintex tbins(h3_bins, 0, 2);
-  auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
-  __XJJLOG << "++ info" << std::endl;
-  xjjc::print_tab(info, -1);
+  const auto info = util::read_info(inf);
   const bool has_dreq = !xjjc::str_contains(info.at("dcut"), "Dnoreq");
   auto this_is = [&info](const std::string& item) {
     return static_cast<bool>(std::atoi(info.at(item).c_str()));
@@ -41,7 +40,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
     h1ptys_refy[name] = xjjc::array2d<TH1D*>(npt, ny);
     for (int i=0; i<npt; i++) {
       for (int j=0; j<ny; j++) {
-        const int refj = this_is("dir_Ngamma") ? ny-j-1 : j;
+        const int refj = this_is("is_Ngamma") ? ny-j-1 : j;
         auto* h1 = h3->ProjectionY(Form("h1_%s_pt-%d_y-%d", name.c_str(), i, j),
                                    j+1, j+1, // y bin
                                    i+1, i+1, // pt bin
@@ -72,15 +71,15 @@ int macro(const std::string& inputname, const std::string& outputname) {
     leg->AddEntry(h, tbins.label_y(xjjc::str_extract_index(h->GetName(), "_y-")).c_str(), "p");
   }
   std::vector<std::string> ts_common = {
-    // std::string(this_is("l1_ZDCOr") ? "L1_ZDCOr + " : (this_is("l1_ZeroBias") ? "L1_ZeroBias + " : "")) + "PV filter + cscTightHalo",
-    std::string(this_is("l1_zdcor") ? "L1_ZDCOr + " : (this_is("l1_zerobias") ? "L1_ZeroBias + " : "")) + "PV filter + cscTightHalo",
-    (this_is("dir_gammaN") ? "#gamma #rightarrow Z+ (#gammaN)" : "#gamma #rightarrow Z- (N#gamma)"),
-    // info["evt_tex"],
+    // std::string(this_is("is_L1ZDCOr") ? "Is_L1ZDCOr + " : (this_is("l1_ZeroBias") ? "L1_ZeroBias + " : "")) + "PV filter + cscTightHalo",
+    std::string(this_is("is_L1ZDCOr") ? "L1_ZDCOr + " : (this_is("is_L1ZeroBias") ? "L1_ZeroBias + " : "")) + "PV filter + cscTightHalo",
+    (this_is("is_gammaN") ? "#gamma #rightarrow Z+ (#gammaN)" : "#gamma #rightarrow Z- (N#gamma)"),
+    // info.at("evt_tex"),
   };
 
   auto treat_tex = [&this_is, &info](const std::string& tex_tochange) {
     return xjjc::str_replaceall(tex_tochange, {
-        { "1nXOR", this_is("dir_gammaN") ? "Xn0n" : "0nXn" },
+        { "1nXOR", this_is("is_gammaN") ? "Xn0n" : "0nXn" },
       });
   };
   
@@ -96,13 +95,13 @@ int macro(const std::string& inputname, const std::string& outputname) {
       else pdf->getc()->SetLogy(0);
       vh1s[i].front()->Draw("axis");
       for (int j=0; j<ny; j++) {
-        vh1s[i][j]->Draw("pe same");
+        vh1s[i][j]->Draw("pe1 same");
       }
-      xjjroot::drawCMS(xjjroot::CMS::internal, info["input_tex"] + " (5.36 TeV)");
+      xjjroot::drawCMS(xjjroot::CMS::internal, info.at("input_tex") + " (5.36 TeV)");
       if (has_dreq) {
         leg->Draw();
         xjjroot::drawtexgroup(legx1+0.005, legy2+0.042*2, { "At least a D cand in", tbins.label_pt(i) }, 0.038, 13, 42, 1.1);
-        xjjroot::drawtexgroup(legx1+0.005, legy1, xjjc::str_divide_trim(info["dcut_tex"], ","), 0.038, 13, 42, 1.1);
+        xjjroot::drawtexgroup(legx1+0.005, legy1, xjjc::str_divide_trim(info.at("dcut_tex"), ","), 0.038, 13, 42, 1.1);
       }
       xjjroot::drawtexgroup(0.24, pos_y(), texs_left, 0.038, 13, 42, 1.1);
       gPad->RedrawAxis();
@@ -120,17 +119,11 @@ int macro(const std::string& inputname, const std::string& outputname) {
   for (const auto& h : xjjana::getobj_regexp<TH1D>(inf, "h1_.+"))
     xjjroot::writehist(h);
   xjjroot::writehist(h3_bins);
-  auto* t = new TTree("info", "");
-  std::map<std::string, std::string> t_container; // for lifetime of the intermediate string
-  auto cast_branch = [&t, &t_container]<typename T>(const std::string& name, const T& x) {
-    t_container[name] = xjjc::to_string(x);
-    t->Branch(name.c_str(), &(t_container[name]));
-  };
+  util::Writeinfo winfo("info");
   for (const auto& [key, val] : info) {
-    cast_branch(key, val);
+    winfo.cast_branch(key, val);
   }
-  t->Fill();
-  t->Write();
+  winfo.close();
   outf->cd();
   xjjroot::closefile(outf);
   
