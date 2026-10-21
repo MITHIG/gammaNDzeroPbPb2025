@@ -5,12 +5,14 @@ trainlabel='261002-gammaN'
 
 # -- signal sample for training
 # inputs=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-1_Dsize.root
-inputs=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root
+# inputs=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root
+inputs=/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/260212-hfle/Dzero_260212-hfle_HiForest_260218_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_t2.root # 260309-gammaN
 
 # -- background sample for training
 bkgstrategy=sideband
-# inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward0-8-2_Dpt-1_Dsize_xbr.root
-inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_12ePD.root
+# inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_12ePD.root
+# inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward0-8-2_Dpt-1_Dsize_xbr.root # low pT
+inputb=/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/260212-hfle/Dzero_260212-hfle_PbPbUPC_HIForward0-10-2_Dpt-2_ZDCgap-3_Dsize_xbr.root # 260309-gammaN
 
 ##
 # -- PV + MET
@@ -28,11 +30,11 @@ cuts=$cut ; cutb=$cut ;
 cutb=$cutb" && isL1ZDCOr && ZDCgammaN && HFEMaxPlus_forest < 16 && cscTightHalo2015Filter"
 
 ##
-# algo='BDT,BDTG,LD,CutsGA'
+algo='BDT,BDTG,LD,CutsGA'
 # algo='BDT,BDTG,LD'
-algo='BDT'
+# algo='BDT'
 
-# stages='0,1,2,3,4,5,6,8,9,10,11' ; sequence=0 ; # see definition below #
+# stages='0,1,2,3,4,5,6,8,9,10,11' ; sequence=1 ; # see definition below #
 stages='0,1,2,3,4,5,6' ; sequence=0 ; # see definition below #
 
 ## ===== do not change the lines below =====

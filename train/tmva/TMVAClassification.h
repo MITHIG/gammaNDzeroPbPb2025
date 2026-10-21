@@ -13,7 +13,8 @@
 namespace mytmva
 {
   #ifdef __PRESET_TRAIN_BINS
-  std::vector<float> ptbins = { 1., 2., 3., 4., 5. };
+  // std::vector<float> ptbins = { 1., 2., 3., 4., 5. };
+  std::vector<float> ptbins = { 2., 5. };
   std::vector<float> ybins = { -2., -1., 0., 1., 2. };
   #endif
   int whichbin(float value, const std::vector<float>& vbins);
@@ -43,8 +44,6 @@ namespace mytmva
     /*9: */ mytmva::tmvavar("Dmass"      , "Dmass"                                                                                          , ""    , "m_{K#pi}"                               , 1.7 , 2.0),
     /*10:*/ mytmva::tmvavar("Dtrk1Eta"   , "Dtrk1Eta"                                                                                       , ""    , "#pi_{1} #eta"                           , -2  , 2)  ,
     /*11:*/ mytmva::tmvavar("Dtrk2Eta"   , "Dtrk2Eta"                                                                                       , ""    , "#pi_{2} #eta"                           , -2  , 2)  ,
-    // /*12:*/ mytmva::tmvavar("Dtrk1DxySig", "Dtrk1DxySig := TMath::Abs(Dtrk1Dxy1/Dtrk1DxyError1)"                                            , ""    , "#pi_{1} |D_{xy}/#sigma(D_{xy})|"        , 0   , 4)  ,
-    // /*13:*/ mytmva::tmvavar("Dtrk2DxySig", "Dtrk2DxySig := TMath::Abs(Dtrk2Dxy1/Dtrk2DxyError1)"                                            , ""    , "#pi_{2} |D_{xy}/#sigma(D_{xy})|"        , 0   , 4)  ,
   };
   const mytmva::tmvavar* findvar(std::string varlabel);
 
