@@ -11,7 +11,7 @@
 
 #include "xjjcuti.h"
 #include "mvaeffs.h"
-#define __PRESET_TRAIN_YBINS
+#define __PRESET_TRAIN_BINS
 #include "TMVAClassification.h"
 
 namespace mytmva

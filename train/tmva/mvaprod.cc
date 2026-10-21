@@ -1,19 +1,21 @@
 #include <string>
-
+#define __PRESET_TRAIN_BINS
 #include "TMVAClassification.h"
 #include "mvaprod.h"
 
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
+// #include <filesystem>
+// namespace fs = std::filesystem;
+// #include <experimental/filesystem>
+// namespace fs = std::experimental::filesystem;
 
-void mvaprob_main(std::string inputname, std::string outputtag, std::string mymethod, std::string stage,
-                  std::string outputfiledir) {
+void mvaprob_main(const std::string& inputname, const std::string& outputtag, const std::string& mymethod, const std::string& stage,
+                  const std::string& outputfiledir) {
 
-  outputtag = mytmva::mkname(outputtag, mymethod, stage);
+  const auto outputtag_full = mytmva::mkname(outputtag, mymethod, stage);
   
   std::vector<std::map<std::string, mytmva::mvaprod*>> prods(mytmva::ptbins.size()-1);
   for (int i=0; i<mytmva::ptbins.size()-1; i++) {
-    auto rootfname = outputtag + "_" + mytmva::mkname_pt(mytmva::ptbins.at(i), mytmva::ptbins.at(i+1)) + ".root";
+    auto rootfname = outputtag_full + "_" + mytmva::mkname_pt(mytmva::ptbins.at(i), mytmva::ptbins.at(i+1)) + ".root";
     auto weightdir = "dataset/weights/" + xjjc::str_tag_from_file(rootfname);
     std::cout<<mytmva::titlecolor<<"==> "<<__FUNCTION__<<": found weight files:"<<mytmva::nocolor<<std::endl;
     for (const auto & entry : fs::directory_iterator(weightdir)) {
@@ -32,7 +34,7 @@ void mvaprob_main(std::string inputname, std::string outputtag, std::string myme
 
   std::cout<<mytmva::titlecolor<<"==> "<<__FUNCTION__<<": input file:"<<mytmva::nocolor<<std::endl<<inputname<<mytmva::nocolor<<std::endl;
   std::string outfname = outputfiledir + "/" + xjjc::str_tag_from_file(inputname)
-    + "_" + xjjc::str_tag_from_file(outputtag) + ".root";
+    + "_" + xjjc::str_tag_from_file(outputtag_full) + ".root";
   std::cout<<mytmva::titlecolor<<"==> "<<__FUNCTION__<<": output file:"<<mytmva::nocolor<<std::endl<<outfname<<mytmva::nocolor<<std::endl;
   if (fs::exists(outfname)) {
     std::cout<<mytmva::errorcolor<<"==> "<<__FUNCTION__<<": warning: output file already exists."<<mytmva::nocolor<<std::endl; }

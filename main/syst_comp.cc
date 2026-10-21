@@ -7,7 +7,7 @@
 
 struct Property {
   std::string tex;
-  // int isNgamma;
+  int rorder = 0;
 };
 
 const float ytop = 0.84, lspace = 1.2, tsize = 0.036;
@@ -33,7 +33,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   const std::map<std::string, Property> texs = {
     { "gammaN", { .tex = "Xn0n (#gammaN)" } },
     { "NgammaRef", { .tex = "0nXn (N#gamma) (#it{y} #rightarrow -#it{y})" } },
-    { "sum", { .tex = "Xn0n + 0nXn (#it{y} #rightarrow -#it{y})" } }
+    { "sum", { .tex = "Xn0n + 0nXn (#it{y} #rightarrow -#it{y})" } },
+    { "Ngamma", { .tex = "Xn0n (N#gamma)", .rorder = 1 } },
   };
   
   std::map<std::string, xjjc::array2D<TH1D*>> hys;
@@ -43,7 +44,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     gs_scan[key] = xjjc::array2d<TGraphErrors*>(tbins.npt(), tbins.ny(), nullptr); //
     for (int j=0; j<tbins.npt(); j++) {
       for (int k=0; k<tbins.ny(); k++) {
-        const auto k_style = k;
+        const auto k_style = prop.rorder ? (tbins.ny()-1-k) : k;
         const auto ccy = colors_y[k_style];
         gs_scan[key][j][k] = new TGraphErrors();
         gs_scan[key][j][k]->SetName(Form("gr-scan_y_xsec_%s__pt-%d__y-%d", key.c_str(), j, k));
@@ -56,6 +57,11 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   leg_y->SetNColumns(3);
   for (int k=0; k<tbins.ny(); k++)
     leg_y->AddEntry(gs_scan.at("sum")[0][k], tbins.label_y(k).c_str(), "p");
+  auto *leg_y_rorder = new TLegend(0.21, ypos(0.7 + std::ceil(tbins.ny()/3.)), 0.91, ypos(0.7));
+  xjjroot::setleg(leg_y_rorder, tsize);
+  leg_y_rorder->SetNColumns(3);
+  for (int k=tbins.ny()-1; k>=0; k--)
+    leg_y_rorder->AddEntry(gs_scan.at("Ngamma")[0][k], tbins.label_y(k).c_str(), "p");
   
   std::vector<double> xvals; 
   TLegend *leg = nullptr; const auto ncol = inputnames.size() > 3 ? 2 : 1;
@@ -86,7 +92,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     auto* hdump = hys.at("sum").front().back();
     // legend
     if (!leg) {
-      leg = new TLegend(x1+legdx, ypos(1+std::ceil(inputnames.size()/ncol), legdy), x2+legdx, ypos(1, legdy));
+      leg = new TLegend(x1+legdx, ypos(1 + std::ceil(float(inputnames.size())/ncol), legdy), x2+legdx, ypos(1, legdy));
       leg->SetNColumns(ncol);
       xjjroot::setleg(leg, tsize);
     }
@@ -232,7 +238,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
           g2->Draw("l same");
           g->Draw("pe same");
         }
-        leg_y->Draw();
+        (prop.rorder ? leg_y_rorder : leg_y)->Draw();
         // xjjroot::drawtexgroup(0.23, ypos(-0.2), xjjc::str_divide_trim(tags, ","), tsize, 13);
         xjjroot::drawtexgroup(0.23, ypos(-0.2), { prop.tex }, tsize, 13);
         xjjroot::drawtexgroup(0.90, ypos(-0.2), { tbins.label_pt(j) }, tsize, 33);

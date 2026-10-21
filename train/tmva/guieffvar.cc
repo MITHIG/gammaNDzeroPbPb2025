@@ -14,10 +14,10 @@
 #include <TH2F.h>
 #include "TMVA/tmvaglob.h"
 
-#include "TMVAClassification.h"
-#include "xjjcuti.h"
-#include "xjjrootuti.h"
 #include "xjjanauti.h"
+
+#define __PRESET_TRAIN_BINS
+#include "TMVAClassification.h"
 
 namespace mytmva
 {
@@ -34,8 +34,10 @@ void mytmva::guieffvar(std::string outputname, float ptmin, float ptmax, float y
     outfname.push_back(mytmva::mkname(outputname, mymethod, stage, ptmin, ptmax, ymin, ymax));
     stage.erase(stage.rfind(','));
   }
-  std::string outputstr(xjjc::str_tag_from_file(outfname.front()));
-  std::sort(outfname.begin(), outfname.end(), xjjc::sortbydes<std::string>);
+  const auto outputstr = xjjc::str_tag_from_file(outfname.front());
+  std::sort(outfname.begin(), outfname.end(), [](const std::string& a, const std::string& b) {
+    return a > b;  // descending
+  });
 
   auto methods = xjjc::str_divide_trim(mymethod, ",");
   for (auto& mm : methods) {

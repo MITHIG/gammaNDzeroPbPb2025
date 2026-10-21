@@ -9,7 +9,7 @@
 #include "TMVA/variables.h"
 
 #include "xjjcuti.h"
-#define __PRESET_TRAIN_YBINS
+#define __PRESET_TRAIN_BINS
 #include "TMVAClassification.h"
 
 namespace mytmva

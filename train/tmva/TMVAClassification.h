@@ -12,10 +12,9 @@
 
 namespace mytmva
 {
-  std::vector<float> ptbins({2., 5.});
-  #ifdef __PRESET_TRAIN_YBINS
-  // std::vector<float> ybins = { -2., -1., 0., 1., 2. };
-  std::vector<float> ybins = { -2., 2. };
+  #ifdef __PRESET_TRAIN_BINS
+  std::vector<float> ptbins = { 1., 2., 3., 4., 5. };
+  std::vector<float> ybins = { -2., -1., 0., 1., 2. };
   #endif
   int whichbin(float value, const std::vector<float>& vbins);
   

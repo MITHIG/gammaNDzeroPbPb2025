@@ -17,10 +17,9 @@
 #include "TMVA/TMVAGui.h"
 #include "TMVA/Config.h"
 
-#include "xjjcuti.h"
 #include "xjjrootuti.h"
 
-#define __PRESET_TRAIN_YBINS
+#define __PRESET_TRAIN_BINS
 #include "TMVAClassification.h"
 
 int TMVAClassification(std::string inputSname, std::string inputBname, std::string mycutS, std::string mycutB, 

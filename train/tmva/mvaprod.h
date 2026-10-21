@@ -6,8 +6,8 @@
 #include <vector>
 #include <string>
 
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
+#include <filesystem>
+namespace fs = std::filesystem;
 #include <TFile.h>
 #include <TTree.h>
 #include <TSystem.h>
@@ -44,7 +44,7 @@ namespace mytmva
     std::string cuts_, cutb_, varinfo_, varnote_;
   };
 
-  xjjc::array2D<std::map<std::string, mvaprod*>> dir_to_weights(const std::string& prefix, std::vector<float> ybins, bool verbose = false);
+  xjjc::array2D<std::map<std::string, mvaprod*>> dir_to_weights(const std::string& prefix, const std::vector<float>& ybins, const std::vector<float>& ptbins, bool verbose = false);
 }
 
 mytmva::mvaprod::mvaprod(std::string weight, bool verbose) :
@@ -154,14 +154,14 @@ float mytmva::mvaprod::evalmva(mytmva::varval* values, int j) {
   return result;
 }
 
-xjjc::array2D<std::map<std::string, mytmva::mvaprod*>> mytmva::dir_to_weights(const std::string& prefix, std::vector<float> ybins, bool verbose) {
+xjjc::array2D<std::map<std::string, mytmva::mvaprod*>> mytmva::dir_to_weights(const std::string& prefix, const std::vector<float>& ybins, const std::vector<float>& ptbins, bool verbose) {
   xjjc::print_vec_h(ybins, 0);
   if (ybins.empty()) {
     __XJJLOG << "!! bad ybins, mva deactivated." << std::endl;
     return {};
   }
-  auto prods = xjjc::array2d<std::map<std::string, mvaprod*>>(mytmva::ptbins.size()-1, ybins.size()-1);
-  for (int i=0; i<mytmva::ptbins.size()-1; i++) {
+  auto prods = xjjc::array2d<std::map<std::string, mvaprod*>>(ptbins.size()-1, ybins.size()-1);
+  for (int i=0; i<ptbins.size()-1; i++) {
     for (int j=0; j<ybins.size()-1; j++) {
       mvaprod* pd = nullptr;
       auto& iprod = prods.at(i).at(j);
@@ -174,7 +174,7 @@ xjjc::array2D<std::map<std::string, mytmva::mvaprod*>> mytmva::dir_to_weights(co
         }
         iprod[pd->method()] = pd; //
       } else { // different weights 
-        auto weightdir = prefix + "_" + mytmva::mkname_pt(mytmva::ptbins.at(i), mytmva::ptbins.at(i+1)) + "_" + mytmva::mkname_y(ybins.at(j), ybins.at(j+1));
+        auto weightdir = prefix + "_" + mytmva::mkname_pt(ptbins.at(i), ptbins.at(i+1)) + "_" + mytmva::mkname_y(ybins.at(j), ybins.at(j+1));
         __XJJLOG << "++ found weight files in " << weightdir << std::endl;
         for (const auto& entry : fs::directory_iterator(weightdir)) {
           std::string entrypath(entry.path());
