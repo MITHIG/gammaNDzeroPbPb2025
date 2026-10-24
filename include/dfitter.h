@@ -69,6 +69,7 @@ namespace xjjroot {
     double ndf() const { return fun_f_->GetNDF(); }
     double chi2prob() const { return TMath::Prob(chi2(), ndf()); }
     std::pair<double, double> width_mc_match(double frac = 0.682689) const;
+    std::pair<double, double> alpha() const { return { fun_f_->GetParameter(11), fun_f_->GetParError(11) }; }
 
     bool haskkpipi() const { return opt_haskkpipi_; }
 
@@ -101,6 +102,7 @@ namespace xjjroot {
     bool opt_3gaus_;
     bool opt_haskkpipi_;
     bool opt_expbkg_;
+    bool opt_float_;
     bool opt_sig_;
     bool opt_verbose_;
 
@@ -135,7 +137,14 @@ xjjroot::dfitter::dfitter(Option_t* option) :
 void xjjroot::dfitter::parse_opt() {
   opt_3gaus_ = xjjc::str_contains(option_, "3G");
   opt_expbkg_ = xjjc::str_contains(option_, "Exp");
+  opt_float_ = xjjc::str_contains(option_, "Fwidth");
   opt_haskkpipi_ = xjjc::str_contains(option_, "Peaky");
+  xjjc::print_tab(std::map<std::string, bool>{
+      {"Triple gaus", opt_3gaus_},
+      {"Expo bkg", opt_expbkg_},
+      {"Float width", opt_float_},
+      {"Has KK/pipi", opt_haskkpipi_},
+    }, 0);
   opt_sig_ = xjjc::str_contains(option_, "Sig");
   opt_verbose_ = xjjc::str_contains(option_, "V");
 }
@@ -433,9 +442,11 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
   h->Fit(fun_f_->GetName(), "q", "", xmin_, xmax_);
   fun_f_->ReleaseParameter(1);
   fun_f_->SetParLimits(1, 1.86, 1.87);
-  // fun_f_->ReleaseParameter(11);
-  // fun_f_->SetParLimits(11, -0.5, 0.5);
   h->Fit(fun_f_->GetName(), "L q", "", xmin_, xmax_);
+  if (opt_float_) {
+    fun_f_->ReleaseParameter(11);
+    fun_f_->SetParLimits(11, -0.5, 0.5);    
+  }
   h->Fit(fun_f_->GetName(), "L q", "", xmin_, xmax_);
   h->Fit(fun_f_->GetName(), "L q", "", xmin_, xmax_);
   r_ = h->Fit(fun_f_->GetName(), Form("%s S", fitopt),"", xmin_, xmax_);
@@ -449,6 +460,11 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
 
   yield_ = fun_match->Integral(xmin_, xmax_)/binwidth_;
   yieldErr_ = fun_match->Integral(xmin_, xmax_)/binwidth_*fun_match->GetParError(0)/fun_match->GetParameter(0);
+
+  const auto width_sigma = width_mc_match(xjjana::frac_1sigma);
+  const auto mean = fun_f_->GetParameter(1);
+  signal_region_l_ = mean - 3*width_sigma.first;
+  signal_region_h_ = mean + 3*width_sigma.first;
 
   calculate_SnB();
   

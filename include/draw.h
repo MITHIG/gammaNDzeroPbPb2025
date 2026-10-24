@@ -9,7 +9,11 @@ namespace draw {
   std::string png_name(const xjjroot::mypdf* pdf) {
     return xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   }
+  const std::string title_ph = "PbPb (5.36 TeV)";
   const std::vector<Color_t> colors = { xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["green"] };
+  const std::vector<Color_t> colors_wblack = { kBlack, xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"] };
+  Color_t icolor(int i, const std::vector<Color_t>& tcolors = colors_wblack) { return tcolors[i%tcolors.size()]; }
+
   class bintex {
   public:
     explicit bintex(TH1* h = nullptr, int xyz_y = 0,  int xyz_pt = 0)
@@ -27,6 +31,10 @@ namespace draw {
       const auto ymax = (i >= 0 ? axis_y->GetBinUpEdge(i+1) : axis_y->GetBinUpEdge(axis_y->GetNbins()));
       return xjjc::str_replaceall(xjjc::number_range_string(ymin, ymax, "y", -1.e1), " #", "#scale[0.4]{ }#");
     }
+    std::string latex_y(int i = -1) const {
+      const auto ymin = v_min(i, axis_y), ymax = v_max(i, axis_y);
+      return xjjc::number_range_string(ymin, ymax, "y", -1.e1);
+    }
     int ny() const { return axis_y->GetNbins(); }
     double binwidth_y(int i = -1) const {
       const auto ymin = (i >= 0 ? axis_y->GetBinLowEdge(i+1) : axis_y->GetBinLowEdge(1));
@@ -40,6 +48,10 @@ namespace draw {
       const auto ptmin = (i >= 0 ? axis_pt->GetBinLowEdge(i+1) : axis_pt->GetBinLowEdge(1));
       const auto ptmax = (i >= 0 ? axis_pt->GetBinUpEdge(i+1) : axis_pt->GetBinUpEdge(axis_pt->GetNbins()));
       return xjjc::str_replaceall(xjjc::number_range_string(ptmin, ptmax, "#it{p}_{T}"), " #", "#scale[0.4]{ }#") + " GeV";
+    }
+    std::string latex_pt(int i = -1) const {
+      const auto ptmin = v_min(i, axis_pt), ptmax = v_max(i, axis_pt);
+      return xjjc::number_range_string(ptmin, ptmax, "\\pt") + "\\GeV";
     }
     int npt() const { return axis_pt->GetNbins(); }
     double binwidth_pt(int i = -1) const {
@@ -58,6 +70,8 @@ namespace draw {
   private:
     TH1* h_bins;
     TAxis *axis_pt, *axis_y;
+    double v_min(int i, TAxis *axis) const { return (i >= 0 ? axis->GetBinLowEdge(i+1) : axis->GetBinLowEdge(1)); }
+    double v_max(int i, TAxis *axis) const { return (i >= 0 ? axis->GetBinUpEdge(i+1) : axis->GetBinUpEdge(axis->GetNbins())); }
     TAxis* decide_axis(int xyz) {
       TAxis* axis = nullptr;
       if (!h_bins) return axis;

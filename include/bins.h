@@ -5,6 +5,12 @@ namespace bins {
 #ifdef __BINS_PTY_PLACEHOLDER__
   std::vector<double> ybins;
   std::vector<double> ptbins;
+  void print() {
+    __XJJLOG << ">> current y binning:" << std::endl;
+    xjjc::print_vec_h(ybins);
+    __XJJLOG << ">> current pt binning:" << std::endl;
+    xjjc::print_vec_h(ptbins);
+  }
 #endif
 
 #ifdef __BINS_PTY_BDT__
@@ -19,7 +25,7 @@ namespace bins {
 
 #ifdef __BINS_PTY_EFF__
   const int ny = 48; const float miny = -2.4, maxy = 2.4;
-  const int npt = 30; const float minpt = 2, maxpt = 5;
+  const int npt = 40; const float minpt = 1, maxpt = 5;
 #endif
 
 #ifdef __BINS_PTY_DATAMCCOMP__
@@ -33,15 +39,6 @@ namespace bins {
 
 #ifdef __BINS_MASS__
   const int nmass = 80; const float minmass = 1.66, maxmass = 2.06;
-#endif
-
-#if defined(__BINS_PTY_PLACEHOLDER__)
-  void print() {
-    __XJJLOG << ">> current y binning:" << std::endl;
-    xjjc::print_vec_h(ybins);
-    __XJJLOG << ">> current pt binning:" << std::endl;
-    xjjc::print_vec_h(ptbins);
-  }
 #endif
 
 }
