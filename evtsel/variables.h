@@ -13,11 +13,13 @@ std::vector<global::variable> variables = {
   { .varname = "HFEMaxGamma_eta5", .var = "HFEMaxPlus_eta5,HFEMaxMinus_eta5", .vartex = "0n (#gamma-going) side HF PF E_{max}^{3 < |#eta| < 5} [GeV]", .varmin = 0, .varmax = 40, .nbin = 100, .logy = 1, .note = "ZDC 1nXOR" },
   // { .varname = "HFEMaxN_eta5", .var = "HFEMaxPlus_eta5,HFEMaxMinus_eta5", .vartex = "Xn (N-going) side HF PF E_{max}^{3 < |#eta| < 5} [GeV]", .varmin = 0, .varmax = 40, .nbin = 100, .logy = 1, .note = "ZDC 1nXOR" },
   { .varname = "HFEMaxN_eta5-gap", .var = "HFEMaxPlus_eta5,HFEMaxMinus_eta5", .vartex = "Xn (N-going) side HF PF E_{max}^{3 < |#eta| < 5} [GeV]", .varmin = 0, .varmax = 40, .nbin = 100, .logy = 1, .note = "ZDC 1nXOR + Gap" },
-  { .varname = "nTrackInAcceptanceHP", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 100, .nbin = 50, .logy = 1, .note = "ZDC 1nXOR" },
-  { .varname = "nTrackInAcceptanceHP-gap", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 100, .nbin = 50, .logy = 1, .note = "ZDC 1nXOR + Gap" },
-  { .varname = "nTrackInAcceptanceHP-gap-extend", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 1000, .nbin = 100, .logy = 1, .note = "ZDC 1nXOR + Gap" },
-  { .varname = "nTrackInAcceptanceHP-nogap", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 100, .nbin = 50, .logy = 1, .note = "ZDC 1nXOR + No gap" },
-  { .varname = "nTrkVtx", .var = "nTrkVtx", .vartex = "N_{trk} associated to PV", .varmin = 0, .varmax = 1000, .nbin = 100, .logy = 1, .note = "ZDC 1nXOR + Gap" },
+  { .varname = "nTrackInAcceptanceHP", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 250, .nbin = 125, .logy = 1, .note = "ZDC 1nXOR" },
+  { .varname = "nTrackInAcceptanceHP-gap", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 250, .nbin = 125, .logy = 1, .note = "ZDC 1nXOR + Gap" },
+  { .varname = "nTrackInAcceptanceHP-nogap", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 250, .nbin = 125, .logy = 1, .note = "ZDC 1nXOR + No gap" },
+  { .varname = "nTrackInAcceptanceHP-gap-low", .var = "nTrackInAcceptanceHP", .vartex = "N_{trk} (highPurity, |#eta| < 2.4,#scale[0.4]{ }#it{p}_{T} > 0.5 GeV)", .varmin = 0, .varmax = 80, .nbin = 80, .logy = 0, .note = "ZDC 1nXOR + Gap" },
+  { .varname = "nTrkVtx", .var = "nTrkVtx", .vartex = "N_{trk} asso to PV (weight > 0.5)", .varmin = 0, .varmax = 250, .nbin = 125, .logy = 1, .note = "ZDC 1nXOR" },
+  { .varname = "nTrkVtx-gap", .var = "nTrkVtx", .vartex = "N_{trk} asso to PV (weight > 0.5)", .varmin = 0, .varmax = 250, .nbin = 125, .logy = 1, .note = "ZDC 1nXOR + Gap" },
+  { .varname = "nTrkVtx-nogap", .var = "nTrkVtx", .vartex = "N_{trk} asso to PV (weight > 0.5)", .varmin = 0, .varmax = 250, .nbin = 125, .logy = 1, .note = "ZDC 1nXOR + No gap" },
   { .varname = "nVtx", .var = "nVtx", .vartex = "Number of vertices", .varmin = 0, .varmax = 10, .nbin = 10, .logy = 1, .note = "ZDC 1nXOR + Gap" },
 };
 

@@ -23,11 +23,22 @@ int macro(const std::string& inputname, const std::string& evtcat, const std::st
     __XJJLOG << "!! neither gammaN nor Ngamma, abort." << std::endl;
     return 2;
   }
-  const bool is_gammaN = want_evt("gammaN");
-  const float thre_zdc_gamma = is_gammaN ? 1100 : 1000,
-    thre_zdc_N = is_gammaN ? 1000 : 1100,
-    thre_gap = want_evt("2023") ? (is_gammaN ? 9.2 : 8.7) : 16.;
-    
+  auto evt_pars = [&evtp](int i) -> float {
+    const auto params = xjjc::str_divide_trim(evtp.content, ",");
+    if (i < params.size() && i >= 0)
+      return std::atof(params[i].c_str());
+    __XJJLOG << "!! cannot extract parameters from evtcat, abort." << std::endl;
+    return -1;
+  };
+  const float thre_zdc_gamma = evt_pars(0), thre_zdc_N = evt_pars(1), thre_gap = evt_pars(2);
+  xjjc::print_tab(std::map<std::string, float>{
+      { "thre_zdc_gamma", thre_zdc_gamma },
+      { "thre_zdc_N", thre_zdc_N },
+      { "thre_gap", thre_gap },
+    }, 0);
+  if (thre_zdc_gamma < 0 || thre_zdc_N < 0 || thre_gap < 0)
+    return 2;
+
   // parse inputs
   const auto inputp = xjjroot::parse_input(inputname);
   auto* inf = xjjroot::openfile(inputp.content);
@@ -44,15 +55,20 @@ int macro(const std::string& inputname, const std::string& evtcat, const std::st
   const auto is_data = !xjjana::ismc_runnum(tree);
   myvar::evtntuple ent(tree);
 
-  const std::map<std::string, bool> opt_to_doc = {
-    { "is_gammaN", is_gammaN },
+  const std::map<std::string, bool> opts_to_use = {
+    { "is_gammaN", want_evt("gammaN") },
     { "is_Ngamma", want_evt("Ngamma") },
-    { "is_2023", want_evt("2023") },
     { "is_L1ZDCOr", want_evt("L1ZDCOr") },
     { "is_L1ZeroBias", want_evt("L1ZeroBias") },
+    { "is_PVfilter", want_evt("PVfilter") },
+    { "is_cscTightHalo2025", want_evt("cscTightHalo") },
+    { "is_clusComp", want_evt("clusComp") },
     { "is_data", is_data },
   };
-  xjjc::print_tab(opt_to_doc, 0);
+  xjjc::print_tab(opts_to_use, 0);
+  auto opts = [&opts_to_use](const std::string& par) -> bool {
+    return opts_to_use.at(par);
+  };
 
   // parse dcutstr
   const auto dcutp = xjjroot::parse_input(dcutstr);
@@ -97,10 +113,11 @@ int macro(const std::string& inputname, const std::string& evtcat, const std::st
     tree->GetEntry(i);
 
     // basic event selections
-    if (is_data && !((want_evt("L1ZDCOr") && ent.isL1ZDCOr) ||
-                     (want_evt("L1ZeroBias") && ent.isZeroBias))) continue; // trigger
-    if (!ent.selectedVtxFilter) continue; // bkgrej 
-    if (is_data && !ent.cscTightHalo2015Filter) continue;
+    if (opts("is_L1ZDCOr") && !ent.isL1ZDCOr) continue;
+    if (opts("is_L1ZeroBias") && !ent.isZeroBias) continue;
+    if (opts("is_PVfilter") && !ent.selectedVtxFilter) continue;
+    if (opts("is_cscTightHalo2025") && !ent.cscTightHalo2015Filter) continue;
+    if (opts("is_clusComp") && !ent.ClusterCompatibilityFilter) continue;
 
     std::vector<std::pair<int, int>> to_fill;
     if (Dnoreq) {
@@ -129,12 +146,12 @@ int macro(const std::string& inputname, const std::string& evtcat, const std::st
       }
       if (to_fill.size() > 0)
         h1s["nd"]->Fill(to_fill.size());
-    } // else of if (dcut_is(Dsel::noreq))
+    }
 
-    const float zdcsum_gamma = is_data ? (is_gammaN ? ent.ZDCsumPlus : ent.ZDCsumMinus) : 0,
-      zdcsum_N = is_data ? (is_gammaN ? ent.ZDCsumMinus : ent.ZDCsumPlus) : 4.e3;
-    const auto hfemax_eta5_gamma = is_gammaN ? ent.HFEMaxPlus_eta5 : ent.HFEMaxMinus_eta5,
-      hfemax_eta5_N = is_gammaN ? ent.HFEMaxMinus_eta5 : ent.HFEMaxPlus_eta5;
+    const float zdcsum_gamma = is_data ? (opts("is_gammaN") ? ent.ZDCsumPlus : ent.ZDCsumMinus) : 0,
+      zdcsum_N = is_data ? (opts("is_gammaN") ? ent.ZDCsumMinus : ent.ZDCsumPlus) : 4.e3;
+    const auto hfemax_eta5_gamma = opts("is_gammaN") ? ent.HFEMaxPlus_eta5 : ent.HFEMaxMinus_eta5,
+      hfemax_eta5_N = opts("is_gammaN") ? ent.HFEMaxMinus_eta5 : ent.HFEMaxPlus_eta5;
 
     for (const auto& ibin : to_fill) {
       auto fill_value = [&h3s, &ibin](const std::string& name, float value) {
@@ -154,23 +171,19 @@ int macro(const std::string& inputname, const std::string& evtcat, const std::st
           fill_value("HFEMaxGamma_eta5", hfemax_eta5_gamma);
           fill_value("HFEMaxN_eta5", hfemax_eta5_N);
           fill_value("nTrackInAcceptanceHP", ent.nTrackInAcceptanceHP);
+          fill_value("nTrkVtx", ent.nTrkVtx);
           if (hfemax_eta5_gamma < thre_gap) { // 0n + Xn + gap
             fill_value("HFEMaxN_eta5-gap", hfemax_eta5_N);
             fill_value("nTrackInAcceptanceHP-gap", ent.nTrackInAcceptanceHP);
-            fill_value("nTrackInAcceptanceHP-gap-extend", ent.nTrackInAcceptanceHP);
-            fill_value("nTrkVtx", ent.nTrkVtx);
+            fill_value("nTrackInAcceptanceHP-gap-low", ent.nTrackInAcceptanceHP);
+            fill_value("nTrkVtx-gap", ent.nTrkVtx);
             fill_value("nVtx", ent.nVtx);
-          }
-          if (hfemax_eta5_gamma >= thre_gap) { // 0n + Xn + no gap
+          } else { // 0n + Xn + no gap
             fill_value("nTrackInAcceptanceHP-nogap", ent.nTrackInAcceptanceHP);
+            fill_value("nTrkVtx-nogap", ent.nTrkVtx);
           }
         }        
       }
-      // if (hfemax_eta5_gamma < thre_gap) { // gap
-      //   if (zdcsum_N > thre_zdc_N) { // gap + Xn
-      //     fill_value("ZDCsumGamma", zdcsum_gamma);
-      //   }
-      // }
     }
   }
   xjjc::progressbar_summary(nentries);
@@ -191,7 +204,7 @@ int macro(const std::string& inputname, const std::string& evtcat, const std::st
   winfo.cast_branch("dcut", dcutp.content);
   winfo.cast_branch("dcut_tex", dcutp.tex);
   winfo.cast_branch("dcut_tag", dcutp.tag);
-  for (auto& [key, val] : opt_to_doc)
+  for (auto& [key, val] : opts_to_use)
     winfo.cast_branch(key, int(val));
   winfo.cast_branch("thre_zdc_gamma", thre_zdc_gamma);
   winfo.cast_branch("thre_zdc_N", thre_zdc_N);
