@@ -171,13 +171,26 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
 
   pdf->close();
 
+  for (int j=0; j<tbins.npt(); j++) {
+    std::cout<<tbins.latex_pt(j)<<std::endl;
+    const auto hs = hsxsec[j];
+    for (int i=0; i<tbins.ny(); i++) {
+      std::cout << "$" + tbins.latex_y(i) + "$";
+      for (const auto c : { int(Cat::gammaN), int(Cat::NgammaRef), int(Cat::sum) }) {
+        std::cout << " & $" << Form("%.2f \\pm %.2f", hs[c]->GetBinContent(i+1), hs[c]->GetBinError(i+1)) << "$";
+      }
+      std::cout<< " \\\\" << std::endl;
+    }
+    std::cout<<std::endl;
+  }
+  
   auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
   xjjroot::writehist(h3_bins);
   for (int j=0; j<hsxsec.size(); j++) {
     auto* dir = outf->mkdir(Form("dir%s", tagspt[j].c_str()));
     dir->cd();
     for (auto& h : hsxsec[j]) {
-        xjjroot::writehist(h);
+      xjjroot::writehist(h);
     }
     for (auto& [_, gs] : gsxsec)
       for (auto& g : gs)

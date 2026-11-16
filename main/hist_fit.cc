@@ -72,9 +72,10 @@ int macro(const std::string& input_data, const std::string& input_template, cons
     }
   };
   make_h1_y("yield", "Raw Yield");
-  make_h1_y("width68mc", "Signal Effective#scale[0.5]{ }#sigma in MC [GeV]");
+  make_h1_y("width68mc", "Signal Effective#scale[0.4]{ }#sigma in MC [GeV]");
   make_h1_y("width95mc", "Signal Effective 2#sigma in MC [GeV]");
-    
+  make_h1_y("walpha", "#frac{#sigma_{data}}{#sigma_{MC}} - 1");
+  
   xjjroot::print_tab(h3s, 0);
   xjjroot::print_tab(h1pts, 0);
 
@@ -104,12 +105,15 @@ int macro(const std::string& input_data, const std::string& input_template, cons
 
       h1pts.at("yield-y")[j]->SetBinContent(i+1, df->yield());
       h1pts.at("yield-y")[j]->SetBinError(i+1, df->yieldErr());
-      auto w68mc = df->width_mc_match(xjjana::frac_1sigma),
+      const auto w68mc = df->width_mc_match(xjjana::frac_1sigma),
         w95mc = df->width_mc_match(xjjana::frac_2sigma);
       h1pts.at("width68mc-y")[j]->SetBinContent(i+1, w68mc.first);
       h1pts.at("width68mc-y")[j]->SetBinError(i+1, w68mc.second);
       h1pts.at("width95mc-y")[j]->SetBinContent(i+1, w95mc.first);
       h1pts.at("width95mc-y")[j]->SetBinError(i+1, w95mc.second);
+      const auto walpha = df->alpha();
+      h1pts.at("walpha-y")[j]->SetBinContent(i+1, walpha.first);
+      h1pts.at("walpha-y")[j]->SetBinError(i+1, walpha.second);
     
       dfs[j][i] = df;
       gPad->RedrawAxis();
@@ -144,9 +148,10 @@ int macro(const std::string& input_data, const std::string& input_template, cons
     }
   }
 
-  for (const std::string& p : { "yield-y", "width68mc-y", "width95mc-y" }) {
+  for (const std::string& p : { "yield-y", "width68mc-y", "width95mc-y", "walpha-y" }) {
     pdf->prepare();
-    xjjana::sethsmin(h1pts.at(p), 0);
+    const auto ymin = xjjana::sethsmin(h1pts.at(p), 0);
+    if (ymin < 0) xjjana::sethsmin(h1pts.at(p), 1.5);
     xjjana::sethsmax(h1pts.at(p), 1.6);
     auto* leg = new TLegend(0.60, 0.86-0.035*1.25*tbins.npt(), 0.80, 0.86);
     xjjroot::setleg(leg, 0.035);
@@ -157,6 +162,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
       leg->AddEntry(h1pts.at(p)[j], tbins.label_pt(j).c_str(), "p");
     }
     h1pts.at(p).front()->Draw("axis");
+    if (p == "walpha-y") xjjroot::drawline_horizon(0, h1pts.at(p).front());
     for (auto& h : h1pts.at(p)) h->Draw("pe1 same");
     leg->Draw();
     xjjroot::drawtexgroup(0.24, 0.85, {
