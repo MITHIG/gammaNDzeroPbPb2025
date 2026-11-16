@@ -48,8 +48,9 @@ int macro(const std::string& inputname, const std::string& outputname,
 
   auto* inf = xjjroot::readfile(inputname);
   if (!inf) return 2;
-  const auto info = util::read_info(inf, "fit/info");
-  const auto fitopt = fit_opt_force.empty() ? info.at("fitopt") : fit_opt_force;
+  const auto info_fit = util::read_info(inf, "fit/info");
+  const auto info_data = util::read_info(inf, "data/info");
+  const auto fitopt = fit_opt_force.empty() ? info_fit.at("fitopt") : fit_opt_force;
   auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins");
   if (!h3_bins) return 3;
   const draw::bintex bins(h3_bins, 0, 2);
@@ -94,6 +95,7 @@ int macro(const std::string& inputname, const std::string& outputname,
       y = iy;
 
       for (itoy = 0; itoy < ntoys; ++itoy) {
+        xjjc::progressslide(itoy, ntoys, 10);
         TH1D* htoy = nullptr;
         if (toytype == 0)
           htoy = make_toy_boostrap(hdata, rng, Form("%d_%d_%d", ipt, iy, itoy));
@@ -107,9 +109,9 @@ int macro(const std::string& inputname, const std::string& outputname,
         tree->Fill();
         delete htoy;
       }
+      xjjc::progressbar_summary(ntoys);
     }
   }
-  xjjc::progressbar_summary(bins.npt()*bins.ny());
 
   tree->Write();
   xjjroot::writehist(h3_bins);
@@ -117,6 +119,8 @@ int macro(const std::string& inputname, const std::string& outputname,
   util::Writeinfo tinfo("info");
   tinfo.cast_branch("fitopt", fitopt);
   tinfo.cast_branch("inputname", inputname);
+  tinfo.cast_branch("input_tex", info_data.at("input_tex"));
+  tinfo.cast_branch("cut_tex", info_data.at("cut_tex"));
   tinfo.cast_branch("toytype", toytype);
   tinfo.cast_branch("toytype_tex", type_names[toytype]);
   tinfo.cast_branch("ntoys", ntoys);

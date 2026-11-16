@@ -1,13 +1,14 @@
 #!/bin/bash 
 
-TAG_BINNING="b-default"
+# TAG_BINNING="b-default"
+TAG_BINNING="b-ptdiff"
 
-fitopt="3G-Peaky;;"
+SAVE_PNG=1
 
 INPUTS_DATA=( "2025PbPb" )
 CUTEVTS=(
     "0nXn-gammaN-25"
-    # "0nXn-Ngamma-25"
+    "0nXn-Ngamma-25"
 )
 INPUTS_TEMPLATE=( "2025-SoftQCD-BeamA" "2025-SoftQCD-BeamB" )
 CUTDS=( "Dbdt-gammaN" "Dbdt-Ngamma" )
@@ -28,14 +29,15 @@ for cutevt_tag in "${CUTEVTS[@]}" ; do
 
                 ls 'rootfiles/'$itag_data_fit'.root'
                 [[ ${1:-0} -eq 1 ]] && {
-                ./toy_save.exe 'rootfiles/'$itag_data_fit'.root' $itag_data_fit'/toy_save_boostrap' 0 500 # 0: boostrap
-                ./toy_save.exe 'rootfiles/'$itag_data_fit'.root' $itag_data_fit'/toy_save_closure' 1 500 # 1: closure
+                    ./toy_save.exe 'rootfiles/'$itag_data_fit'.root' $itag_data_fit'/toy_save_boostrap' 0 500 & # 0: boostrap
+                    ./toy_save.exe 'rootfiles/'$itag_data_fit'.root' $itag_data_fit'/toy_save_closure' 1 500 & # 1: closure
                 }
                 itag_toy=$itag_data_fit'/toy'
                 [[ ${2:-0} -eq 1 ]] && {
-                    ./toy_draw.exe 'rootfiles/'$itag_data_fit'/toy_save_boostrap.root,rootfiles/'$itag_data_fit'/toy_save_closure.root' $itag_toy
+                    ./toy_draw.exe 'rootfiles/'$itag_data_fit'/toy_save_boostrap.root,rootfiles/'$itag_data_fit'/toy_save_closure.root' $itag_toy 0 $SAVE_PNG
                 }
             done
         done
     done
 done 
+wait

@@ -100,14 +100,16 @@ Dataset read_dataset(const std::string& path, const int npt, const int ny) {
 }
 
 int macro(const std::vector<std::string>& inputnames, const std::string& outputname,
-          int draw_rms = 0) {
-  
-  auto* h3_bins = xjjana::getobj<TH3D>(Form("%s::h3_bins", inputnames.front().c_str()));
+          int draw_rms = 0, int save_png = 0) {
+  auto* inf0 = xjjroot::readfile(inputnames.front());
+  if (!inf0) return 2;
+  auto* h3_bins = xjjana::getobj<TH3D>(inf0, "h3_bins");
   if (!h3_bins) return 2;
   const draw::bintex tbins(h3_bins, 0, 2);
   const auto npt = tbins.npt(), ny = tbins.ny();
   auto* hempty = new TH2D("hempty", ";y;Pull Mean#scale[0.4]{ }#pm#scale[0.4]{ }#sigma", 10, tbins.edgelow_y(), tbins.edgeup_y(), 10, -2.5, 3.5);
   xjjroot::sethempty(hempty, 0, 0.1);
+  const auto info = util::read_info(inf0);
 
   std::vector<Dataset> datasets;
   for (const auto& input : inputnames) {
@@ -123,8 +125,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   xjjroot::setgstyle(1);
   gStyle->SetEndErrorSize(8);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
+  const auto png_name = draw::png_name(pdf);
   for (int ipt = 0; ipt < npt; ++ipt) {    
-
     pdf->prepare();
     hempty->Draw("axis");
     if (!draw_rms)
@@ -169,11 +171,12 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     } // for (int idata = 0; idata < ndata; idata++) {
     leg->Draw();
     xjjroot::drawtexgroup(0.25, y_pos(0.1), {
+        info.at("cut_tex"),
         tbins.label_pt(ipt),
         Form("N_{toys} = %d", datasets.front().ntoys),
       }, tsize, 13, 42, lspace);
-    xjjroot::drawCMS(xjjroot::CMS::internal, "PbPb (5.36 TeV)");
-    pdf->write(); 
+    xjjroot::drawCMS(xjjroot::CMS::internal, info.at("input_tex"));
+    pdf->write(Form("%s_pt-%d.pdf", png_name.c_str(), ipt), save_png ? "" : "X");
   }
   pdf->close();
 
@@ -181,6 +184,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 }
 
 int main(int argc, char* argv[]) {
+  if (argc == 5)
+    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], std::atoi(argv[3]), std::atoi(argv[4]));
   if (argc == 4)
     return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], std::atoi(argv[3]));
   if (argc == 3)
