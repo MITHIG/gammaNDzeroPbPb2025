@@ -187,7 +187,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
     };
 
     auto draw_global = [&btex, &infos](int ibin_y = -1) {
-      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"] + " (5.36 TeV)");
+      xjjroot::drawCMS(xjjroot::CMS::internal, infos["data"]["input_tex"]);
       // xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos["data"]["cut_tex"] }, 0.038, 13);
       xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(ibin_y), btex.label_pt(), infos["data"].at("dcut_tex") }, 0.038, 13);
       xjjroot::drawtexgroup(0.525, 0.86, { infos["data"].at("ecut_tex") }, 0.038, 13);

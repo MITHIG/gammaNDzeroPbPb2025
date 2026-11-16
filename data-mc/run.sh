@@ -8,23 +8,27 @@ TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.'
 
 ## !! do not give more than one data ##
 INPUTS_DATA=(
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb;2025PbPb" # 2025
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8 #gammaN;BeamAclose" # !! to replace by the one without gmatch filter
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260426-yrefmva_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.85]{YTHIA}8 #gammaN (5.36 TeV);BeamAclose" # !! to replace by the one without gmatch filter
 )
 CUTEVTS=(
     # "1;#gammaN (Xn0n);0nXn-gammaN-25"
-    "2;N#gamma (0nXn);0nXn-Ngamma-25"
-    # "3;Xn0n + 0nXn (reflected);0nXn-twodirs-25" # reflect y for Ngamma
+    # "2;N#gamma (0nXn);0nXn-Ngamma-25"
+    "3;Xn0n + 0nXn (reflected);0nXn-twodirs-25" # reflect y for Ngamma
 )
 CUTDS=(
-    "1;Analysis BDT cut;Dbdt"
-    # "2;Loose cut;Dloose"
+    # "1;Analysis BDT cut;Dbdt"
+    "2;Full BDT range;Dnobdt"
     # "3;BDT > 0;Dpzero"
-
 )
 INPUTS_MC=(
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamA-2025-prompt"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);BeamB-2025-prompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamA-2025-prompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);BeamB-2025-prompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamA-2025-nonprompt"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamB-2025-nonprompt"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamA-2025-inclusive"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);BeamB-2025-inclusive"
+
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.8]{YTHIA}8 #gammaN;BeamA-prompt"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamB_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Prompt P#scale[0.8]{YTHIA}8 N#gamma;BeamB-prompt"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_nonprompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;Nonprompt P#scale[0.8]{YTHIA}8 #gammaN;BeamA-nonprompt"

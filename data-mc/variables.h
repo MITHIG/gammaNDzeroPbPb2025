@@ -10,6 +10,7 @@ std::vector<global::variable> variables = {
   { .varname = "Dpt", .var = "Dpt", .vartex = "#it{p}_{T} [GeV/c]", .varmin = 2., .varmax = 5., .nbin = 10, .logy = 0, .isbranch = 1 },
   { .varname = "Dy", .var = "Dy", .vartex = "y", .varmin = -2., .varmax = 2., .nbin = 20, .logy = 0, .isbranch = 1 },
   { .varname = "Dmva_BDT", .var = "Dmva_BDT", .vartex = "BDT", .varmin = 0, .varmax = 0.4, .nbin = 20, .logy = 0, .isbranch = 1 },
+  // { .varname = "Dmva_BDT", .var = "Dmva_BDT", .vartex = "BDT", .varmin = -0.2, .varmax = 0.4, .nbin = 10, .logy = 0, .isbranch = 1 }, // for BDT weight
   { .varname = "Dalpha", .var = "Dalpha", .vartex = "#alpha (3D pointing angle)", .varmin = 0, .varmax = 0.6, .nbin = 15, .logy = 0, .isbranch = 1 },
   // { .varname = "Dalpha", .var = "Dalpha", .vartex = "#alpha (3D pointing angle)", .varmin = 0, .varmax = 3.2, .nbin = 64, .logy = 0, .isbranch = 1 },
   // { .varname = "Dalpha_zoom", .var = "Dalpha", .vartex = "#alpha (3D pointing angle)", .varmin = 0, .varmax = 0.6, .nbin = 60, .logy = 0, .isbranch = -1 },

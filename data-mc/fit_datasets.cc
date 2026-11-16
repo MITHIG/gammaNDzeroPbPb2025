@@ -70,7 +70,7 @@ int macro(const std::string& inputname_data, const std::string& inputname_templa
     frame_data_y->Draw();
     fitterys[i]->leg()->Draw();
     xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt(), infos.at("data").at("ecut_tex"), infos.at("data").at("dcut_tex") }, 0.035, 13);
-    xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex") + " (5.36 TeV)");
+    xjjroot::drawCMS(xjjroot::CMS::internal, infos.at("data").at("input_tex"));
     pdf->write(Form("%s/fit_y-%d.pdf", name_png.c_str(), i), save_png ? "" : "X");
 
     pdf->prepare();
@@ -78,7 +78,7 @@ int macro(const std::string& inputname_data, const std::string& inputname_templa
     fitterys[i]->draw_mc_sig(bins::nmass, frame_mc_y);
     frame_mc_y->Draw();
     xjjroot::drawtexgroup(0.25, 0.86, { btex.label_y(i), btex.label_pt() }, 0.035, 13);
-    xjjroot::drawCMS(xjjroot::CMS::simulation, infos.at("template").at("input_tex") + " (5.36 TeV)");
+    xjjroot::drawCMS(xjjroot::CMS::simulation, infos.at("template").at("input_tex"));
     pdf->write();
   }
 
