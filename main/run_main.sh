@@ -1,20 +1,19 @@
 #!/bin/bash
 
-SAVE_PNG=1
+SAVE_PNG=0
 
 TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
 # TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
-# TAG_BINNING="b-ptlow" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='1., 2.' ;
 # TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
 # TAG_BINNING="b-incl" ; BINNING_Y='-2., 2.' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="b-tmp" ; BINNING_Y='-1., 1.' ; BINNING_PT='2., 8.' ;
 
 fitopt="3G-Peaky-Sig;;"
 
 INPUTS_DATA=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_261002-ptdiff_PbPbUPC_HIForward_Dpt-1_xbr_Dsize_gap-17_12ePD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025 low pT
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb"
+
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_261002-ptdiff_PbPbUPC_HIForward_Dpt-1_xbr_Dsize_gap-17_12ePD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025 low pT
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260814-yinclbdt_PbPbUPC_HIForward_Trig-3_Dsize.root;2025 PbPb ZB (5.36 TeV);2025PbPb" # 2025 ZB + inclusive BDT
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward_Dpt-2_Trig-2_Dsize_xbr.root;2023 PbPb (Jan2024 ReReco);2023PbPb-recoJan2024" # 2023 Jan24 rereco
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward_Dpt-2_Trig-2_Dsize.root;2023 PbPb (Feb2025 ReReco);2023PbPb-recoFeb2025" # 2023 Feb25 rereco
@@ -43,13 +42,13 @@ INPUTS_TEMPLATE=(
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_261002-ptdiff_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-1_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
 )
 INPUTS_MC=(
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA;0"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamB;0"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;Prompt P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA-prompt;1"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;Prompt P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2025-SoftQCD-BeamB-prompt;1"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA;0"
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamB;0"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;Nonprompt P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA-nonprompt;2"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;Nonprompt P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2025-SoftQCD-BeamB-nonprompt;2"
-  
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;Nonprompt P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA-nonprompt;2"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Deff.root;Nonprompt P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2025-SoftQCD-BeamB-nonprompt;2"
+    
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-1_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
 )
 INPUTS_MC_EVT=( # only one sample work for each cut
@@ -218,7 +217,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
 done
 wait
 
-# TAG_BINNING="_b-yextend" ; BINNING_Y='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="_b-ptlow" ; BINNING_Y='-2., 2.' ; BINNING_PT='1., 2., 3., 4., 5.' ;
+# TAG_BINNING="b-yextend" ; BINNING_Y='-2.4, -2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2., 2.4' ; BINNING_PT='2., 5.' ;
+# TAG_BINNING="b-ptlow" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='1., 2.' ;
 # fitopt="Peaky;Double gaus signal;_f-2gaus"
 # fitopt="3G;No KK/#pi#pi;_f-nopeaky"
