@@ -39,6 +39,7 @@ namespace bins {
 
 #ifdef __BINS_MASS__
   const int nmass = 80; const float minmass = 1.66, maxmass = 2.06;
+  // const int nmass = 60; const float minmass = 1.7, maxmass = 2.0;
 #endif
 
 }

@@ -11,7 +11,10 @@ namespace fonll {
   public:
     DrawSets() { ; }
     DrawSets(const std::string&, double ptmin, double ptmax);
+    void draw_base(const std::vector<std::string>& dmodels, float ltsize);
     void draw();
+    void draw_mc15();
+    void draw_mc13();
     bool valid() const { return valid_; }
     size_t n() const { return models.size(); }
     double ymaximum();
@@ -23,12 +26,19 @@ namespace fonll {
   };
 
   const std::vector<Model> configs = {
-    { .name = "CT18ANLO_mc13", .color = static_cast<Color_t>(TColor::GetColor("#ed9418")), .tex = "CT18ANLO (pPDF, m_{c}=1.3 GeV)", },
-    { .name = "CT18ANLO_mc15", .color = static_cast<Color_t>(TColor::GetColor("#e44760")), .tex = "CT18ANLO (pPDF, m_{c}=1.5 GeV)" },
-    { .name = "EPPS21Pb_mc13", .color = static_cast<Color_t>(TColor::GetColor("#94529a")), .tex = "EPPS21 (nPDF, m_{c}=1.3 GeV)" },
-    { .name = "EPPS21Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#3279df")), .tex = "EPPS21 (nPDF, m_{c}=1.5 GeV)" },
-    { .name = "nNNPDF30Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#26a4ac")), .tex = "nNNPDF3.0 (nPDF, m_{c}=1.5 GeV)" },
-    { .name = "EPPS16_mc13", .color = static_cast<Color_t>(TColor::GetColor("#8a8645")), .tex = "EPPS16 (nPDF, m_{c}=1.3 GeV)" }
+    { .name = "CT18ANLO_mc13", .color = static_cast<Color_t>(TColor::GetColor("#015AA6")), .tex = "CT18ANLO (pPDF, m_{c}=1.3 GeV)", },
+    { .name = "CT18ANLO_mc15", .color = static_cast<Color_t>(TColor::GetColor("#458984")), .tex = "CT18ANLO (pPDF, m_{c}=1.5 GeV)" },
+    { .name = "EPPS21Pb_mc13", .color = static_cast<Color_t>(TColor::GetColor("#F2B445")), .tex = "EPPS21 (nPDF, m_{c}=1.3 GeV)" },
+    { .name = "EPPS21Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#A6442E")), .tex = "EPPS21 (nPDF, m_{c}=1.5 GeV)" },
+    { .name = "nNNPDF30Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#D95829")), .tex = "nNNPDF3.0 (nPDF, m_{c}=1.5 GeV)" },
+    { .name = "EPPS16_mc13", .color = static_cast<Color_t>(TColor::GetColor("#734886")), .tex = "EPPS16 (nPDF, m_{c}=1.3 GeV)" }
+
+    // { .name = "CT18ANLO_mc13", .color = static_cast<Color_t>(TColor::GetColor("#ed9418")), .tex = "CT18ANLO (pPDF, m_{c}=1.3 GeV)", },
+    // { .name = "CT18ANLO_mc15", .color = static_cast<Color_t>(TColor::GetColor("#e44760")), .tex = "CT18ANLO (pPDF, m_{c}=1.5 GeV)" },
+    // { .name = "EPPS21Pb_mc13", .color = static_cast<Color_t>(TColor::GetColor("#94529a")), .tex = "EPPS21 (nPDF, m_{c}=1.3 GeV)" },
+    // { .name = "EPPS21Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#3279df")), .tex = "EPPS21 (nPDF, m_{c}=1.5 GeV)" },
+    // { .name = "nNNPDF30Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#26a4ac")), .tex = "nNNPDF3.0 (nPDF, m_{c}=1.5 GeV)" },
+    // { .name = "EPPS16_mc13", .color = static_cast<Color_t>(TColor::GetColor("#8a8645")), .tex = "EPPS16 (nPDF, m_{c}=1.3 GeV)" }
   };
 
 }
@@ -61,32 +71,6 @@ fonll::DrawSets::DrawSets(const std::string& inputname, double ptmin, double ptm
   }
   if (models.empty()) return;
 
-  int nm_p = 0, nm_n = 0;
-  for (const auto& m : models) {
-    if (xjjc::str_contains(m.tex, "nPDF")) nm_n++;
-    if (xjjc::str_contains(m.tex, "pPDF")) nm_p++;
-  }
-
-  float x1 = 0.23, y2 = 0.27;
-  leg_p = new TLegend(x1, y2 - lheight*nm_p, x1+0.2, y2);
-  xjjroot::setleg(leg_p, tsize);
-  x1 = 0.55; y2 = 0.72;
-  leg_n = new TLegend(x1, y2 - lheight*nm_n, x1+0.2, y2);
-  xjjroot::setleg(leg_n, tsize);
-  for (int i=0; i<models.size(); i++) {
-    const auto& m = models[i];
-    auto* leg = xjjc::str_contains(m.tex, "nPDF") ? leg_n : leg_p;
-    auto tleg = xjjc::str_replaceall_regex(m.tex, ".PDF, ", "");
-    xjjroot::addentrybystyle(leg, tleg, (m.gs.find("PDF") != m.gs.end()) ? "f" : "l",
-                             0, 0, 0,
-                             models[i].color, 1, 2,
-                             xjjroot::color_alpha(models[i].color, 0.7), 1, 1001);
-  }
-  // xjjroot::autoleg_n_draw(leg_p, 0., 0.20, 0.03, 1.2);
-  // xjjroot::autoleg_n_draw(leg_n, 0.50, 0.76, 0.03, 1.2);
-  leg_p->Draw();
-  leg_n->Draw();
-  
   valid_ = true;
 };
 
@@ -102,39 +86,96 @@ double fonll::DrawSets::ymaximum() {
   return ymax;
 }
 
-void fonll::DrawSets::draw() {
-  auto draw_one = [this](const std::string& name, int i, Color_t color) {
+void fonll::DrawSets::draw_base(const std::vector<std::string>& draws, float ltsize) {
+  auto draw_one = [this](const std::string& name, int i, Color_t color, int nmodels) {
     if (models[i].gs.find(name) == models[i].gs.end()) return;
     auto* g = models[i].gs.at(name);
     if (!g) return;
     for (int j=0; j<g->GetN(); j++) {
-      const auto y = g->GetPointY(j), ylow = g->GetErrorYlow(j), yhigh = g->GetErrorYhigh(j);
-      const auto x = g->GetPointX(j), xlow = g->GetErrorXlow(j), xhigh = g->GetErrorXhigh(j);
-      const auto width = (xlow + xhigh)/(models.size() + 1), xleft = x - xlow + (0.5+i)*width;
-      if (ylow + yhigh > 0) 
-        xjjroot::drawbox(xleft, y-ylow, xleft+width, y+yhigh, color, 1, 1001, color, 1, 1);
+      const auto y = g->GetPointY(j), eylow = g->GetErrorYlow(j), eyhigh = g->GetErrorYhigh(j);
+      const auto x = g->GetPointX(j), exlow = g->GetErrorXlow(j), exhigh = g->GetErrorXhigh(j);
+      const auto width = (exlow + exhigh)/(nmodels + 1), xleft = x - exlow + (0.5+i)*width;
+      if (eylow + eyhigh > 0) 
+        xjjroot::drawbox(xleft, y-eylow, xleft+width, y+eyhigh, color, 1, 1001, color, 1, 1);
       else
         xjjroot::drawline(xleft, y, xleft+width, y, color, 1, 2);
     }
   };
 
-  for (int i=0; i<models.size(); i++) {
-    const auto& m = models[i];
-    draw_one("Scale7", i, xjjroot::color_alpha(models[i].color, 0.25));
-    draw_one("PDF", i, xjjroot::color_alpha(models[i].color, 0.7));
-    draw_one("Central", i, models[i].color);
+  int im = 0, nm_p = 0, nm_n = 0;
+  int has_mc13 = 0, has_mc15 = 0;
+  for (const auto& m : models) {
+    if (std::find(draws.begin(), draws.end(), m.name) == draws.end()) continue;
+    if (xjjc::str_contains(m.tex, "nPDF")) nm_n++;
+    if (xjjc::str_contains(m.tex, "pPDF")) nm_p++;
+    if (xjjc::str_contains(m.name, "mc13")) has_mc13++;
+    if (xjjc::str_contains(m.name, "mc15")) has_mc15++;
+
+    draw_one("Scale7", im, xjjroot::color_alpha(m.color, 0.15), draws.size());
+    draw_one("PDF", im, xjjroot::color_alpha(m.color, 0.7), draws.size());
+    draw_one("Central", im, m.color, draws.size());
+
+    im++;
   }
 
+  const std::string tcommon = has_mc13 && !has_mc15 ? "(m_{c}=1.3 GeV)" : (has_mc15 && !has_mc13 ? "(m_{c}=1.5 GeV)" : "");
+
+  float x1 = 0.23, y2 = 0.27;
+  leg_p = new TLegend(x1, y2 - lheight*nm_p, x1+0.2, y2);
+  xjjroot::setleg(leg_p, ltsize);
+  x1 = 0.55; y2 = 0.72;
+  leg_n = new TLegend(x1, y2 - lheight*nm_n, x1+0.2, y2);
+  xjjroot::setleg(leg_n, ltsize);
+  for (const auto& m : models) {
+    if (std::find(draws.begin(), draws.end(), m.name) == draws.end()) continue;
+    auto* leg = xjjc::str_contains(m.tex, "nPDF") ? leg_n : leg_p;
+    auto tleg = xjjc::str_replaceall_regex(m.tex, ".PDF, ", "");
+    if (!tcommon.empty()) tleg = xjjc::str_eraseall(tleg, { " " + tcommon });
+    xjjroot::addentrybystyle(leg, tleg, (m.gs.find("PDF") != m.gs.end()) ? "f" : "l",
+                             0, 0, 0,
+                             m.color, 1, 2,
+                             xjjroot::color_alpha(m.color, 0.7), 1, 1001);
+  }
+  // xjjroot::autoleg_n_draw(leg_p, 0., 0.20, 0.03, 1.2);
+  // xjjroot::autoleg_n_draw(leg_n, 0.50, 0.76, 0.03, 1.2);
   leg_p->Draw();
   leg_n->Draw();
-
-  float x1 = leg_p->GetX1NDC() > 0 ? leg_p->GetX1NDC() : leg_p->GetX1();
-  float y2 = leg_p->GetX1NDC() > 0 ? leg_p->GetY2NDC() : leg_p->GetY2();
+  
+  // float x1 = leg_p->GetX1NDC() > 0 ? leg_p->GetX1NDC() : leg_p->GetX1();
+  // float y2 = leg_p->GetX1NDC() > 0 ? leg_p->GetY2NDC() : leg_p->GetY2();
   // __XJJLOG << leg_p->GetX1() << ", " << leg_p->GetY2() << " | " << leg_p->GetX1NDC() << ", " << leg_p->GetY2NDC() << std::endl;
 
   auto x1pos = [](TLegend* leg) { return leg->GetX1NDC() > 0 ? leg->GetX1NDC() : leg->GetX1(); };
   auto y2pos = [](TLegend* leg) { return leg->GetX1NDC() > 0 ? leg->GetY2NDC() : leg->GetY2(); };
-  
-  xjjroot::drawtex(x1pos(leg_p) + 0.005, y2pos(leg_p) + 0.01, "G#gammaA-FONLL + pPDF", tsize, 11);
-  xjjroot::drawtex(x1pos(leg_n) + 0.005, y2pos(leg_n) + 0.01, "G#gammaA-FONLL + nPDF", tsize, 11);
+  auto y1pos = [](TLegend* leg) { return leg->GetX1NDC() > 0 ? leg->GetY1NDC() : leg->GetY1(); };
+
+  if (nm_p) {
+    std::vector<std::string> texs = { "G#gammaA-FONLL + pPDF" };
+    xjjroot::drawtexgroup(x1pos(leg_p) + 0.005, y2pos(leg_p) + 0.01, texs, ltsize, 11);
+  }
+  if (nm_n) {
+    std::vector<std::string> texs = { "G#gammaA-FONLL + nPDF" };
+    xjjroot::drawtexgroup(x1pos(leg_n) + 0.005, y2pos(leg_n) + 0.01, texs, ltsize, 11);
+  }
+  xjjroot::drawtex(x1pos(leg_n) + 0.005, y1pos(leg_n) - 0.01, tcommon.c_str(), ltsize, 13);
+}
+
+void fonll::DrawSets::draw() {
+  std::vector<std::string> dmodels;
+  for (auto& m : models) {
+    dmodels.push_back(m.name);
+  }
+  draw_base(dmodels, tsize);
+}
+
+void fonll::DrawSets::draw_mc15() {
+  draw_base({
+      "CT18ANLO_mc15", "EPPS21Pb_mc15", "nNNPDF30Pb_mc15"
+    }, tsize*1.1);
+}
+
+void fonll::DrawSets::draw_mc13() {
+  draw_base({
+      "CT18ANLO_mc13", "EPPS21Pb_mc13"
+    }, tsize*1.1);
 }
