@@ -21,6 +21,20 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   std::map<std::string, TH2D*> h2s;
   std::map<std::string, std::vector<TH1D*>> h1pts, h1ys;
 
+  // 1D projections of the rebinned 2D histogram
+  auto project_rebin = [&h2s, &h1pts, &h1ys](const std::string& name) {
+    for (int j=0; j<h2s.at(name+"-y-pt__rebin")->GetYaxis()->GetNbins(); j++) {
+      auto* h_y = h2s.at(name + "-y-pt__rebin")->ProjectionX(Form("h1_y_%s__rebin__pt-%d", name.c_str(), j),
+                                                             j+1, j+1, "e");
+      h1pts[name + "-y__rebin"].push_back(h_y);
+    }
+    for (int i=0; i<h2s.at(name+"-y-pt__rebin")->GetXaxis()->GetNbins(); i++) {
+      auto* h_pt = h2s.at(name + "-y-pt__rebin")->ProjectionY(Form("h1_pt_%s__rebin__y-%d", name.c_str(), i),
+                                                              i+1, i+1, "e");
+      h1ys[name + "-pt__rebin"].push_back(h_pt);
+    }
+  };
+
   for (auto* h3 : xjjana::getobj_regexp<TH3D>(inf, "h3_.+")) {
     auto name = xjjc::str_eraseall(h3->GetName(), { "h3_" });
     h3->Sumw2();
@@ -32,16 +46,20 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
                                                bins::ybins.size()-1, bins::ybins.data(),
                                                bins::ptbins.size()-1, bins::ptbins.data(),
                                                Form("%s__rebin", h2s[name + "-y-pt"]->GetName()));
-    for (int j=0; j<h2s.at(name+"-y-pt__rebin")->GetYaxis()->GetNbins(); j++) {
-      auto* h_y = h2s.at(name + "-y-pt__rebin")->ProjectionX(Form("h1_y_%s__rebin__pt-%d", name.c_str(), j),
-                                                             j+1, j+1, "e");
-      h1pts[name + "-y__rebin"].push_back(h_y);
+    project_rebin(name);
+  }
+
+  // BDT-weighted numerator, normalized in each bin so that the weight only changes the BDT cut efficiency:
+  // eff_num_wn = eff_num_w / presel_num_w * presel_num
+  const bool has_weight = h3s.count("eff_num_w") && h3s.count("presel_num") && h3s.count("presel_num_w");
+  if (has_weight) {
+    for (const std::string& suffix : { "-y-pt", "-y-pt__rebin" }) {
+      auto* h = (TH2D*)h2s.at("eff_num_w" + suffix)->Clone(xjjc::str_replaceall(h2s.at("eff_num_w" + suffix)->GetName(), "eff_num_w", "eff_num_wn").c_str());
+      h->Divide(h2s.at("eff_num_w" + suffix), h2s.at("presel_num_w" + suffix), 1, 1, "B");
+      h->Multiply(h2s.at("presel_num" + suffix));
+      h2s["eff_num_wn" + suffix] = h;
     }
-    for (int i=0; i<h2s.at(name+"-y-pt__rebin")->GetXaxis()->GetNbins(); i++) {
-      auto* h_pt = h2s.at(name + "-y-pt__rebin")->ProjectionY(Form("h1_pt_%s__rebin__y-%d", name.c_str(), i),
-                                                              i+1, i+1, "e");
-      h1ys[name + "-pt__rebin"].push_back(h_pt);
-    }
+    project_rebin("eff_num_wn");
   }
   xjjroot::print_tab(h2s, 0);
   xjjroot::print_tab(h1pts, 0);
@@ -94,6 +112,9 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
            "#frac{"+Nreco+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}{"+Ngen+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}", 1.2);
   make_eff("acc", "acc_num", "eff_den", xjjroot::CMS::DzDzbar + "#scale[0.4]{ }#LT#alpha#GT",
            "#frac{"+Ngen+"(#it{p}_{T}^{trk} > 0.5 GeV, |#eta^{trk}| < 2.4)}{"+Ngen+"}");
+  if (has_weight)
+    make_eff("eff_w", "eff_num_wn", "eff_den", xjjroot::CMS::DzDzbar + "#scale[0.4]{ }#LT#alpha#scale[0.4]{ }#times#scale[0.4]{ }#epsilon_{reco}#scale[0.4]{ }#times#scale[0.4]{ }#epsilon_{sel}#GT (BDT weighted)",
+             "#frac{"+Nreco+"(All selections, BDT weighted)}{"+Ngen+"}");
 
   xjjroot::print_tab(h2s, 0);
   xjjroot::print_tab(h1pts, 0);
@@ -125,8 +146,11 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   auto png_name = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
   
+  std::vector<std::string> draw_names = { "eff", "acc", "effreco", "effsel" };
+  if (has_weight) draw_names.push_back("eff_w");
+
   // TH2
-  for (std::string name : { "eff", "acc", "effreco", "effsel" } ) {
+  for (const auto& name : draw_names) {
     pdf->prepare();
     h2s[name + "-y-pt"]->Draw("colz");
     xjjroot::drawtexgroup(0.18, 0.85, {
@@ -148,7 +172,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   gPad->Modified();
   gPad->Update();
 
-  for (auto& name : std::vector<std::string>{ "eff", "acc", "effreco", "effsel" }) {
+  for (const auto& name : draw_names) {
     pdf->prepare();
     xjjana::sethsmin(h1pts[name + "-y__rebin"], 0);
     xjjana::sethsmax(h1pts[name + "-y__rebin"], 1.5);
@@ -163,13 +187,15 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
     pdf->write(png_name + "_" + name + "-y.pdf", save_png ? "" : "X");
   }
 
-  pdf->draw_cover( {
+  std::vector<std::string> cover = {
       "#bf{eff num} " + info.at("cut_eff_num"),
       "#bf{effreco num} " + info.at("cut_reco_num"),
       "#bf{acc num} " + info.at("cut_acc_num"),
       "#bf{eff den} " + info.at("cut_eff_den"),
       "#bf{File} " + info.at("inputmc")
-    }, 0.03);
+  };
+  if (has_weight) cover.push_back("#bf{BDT weight} " + info.at("weight_bdt"));
+  pdf->draw_cover(cover, 0.03);
 
   pdf->close();
 

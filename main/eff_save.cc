@@ -20,12 +20,6 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
   }
   save::mask_branch(trs.at("mc"));
 
-  // const auto pi_inputdata = xjjroot::parse_input(inputdatastr);
-  // trs["data"] = xjjana::chain_files(xjjc::str_divide_trim(pi_inputdata.content, ","), "Tree");
-  // if (!trs.at("data")) {
-  //   __XJJLOG << "?? no inputdata file, only MC is used." << std::endl;
-  // }
-
   // parse cut
   const auto pi_cutevt = xjjroot::parse_input(cutevtstr);
   const auto cutevt = pi_cutevt.content, cutevt_mc = save::cut_adjust_to_mc(cutevt);
@@ -64,10 +58,29 @@ int macro(std::string inputmcstr, std::string cutevtstr, std::string cutdstr, st
     cut_signal_reco += " && DisSignalCalcFeeddown";
     cut_signal_gen += " && GisSignalCalcFeeddown";    
   }
+
   auto cut_eff_num = project(trs.at("mc"), "_eff_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && " + cut_signal_reco + " && " + cutd);
   cast_branch("cut_eff_num", cut_eff_num);
   auto cut_reco_num = project(trs.at("mc"), "_reco_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && " + cut_signal_reco + " && fabs(Dtrk1Eta) < 2.4 && fabs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5");
   cast_branch("cut_reco_num", cut_reco_num);
+
+  // BDT data/MC weights (from data-mc/weight_draw), one function per Dy region
+  const std::string weight_bdt =
+    "(Dy<-1)*(1.27+(-0.841)*0.5*TMath::Erfc((Dmva_BDT-0.0831)/0.03))"
+    " + (Dy>=-1 && Dy<0)*(0.793+1.02*0.5*TMath::Erfc((Dmva_BDT-(-0.00214))/0.0772))"
+    " + (Dy>=0 && Dy<1)*(0.834+0.714*0.5*TMath::Erfc((Dmva_BDT-0.0218)/0.03))"
+    " + (Dy>=1)*(1.02*(1-((Dmva_BDT-0.08)/0.556)^2))";
+  auto cut_eff_num_w = project(trs.at("mc"), "_eff_num_w", "nTrackInAcceptanceHP:Dpt:Dy", "(" + weight_bdt + ")*(" + cut_eff_num + ")");
+  cast_branch("cut_eff_num_w", cut_eff_num_w);
+  // selection without the BDT cut, unweighted and weighted: eff_calc normalizes the weight with
+  // presel_num / presel_num_w in each final bin, so that the weight only changes the BDT cut efficiency
+  const auto cutd_nobdt = std::regex_replace(cutd, std::regex(R"(Dmva_BDT\s*>\s*[-+0-9.eE]+)"), "1");
+  auto cut_presel_num = project(trs.at("mc"), "_presel_num", "nTrackInAcceptanceHP:Dpt:Dy", cutevt_mc + " && " + cut_signal_reco + " && " + cutd_nobdt);
+  cast_branch("cut_presel_num", cut_presel_num);
+  auto cut_presel_num_w = project(trs.at("mc"), "_presel_num_w", "nTrackInAcceptanceHP:Dpt:Dy", "(" + weight_bdt + ")*(" + cut_presel_num + ")");
+  cast_branch("cut_presel_num_w", cut_presel_num_w);
+  cast_branch("weight_bdt", weight_bdt);
+
   auto cut_acc_num = project(trs.at("mc"), "_acc_num", "nTrackInAcceptanceHP:Gpt:Gy", cutevt_mc + " && " + cut_signal_gen + " && fabs(Gtk1eta) < 2.4 && fabs(Gtk2eta) < 2.4 && Gtk1pt > 0.5 && Gtk2pt > 0.5");
   cast_branch("cut_acc_num", cut_acc_num);
   auto cut_eff_den = project(trs.at("mc"), "_eff_den", "nTrackInAcceptanceHP:Gpt:Gy", cutevt_mc + " && " + cut_signal_gen);
