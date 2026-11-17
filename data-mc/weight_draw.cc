@@ -13,6 +13,7 @@ int macro(const std::string inputname, const std::string& outputname) {
   
   auto* dir = (TDirectory*)inf->GetDirectory("dir_Dmva_BDT");
   std::map<std::string, std::vector<TH1D*>> h1s;
+  std::vector<TF1*> fs;
   h1s["sub"] = xjjana::getobj_regexp<TH1D>(dir, "h1_Dmva_BDT_data-sub__y-.+");
   h1s["sigswap"] = xjjana::getobj_regexp<TH1D>(dir, "h1_Dmva_BDT_data-sigswap__y-.+");
   h1s["sideband"] = xjjana::getobj_regexp<TH1D>(dir, "h1_Dmva_BDT_data-sideband__y-.+");
@@ -44,6 +45,47 @@ int macro(const std::string inputname, const std::string& outputname) {
       h_sub->SetMaximum(2.9);
     h_sub->GetYaxis()->SetTitle("Data / MC");
     h1s["ratio-sub"].push_back(h_sub);
+    // fit ratio with a smoothed step; skip bins where the MC shape is negligible
+    auto* h_fit = (TH1D*)h_sub->Clone(Form("%s_forfit", h_sub->GetName()));
+    for (int b=1; b<=h_fit->GetNbinsX(); b++) {
+      if (h1s.at("match")[i]->GetBinContent(b) < 0.05) {
+        h_fit->SetBinContent(b, 0);
+        h_fit->SetBinError(b, 0);
+      }
+    }
+    // y-0, y-2: step with fixed width; y-1: step with free width; y-3: wide parabola
+    const double xmin = h_sub->GetXaxis()->GetXmin(), xmax = h_sub->GetXaxis()->GetXmax();
+    TF1* f = nullptr;
+    if (i == 3) {
+      // vertex form: maximum [0] at x = [1], reaches 0 at x = [1] +- [2]
+      f = new TF1(Form("f_ratio__y-%d", i), "[0]*(1-((x-[1])/[2])^2)", xmin, xmax);
+      f->SetParameters(1.1, 0.08, 0.5);
+      f->FixParameter(1, 0.08);
+      f->SetParLimits(2, 0.3, 5);
+    } else if (i == 1) {
+      f = new TF1(Form("f_ratio__y-%d", i), "[0]+[1]*0.5*TMath::Erfc((x-[2])/[3])", xmin, xmax);
+      f->SetParameters(0.8, 0.8, 0.05, 0.05);
+      f->SetParLimits(2, -0.15, 0.3);
+      f->SetParLimits(3, 0.005, 0.5);
+    } else {
+      f = new TF1(Form("f_ratio__y-%d", i), "[0]+[1]*0.5*TMath::Erfc((x-[2])/0.03)", xmin, xmax);
+      f->SetParameters(0.8, 0.8, 0.05);
+      f->SetParLimits(2, -0.15, 0.3);
+    }
+    h_fit->Fit(f, "Q0N");
+    f->SetLineColor(kRed);
+    f->SetLineWidth(2);
+    std::cout << f->GetName() << ": chi2/ndf = " << f->GetChisquare() << "/" << f->GetNDF();
+    for (int p=0; p<f->GetNpar(); p++) std::cout << ", p" << p << " = " << f->GetParameter(p) << " +- " << f->GetParError(p);
+    std::cout << std::endl;
+    // formula with fitted values in place of [0], [1], ...
+    std::string formula = xjjc::str_replaceall(f->GetTitle(), {{ "(x-", "(Dmva_BDT-" }});
+    for (int p=0; p<f->GetNpar(); p++) {
+      const double v = f->GetParameter(p);
+      formula = xjjc::str_replaceall(formula, {{ Form("[%d]", p), Form(v < 0 ? "(%.3g)" : "%.3g", v) }});
+    }
+    std::cout << f->GetName() << ": " << formula << std::endl;
+    fs.push_back(f);
   }
   
   leg->AddEntry(h1s["match"].front(), "Signal in MC", "f");
@@ -64,6 +106,7 @@ int macro(const std::string inputname, const std::string& outputname) {
     leg->Draw();
     cs[1]->cd();
     xjjroot::drawline_horizon(1, h1s.at("ratio-sub")[i], h1s.at("match")[i]->GetLineColor(), 2);   
+    fs[i]->Draw("same");
     h1s.at("ratio-sub")[i]->Draw("pe1 same");
     pdf->getc()->cd();
     pdf->write();
@@ -78,8 +121,10 @@ int macro(const std::string inputname, const std::string& outputname) {
     pdf->prepare();
     h1s.at("ratio-sub")[i]->Draw("pe1");
     xjjroot::drawline_horizon(1, h1s.at("ratio-sub")[i], h1s.at("match")[i]->GetLineColor(), 2);
-    // h1s.at("ratio-sub")[i]->Draw("pe1 same");
-    xjjroot::drawtexgroup(0.25, 0.86, { tbins.label_y(i), tbins.label_pt() }, 0.038, 13);
+    fs[i]->Draw("same");
+    h1s.at("ratio-sub")[i]->Draw("pe1 same");
+    xjjroot::drawtexgroup(0.25, 0.86, { tbins.label_y(i), tbins.label_pt(),
+        Form("#chi^{2}/ndf = %.1f/%d", fs[i]->GetChisquare(), fs[i]->GetNDF()) }, 0.038, 13);
     xjjroot::drawCMS(xjjroot::CMS::internal, "PbPb (5.36 TeV)");
     pdf->write();
   }
