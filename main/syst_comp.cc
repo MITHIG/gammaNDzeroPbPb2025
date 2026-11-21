@@ -261,6 +261,12 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       xjjroot::writehist(gs_err.at(key)[j]);
       xjjroot::writehist(gs_rel.at(key)[j]);
     }
+    dir->mkdir("scan")->cd();
+    for (const auto& [key, _] : texs) {
+      for (int i=0; i<tbins.ny(); i++)
+        xjjroot::writehist(gs_scan.at(key)[j][i]);
+    }
+    
     outf->cd();
   }
   util::Writeinfo tinfo("info");

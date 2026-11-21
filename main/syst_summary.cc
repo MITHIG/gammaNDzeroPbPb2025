@@ -3,8 +3,6 @@
 #include "xjjstruct.h"
 
 #include "draw.h"
-#include "util.h"
-
 #include "theory.h"
 
 struct Property {
@@ -57,7 +55,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& inputpr
   draw::bintex tbins(h3_bins, 0, 2);
   const auto colors_y = xjjroot::grayscales_color(tbins.ny());
 
-  const auto info = util::read_info(TFile::Open(xjjroot::parse_input(inputnames.front()).content.c_str()), "info", true);
+  const auto info = xjjroot::read_info(TFile::Open(xjjroot::parse_input(inputnames.front()).content.c_str()), "info", true);
   const auto lumi = std::atof(info.at("lumi").c_str());
 
   const std::map<std::string, Property> texs = {
