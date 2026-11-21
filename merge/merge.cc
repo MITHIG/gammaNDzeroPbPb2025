@@ -4,8 +4,9 @@
 #include <string>
 
 #include "merge.h"
+#include "lumiMask.h"
 
-enum class skimPreset { BRANCH = 0, ZDCOR, ZDCXORJET, DSIZE, DEFF };
+enum class skimPreset { BRANCH = 0, ZDCOR, ZDCXORJET, DSIZE, DEFF, JSON };
 
 namespace globals {
   const std::vector<std::string> trees_regexp =
@@ -19,7 +20,8 @@ namespace globals {
     { skimPreset::ZDCOR, "ZDCOR" },
     { skimPreset::ZDCXORJET, "ZDCXORJET" },
     { skimPreset::DSIZE, "DSIZE" },
-    { skimPreset::DEFF, "DEFF" }
+    { skimPreset::DEFF, "DEFF" },
+    { skimPreset::JSON, "JSON" },
   };
 }
 void recursive_enter(TDirectory*, const std::string&, std::vector<std::string>&, const std::regex&);
@@ -38,9 +40,6 @@ std::vector<std::string> str_skim() {
 
 int macro(std::string outputname, std::string filelist, int ntotal = -1) {
   //
-  __XJJLOG << "-- Skim presets selected" << std::endl;
-  xjjc::print_vec_v(str_skim(), 0);
-
   __XJJLOG << "-- Finalize tree list" << std::endl;
   auto trees = get_trees_regexp(dump_file(filelist));
   if (trees.empty()) {
@@ -50,12 +49,16 @@ int macro(std::string outputname, std::string filelist, int ntotal = -1) {
 
   xjjroot::merge m(trees, filelist, outputname, ntotal);
 
+  __XJJLOG << "-- Skim presets selected" << std::endl;
+  xjjc::print_vec_v(str_skim(), 0);
+
   // SetBranchAddress and SetBranchStatus
   auto* nt = m.GetTree("Tree");
   if (has_skim(skimPreset::BRANCH)) {
     nt->SetBranchStatus("G*", 0);
     nt->SetBranchStatus("Dtrk*Score", 0);
     nt->SetBranchStatus("Dtrk*dedx", 0);
+    nt->SetBranchStatus("DpassCut*Syst*", 0);
     nt->SetBranchStatus("gammaN", 0);
     nt->SetBranchStatus("Ngamma", 0);
   }
@@ -65,11 +68,17 @@ int macro(std::string outputname, std::string filelist, int ntotal = -1) {
   int Gsize; nt->SetBranchAddress("Gsize", &Gsize);
   std::vector<bool>* GisSignalCalc = nullptr; nt->SetBranchAddress("GisSignalCalc", &GisSignalCalc);
   std::vector<float>* Gpt = nullptr; nt->SetBranchAddress("Gpt", &Gpt);
+  int Run; nt->SetBranchAddress("Run", &Run);
+  int Lumi; nt->SetBranchAddress("Lumi", &Lumi);
 
   const auto has_skim_ZDCOR = has_skim(skimPreset::ZDCOR),
     has_skim_ZDCXORJET = has_skim(skimPreset::ZDCXORJET),
     has_skim_DSIZE = has_skim(skimPreset::DSIZE),
-    has_skim_DEFF = has_skim(skimPreset::DEFF);
+    has_skim_DEFF = has_skim(skimPreset::DEFF),
+    has_skim_JSON = has_skim(skimPreset::JSON);
+
+  lumiMask lm("datas/diff_Collisions25HI_Mix2Golden.json");
+  lm.print();
   
   m.CloneTree();
   const auto nentries = m.GetEntries();
@@ -85,13 +94,14 @@ int macro(std::string outputname, std::string filelist, int ntotal = -1) {
     if (has_skim_DEFF) {
       bool there_is_Gsignal = false;
       for (int j=0; j<Gsize; j++) {
-        if (GisSignalCalc->at(j) && Gpt->at(j) > 2) {
+        if (GisSignalCalc->at(j) && Gpt->at(j) > 1) {
           there_is_Gsignal = true;
           break;
         }
       }
       if (!there_is_Gsignal && !(Dsize > 0)) continue;
     }
+    if (has_skim_JSON && lm.pass(Run, Lumi)) continue;
 
     m.Fill();
   }

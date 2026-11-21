@@ -1,11 +1,15 @@
 #!/bin/bash
 
-e_skim=4
+# e_skim='3,5' # data
+# e_skim='4'
+e_skim='5'
+
+[[ $e_skim == *0* ]] && label=$label'_xbr'
 [[ $e_skim == *1* ]] && label=$label'_isL1ZDCOr'
 [[ $e_skim == *2* ]] && label=$label'_isL1ZDCXORJet8'
-[[ $e_skim == *3* ]] && label=$label'_Dsize'
-[[ $e_skim == *0* ]] && label=$label'_xbr'
-[[ $e_skim == *4* ]] && label=$label'_Deff'
+[[ $e_skim == *3* ]] && label=$label'_Dsize' # 3
+[[ $e_skim == *4* ]] && label=$label'_Deff' # 4
+[[ $e_skim == *5* ]] && label=$label'_Golden' # 5
 
 ntotal=-1
 [[ $ntotal -gt 0 ]] && label=${label}'_nf-'$ntotal
@@ -15,35 +19,37 @@ inputdirs=(
     # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2
     # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2
     # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root
-    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_nonprompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2.root
     
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward0_Dpt-2.root
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward2_Dpt-2.root
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward4_Dpt-2.root
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward6_Dpt-2.root
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward8_Dpt-2.root
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward10_Dpt-2.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward0_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward2_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward4_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward6_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward8_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward10_Dpt-2_Dsize.root
 
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward12_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward14_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward16_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward18_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward20_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward22_Dpt-2
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward12_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward14_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward16_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward18_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward20_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward22_Dpt-2_Dsize.root
     
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward1_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward3_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward5_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward7_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward9_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward11_Dpt-2
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward1_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward3_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward5_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward7_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward9_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward11_Dpt-2_Dsize.root
 
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward13_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward15_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward17_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward19_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward21_Dpt-2
-    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260906-glmva_PbPbUPC_HIForward23_Dpt-2
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward13_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward15_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward17_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward19_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward21_Dpt-2_Dsize.root
+    /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward23_Dpt-2_Dsize.root
 
     ## --- MC 2024 ---
     # /eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleusToD0-PhotonBeamA_Bin-Pthat0_Kpi_trkpt0p1_Drej-genmatched_Dpt-2.root 
@@ -56,6 +62,11 @@ inputdirs=(
     # '/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward*_Dpt-2_Trig-2.root'
 
     # '/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260426-yrefmva_2023PbPbUPC_Feb2025ReReco_20260521Forest_HIForward*_Dpt-2_Trig-2.root'
+
+    ## --- MC 2025 (not major samples) ---
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_261002-ptdiff_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-1
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_261002-ptdiff_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-1
+    # /eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_261002-ptdiff_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-1
 
     #####################
     # Example input patterns
