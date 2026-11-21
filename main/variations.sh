@@ -12,29 +12,31 @@ parse_input_tag() {
 }
 
 evtgaps=(
-    'HFEMax_eta5 < 16;;'
+    'HFEMax_forest < NOMINAL_GAP;;'
     
-    # 'HFEMax_eta5 < 23;Rap gap 23 GeV;-gap23'
-    # 'HFEMax_eta5 < 22;Rap gap 22 GeV;-gap22'
-    # 'HFEMax_eta5 < 21;Rap gap 21 GeV;-gap21'
-    # 'HFEMax_eta5 < 20;Rap gap 20 GeV;-gap20'
-    # 'HFEMax_eta5 < 19;Rap gap 19 GeV;-gap19'
-    # 'HFEMax_eta5 < 18;Rap gap 18 GeV;-gap18'
-    # 'HFEMax_eta5 < 17;Rap gap 17 GeV;-gap17'
-    # 'HFEMax_eta5 < 15;Rap gap 15 GeV;-gap15'
-    # 'HFEMax_eta5 < 14;Rap gap 14 GeV;-gap14'
-    # 'HFEMax_eta5 < 13;Rap gap 13 GeV;-gap13'
-    # 'HFEMax_eta5 < 12;Rap gap 12 GeV;-gap12'
-    # 'HFEMax_eta5 < 11;Rap gap 11 GeV;-gap11'
-    # 'HFEMax_eta5 < 10;Rap gap 10 GeV;-gap10'
-    # 'HFEMax_eta5 < 9;Rap gap 9 GeV;-gap9'
-    # 'HFEMax_eta5 < 8;Rap gap 8 GeV;-gap8'
-    # 'HFEMax_eta5 < 7;Rap gap 7 GeV;-gap7'
-    # 'HFEMax_eta5 < 6;Rap gap 6 GeV;-gap6'
-    # 'HFEMax_eta5 < 5;Rap gap 5 GeV;-gap5'
-    # 'HFEMax_eta5 < 4;Rap gap 4 GeV;-gap4'
-
-    'HFEMax_forest < 18;Rap gap in 3 < |#eta| < 5.2;-gapeta5p2'
+    # 'HFEMax_forest < 25;Rap gap 25 GeV;-gap25'
+    # 'HFEMax_forest < 24;Rap gap 24 GeV;-gap24'
+    # 'HFEMax_forest < 23;Rap gap 23 GeV;-gap23'
+    # 'HFEMax_forest < 22;Rap gap 22 GeV;-gap22'
+    # 'HFEMax_forest < 21;Rap gap 21 GeV;-gap21'
+    # 'HFEMax_forest < 20;Rap gap 20 GeV;-gap20'
+    # 'HFEMax_forest < 19;Rap gap 19 GeV;-gap19'
+    # 'HFEMax_forest < 18;Rap gap 18 GeV;-gap18'
+    # 'HFEMax_forest < 17;Rap gap 17 GeV;-gap17'
+    # 'HFEMax_forest < 15;Rap gap 15 GeV;-gap15'
+    # 'HFEMax_forest < 14;Rap gap 14 GeV;-gap14'
+    # 'HFEMax_forest < 13;Rap gap 13 GeV;-gap13'
+    # 'HFEMax_forest < 12;Rap gap 12 GeV;-gap12'
+    # 'HFEMax_forest < 11;Rap gap 11 GeV;-gap11'
+    # 'HFEMax_forest < 10;Rap gap 10 GeV;-gap10'
+    # 'HFEMax_forest < 9;Rap gap 9 GeV;-gap9'
+    # 'HFEMax_forest < 8;Rap gap 8 GeV;-gap8'
+    # 'HFEMax_forest < 7;Rap gap 7 GeV;-gap7'
+    # 'HFEMax_forest < 6;Rap gap 6 GeV;-gap6'
+    
+    # 'HFEMax_forest < 5;Rap gap 5 GeV;-gap5'
+    # 'HFEMax_forest < 4;Rap gap 4 GeV;-gap4'
+    # 'HFEMax_eta5 < 16;Rap gap in 3 < |#eta| < 5;-gapeta5'
 )
 
 make_dcut_string() {
@@ -67,7 +69,14 @@ cutdtopos=(
 fitopts=(
     '3G-Peaky;;'
     # '3G-Peaky-Exp;;_f-exp'
+    # '3G-Peaky-Fwidth;;_f-fwidth'
     # 'Peaky;;_f-2gaus'
+)
+
+templateopts=(
+    '0.95;;'
+    '1;Fixed to MC;-tmc'
+    '0.875+0.0835*(exp(-0.5*((Dy-0.8)/0.586)^2)+exp(-0.5*((Dy+0.8)/0.586)^2));Alternative #alpha;-talpha2'
 )
 
 make_zdccut_string() {
@@ -81,10 +90,17 @@ evtzdcs=(
     # "`make_zdccut_string 1000,1000`;ZDC 1000 GeV;-zdc1000"
     # "`make_zdccut_string 1100,1100`;ZDC 1100 GeV;-zdc1100"
     # "`make_zdccut_string 1200,1200`;ZDC 1200 GeV;-zdc1200"
+    # "`make_zdccut_string 1300,1300`;ZDC 1300 GeV;-zdc1300"
+    # "`make_zdccut_string 1400,1400`;ZDC 1400 GeV;-zdc1400"
+    # "`make_zdccut_string 1500,1500`;ZDC 1500 GeV;-zdc1500"
     # "`make_zdccut_string 900,900`;ZDC 900 GeV;-zdc900"
+    # "`make_zdccut_string 800,800`;ZDC 800 GeV;-zdc800"
+    # "`make_zdccut_string 700,700`;ZDC 700 GeV;-zdc700"
+    # "`make_zdccut_string 600,600`;ZDC 600 GeV;-zdc600"
 )
 
-for binning in 0 1 ; do
+for binning in 0 ; do
+# for binning in 0 1 ; do
     for evtzdc in "${evtzdcs[@]}" ; do
         evtzdc_tag=`parse_input_tag "$evtzdc"`
         [[ x$evtzdc_tag == x ]] && def_evtzdc=1 || def_evtzdc=0
@@ -103,21 +119,28 @@ for binning in 0 1 ; do
                     fitopt_tag=`parse_input_tag "$fitopt"`
                     [[ x$fitopt_tag == x ]] && def_fitopt=1 || def_fitopt=0
 
-                    [[ $(($def_evtzdc+$def_evtgap+$def_cutdtopo+$def_fitopt)) -eq 3 ]] || continue
-                    
-                    echo -n "--"
-                    [[ $def_evtzdc -eq 0 ]] && echo -en " \033[1m["$evtzdc"]\033[0m" || echo -en " \033[2m["$evtzdc"]\033[0m"
-                    [[ $def_evtgap -eq 0 ]] && echo -en " \033[1m["$evtgap"]\033[0m" || echo -en " \033[2m["$evtgap"]\033[0m"
-                    [[ $def_cutdtopo -eq 0 ]] && echo -en " \033[1m["$cutdtopo"]\033[0m" || echo -en " \033[2m["$cutdtopo"]\033[0m"
-                    [[ $def_fitopt -eq 0 ]] && echo -en " \033[1m["$fitopt"]\033[0m" || echo -en " \033[2m["$fitopt"]\033[0m"
-                    echo
+                    for templateopt in "${templateopts[@]}" ; do
+                        templateopt_tag=`parse_input_tag "$templateopt"`
+                        [[ x$templateopt_tag == x ]] && def_templateopt=1 || def_templateopt=0
 
-                    [[ $def_evtzdc -eq 0 ]] && ./run_var.sh $binning $isNgamma 00110 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" $2
-                    [[ $def_evtgap -eq 0 ]] && ./run_var.sh $binning $isNgamma 10110 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" $2 &
-                    [[ $def_cutdtopo -eq 0 ]] && ./run_var.sh $binning $isNgamma 01111 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" $2 &
-                    [[ $def_fitopt -eq 0 ]] && ./run_var.sh $binning $isNgamma 00010 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" $2
-                    
-                done            
+                        [[ $(($def_evtzdc+$def_evtgap+$def_cutdtopo+$def_fitopt+$def_templateopt)) -eq 4 ]] || continue
+                        
+                        echo -n "--"
+                        [[ $def_evtzdc -eq 0 ]] && echo -en " \033[1m["$evtzdc"]\033[0m" || echo -en " \033[2m["$evtzdc"]\033[0m"
+                        [[ $def_evtgap -eq 0 ]] && echo -en " \033[1m["$evtgap"]\033[0m" || echo -en " \033[2m["$evtgap"]\033[0m"
+                        [[ $def_cutdtopo -eq 0 ]] && echo -en " \033[1m["$cutdtopo"]\033[0m" || echo -en " \033[2m["$cutdtopo"]\033[0m"
+                        [[ $def_fitopt -eq 0 ]] && echo -en " \033[1m["$fitopt"]\033[0m" || echo -en " \033[2m["$fitopt"]\033[0m"
+                        [[ $def_templateopt -eq 0 ]] && echo -en " \033[1m["$templateopt"]\033[0m" || echo -en " \033[2m["$templateopt"]\033[0m"
+                        echo
+
+                        [[ $def_evtzdc -eq 0 ]] && ./run_var.sh $binning $isNgamma 00110 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" "$templateopt" $2 &
+                        [[ $def_evtgap -eq 0 ]] && ./run_var.sh $binning $isNgamma 10110 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" "$templateopt" $2 &
+                        [[ $def_cutdtopo -eq 0 ]] && ./run_var.sh $binning $isNgamma 01111 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" "$templateopt" $2 &
+                        [[ $def_fitopt -eq 0 ]] && ./run_var.sh $binning $isNgamma 00010 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" "$templateopt" $2
+                        [[ $def_templateopt -eq 0 ]] && ./run_var.sh $binning $isNgamma 01010 "$evtzdc" "$evtgap" "$cutdtopo" "$fitopt" "$templateopt" $2
+
+                    done
+                done
             done
         done
     done

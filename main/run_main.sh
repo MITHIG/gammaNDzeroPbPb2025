@@ -1,18 +1,20 @@
 #!/bin/bash
 
 SAVE_PNG=0
+ver='v2'
 
-TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ;
-# TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ;
-# TAG_BINNING="b-incl" ; BINNING_Y='-2., 2.' ; BINNING_PT='2., 5.' ;
+TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ; INPUT_FPROMPT='../fprompt/rootfiles/0nXn-twodirs-25_Dbdt/b-ycoarse/collect__2025PbPb_BeamA-prompt_BeamA-nonprompt_Dip3D-Dip3Dsig/'$TAG_BINNING'.root;;fprompt-25MC' ;
+# TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ; INPUT_FPROMPT='null' ;
+# TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ; INPUT_FPROMPT='null' ;
 
-fitopt="3G-Peaky-Sig;;"
+templateopt='0.95;pol0 #alpha;'
+fitopt='3G-Peaky-Sig;;'
 
 INPUTS_DATA=(
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025
-    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward_Dpt-2_Dsize_Golden_24PD.root;2025 PbPb (5.36 TeV);2025PbPb;0.057607"
 
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb-mixjson;0.060361"
+    # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260426-yrefmva_PbPbUPC_HIForward_Dpt-2_Dsize_24PD.root;2025 PbPb (5.36 TeV);2025PbPb;0.060361" # 2025
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_261002-ptdiff_PbPbUPC_HIForward_Dpt-1_xbr_Dsize_gap-17_12ePD.root;2025 PbPb (5.36 TeV);2025PbPb" # 2025 low pT
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260814-yinclbdt_PbPbUPC_HIForward_Trig-3_Dsize.root;2025 PbPb ZB (5.36 TeV);2025PbPb" # 2025 ZB + inclusive BDT
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2023PbPb/Dzero_260212-hfle_2023PbPbUPC_Jan2024ReReco_20260212Forest_HIForward_Dpt-2_Trig-2_Dsize_xbr.root;2023 PbPb (Jan2024 ReReco);2023PbPb-recoJan2024" # 2023 Jan24 rereco
@@ -20,8 +22,14 @@ INPUTS_DATA=(
 )
 CUTEVTS=( # lumi is nb-1 - directly from brilcalc
     # # --- 2025 0nXn ZDCOr
-    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN);0nXn-gammaN-25;0.060361"
-    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma);0nXn-Ngamma-25;0.060361"
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_forest < 19.4;Xn0n (#gammaN);0nXn-gammaN-25;"
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_forest < 17.2;0nXn (N#gamma);0nXn-Ngamma-25;"
+
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_forest < 18;Xn0n (#gammaN);0nXn-gammaN-25;"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_forest < 18;0nXn (N#gamma);0nXn-Ngamma-25;"
+
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN);0nXn-gammaN-25-preapp;"
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma);0nXn-Ngamma-25-preapp;"
     # # --- 2025 0nXn ZB
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN) ZB;0nXn-gammaN-25-ZB;0.0082426"
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma) ZB;0nXn-Ngamma-25-ZB;0.0082426"
@@ -36,6 +44,7 @@ CUTEVTS=( # lumi is nb-1 - directly from brilcalc
 INPUTS_TEMPLATE=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2025-SoftQCD-BeamB"
+
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamA_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamB_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
 
@@ -52,25 +61,27 @@ INPUTS_MC=(
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260928-symmva_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-1_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
 )
 INPUTS_MC_EVT=( # only one sample work for each cut
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamA_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
-    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_prompt_GNucleusToD0-BeamB_SoftQCD_KPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2025-SoftQCD-BeamB"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
+    "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_260714-gen_HiForest_260904_GNucleusToD0-BeamB_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamB"
 
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_261002-ptdiff_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-1_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
 )
 CUT_BASE="TMath::Abs(Dtrk1PtErr/Dtrk1Pt)<0.1 && TMath::Abs(Dtrk2PtErr/Dtrk2Pt)<0.1 && TMath::Abs(Dtrk1Eta) < 2.4 && TMath::Abs(Dtrk2Eta) < 2.4 && Dtrk1Pt > 0.5 && Dtrk2Pt > 0.5 && Dchi2cl > 0.05 && (DsvpvDistance/DsvpvDisErr) > 1. && DsvpvDisErr>1.e-8 && DsvpvDisErr_2D>1.e-8"
 CUT_SIGNALWIN="Dmass > 1.83 && Dmass < 1.9" # for event selection efficiency
 CUTDS=(
-    "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN"
-    "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.143) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma"
-    # "${CUT_BASE} && (Dtrk1PixelHit+Dtrk1StripHit)>=11 && (Dtrk2PixelHit+Dtrk2StripHit)>=11 && DpassCut23PAS;2023 PAS cut;D23pas"
-    # "${CUT_BASE};Prefilter;prefilter"
+    "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN;"
+    "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.143) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma;"
+
+    # "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN-weight;(Dy<-1)*(1.27+(-0.841)*0.5*TMath::Erfc((Dmva_BDT-0.0831)/0.03))+(Dy>=-1 && Dy<0)*(0.793+1.02*0.5*TMath::Erfc((Dmva_BDT-(-0.00214))/0.0772))+(Dy>=0 && Dy<1)*(0.834+0.714*0.5*TMath::Erfc((Dmva_BDT-0.0218)/0.03))+(Dy>=1)*(1.02*(1-((Dmva_BDT-0.08)/0.556)^2))"
+    # "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.143) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma-weight;(Dy>=1)*(1.27+(-0.841)*0.5*TMath::Erfc((Dmva_BDT-0.0831)/0.03))+(Dy<1 && Dy>=0)*(0.793+1.02*0.5*TMath::Erfc((Dmva_BDT-(-0.00214))/0.0772))+(Dy<0 && Dy>=-1)*(0.834+0.714*0.5*TMath::Erfc((Dmva_BDT-0.0218)/0.03))+(Dy<-1)*(1.02*(1-((Dmva_BDT-0.08)/0.556)^2))"
+    # "${CUT_BASE} && (Dtrk1PixelHit+Dtrk1StripHit)>=11 && (Dtrk2PixelHit+Dtrk2StripHit)>=11 && DpassCut23PAS;2023 PAS cut;D23pas;"
+    # "${CUT_BASE};Prefilter;prefilter;"
     # # for different mva, don't use if you don't know:
-    # "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.160) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN-ZB"
-    # "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.160) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma-ZB"
-    # "${CUT_BASE} && Dmva_BDT>0.12;BDT;Dbdt-0n0n-ZB"
+    # "${CUT_BASE} && ((Dy<-1 && Dmva_BDT>0.160) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));BDT;Dbdt-gammaN-ZB;"
+    # "${CUT_BASE} && ((Dy>=1 && Dmva_BDT>0.160) || (Dy<1 && Dy>=0 && Dmva_BDT>0.142) || (Dy<0 && Dy>=-1 && Dmva_BDT>0.123) || (Dy<-1 && Dmva_BDT>0.098));BDT;Dbdt-Ngamma-ZB;"
+    # "${CUT_BASE} && Dmva_BDT>0.12;BDT;Dbdt-0n0n-ZB;"
 )
-# INPUT_FPROMPT='null'
-INPUT_FPROMPT='../fprompt/rootfiles/0nXn-twodirs-25_Dbdt/b-ycoarse/collect__2025PbPb_BeamA-prompt_BeamA-nonprompt_Dip3D-Dip3Dsig/'$TAG_BINNING'.root;;2024MC'
+
 ## Do not change below
 
 ##
@@ -87,7 +98,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
 
     # Loop D cuts
     for cutdstr in "${CUTDS[@]}" ; do
-        IFS=';' ; cutdtags=($cutdstr) ; unset IFS ; cutd="${cutdtags[0]}" ; cutd_tex="${cutdtags[1]}" ; cutd_tag="${cutdtags[2]}"
+        IFS=';' ; cutdtags=($cutdstr) ; unset IFS ; cutd="${cutdtags[0]}" ; cutd_tex="${cutdtags[1]}" ; cutd_tag="${cutdtags[2]}" ; cutd_weight="${cutdtags[3]}"
 
         [[ x$cutd_tag == x ]] && { echo "warning: missed cutd_tag. skip." ; continue ; }
         [[ ($cutd_tag == *gammaN* && $cutevt_tag == *Ngamma*) || ($cutd_tag == *Ngamma* && $cutevt_tag == *gammaN*) ]] && continue 
@@ -105,8 +116,8 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             ######################
             # Event efficiency   #
             ######################
-            itag_evteff=$cut_tag"/"$TAG_BINNING"/evteffsave_"$mc_evt_tag #
-            echo -e "\033[33;2m"$cut_tag" / \033[0m\033[33m"$mc_evt_tag"\033[0m \033[2m(event efficiency)\033[0m"
+            itag_evteff=$ver'/'$cut_tag"/"$TAG_BINNING"/evteffsave_"$mc_evt_tag #
+            echo -e "\033[33;2m"$ver'/'$cut_tag" / \033[0m\033[33m"$mc_evt_tag"\033[0m \033[2m(event efficiency)\033[0m"
             if [[ ${1:-0} -eq 1 || ${1:-0} -eq 3 ]] ; then
                 ./evteff_save.exe "$input_mc_evt" "$cutevtstr" "${cutdstr} && $CUT_SIGNALWIN" $itag_evteff "$BINNING_Y" "$BINNING_PT"
             fi
@@ -122,39 +133,41 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             
             IFS=';' ; input_template_tags=($input_template) ; unset IFS ; template_tag=${input_template_tags[2]} ;
             [[ ($cutevt_tag == *gammaN* && $template_tag == *BeamB*) || ($cutevt_tag == *Ngamma* && $template_tag == *BeamA*) || ($cutevt_tag == *0n0n* && $template_tag == *BeamB*) ]] && continue 
-            echo -e "\033[33;2m"$cut_tag" / \033[0m\033[33m"$template_tag"\033[0m \033[2m(mass template)\033[0m"
+            IFS=';' ; templateopt_tags=($templateopt) ; unset IFS ; templateopt_tag=${templateopt_tags[2]} ;
+            template_tag=$template_tag$templateopt_tag
+            echo -e "\033[33;2m"$ver'/'$cut_tag" / \033[0m\033[33m"$template_tag"\033[0m \033[2m(mass template)\033[0m"
 
             ####################
-            # Mass template    # -> [ 3 min ]
+            # Mass template    #
             ####################
-            itag_template=$cut_tag"/"$TAG_BINNING"/template_"$template_tag #
+            itag_template=$ver'/'$cut_tag"/"$TAG_BINNING"/template_"$template_tag #
             if [[ ${2:-0} -eq 1 ]] ; then
-                echo "    -> generate mass templates from MC (about 3 min)"
-                ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING_Y" "$BINNING_PT" 1 # 1: is_template
+                echo "++ [ generate mass templates from MC ]"
+                ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING_Y" "$BINNING_PT" 1 "$templateopt" # 1: is_template
             fi
             # echo -e "  \033[2m"$itag_template"\033[0m"
             ## Loop data
             for input_data in "${INPUTS_DATA[@]}" ; do
                 
-                IFS=';' ; input_data_tags=($input_data) ; unset IFS ; data_tag=${input_data_tags[2]}
-                echo -e "\033[33;2m"$cut_tag" / "$template_tag" / \033[0m\033[33m"$data_tag"\033[0m \033[2m(data)\033[0m"
+                IFS=';' ; input_data_tags=($input_data) ; unset IFS ; data_tag=${input_data_tags[2]} ; data_lumi=${input_data_tags[3]} ; 
+                echo -e "\033[33;2m"$ver'/'$cut_tag" / "$template_tag" / \033[0m\033[33m"$data_tag"\033[0m \033[2m(data)\033[0m"
 
                 ####################
                 # Fill data mass   # -> [ 13 min ]
                 ####################
-                itag_data=$cut_tag"/"$TAG_BINNING"/savehist_"$data_tag #
+                itag_data=$ver'/'$cut_tag"/"$TAG_BINNING"/savehist_"$data_tag #
                 [[ ${3:-0} -eq 1 || ${3:-0} -eq 3 ]] && {
-                    echo "    -> fill data mass (about 13 min)"
-                    ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING_Y" "$BINNING_PT" 0 # 0: not template
+                    echo "++ [ fill data mass ]"
+                    ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING_Y" "$BINNING_PT" 0 "1" # 0: not template
                 }
 
                 ####################
                 # Mass fitting     #
                 ####################
                 IFS=';' ; fitopts=($fitopt) ; unset IFS ; fit_tag=${fitopts[2]} ; 
-                itag_data_fit=$cut_tag"/"$TAG_BINNING"/fithist_"$data_tag"_"$template_tag$fit_tag ## 
+                itag_data_fit=$ver'/'$cut_tag"/"$TAG_BINNING"/fithist_"$data_tag"_"$template_tag$fit_tag ## 
                 [[ ${3:-0} -eq 2 || ${3:-0} -eq 3 ]] && {
-                    echo "    -> fit invariant mass"
+                    echo "++ [ fit invariant mass ]"
                     ./hist_fit.exe "rootfiles/"$itag_data".root" "rootfiles/"$itag_template".root" $itag_data_fit "$fitopt" $SAVE_PNG
                 }
                 # echo -e "  \033[2m"$itag_data"\n  -> "$itag_data_fit"\033[0m"
@@ -163,36 +176,41 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
 
                     IFS=';' ; input_mc_tags=($input_mc) ; unset IFS ; mc_tag=${input_mc_tags[2]} ; pnp_flag=${input_mc_tags[3]}
                     [[ ($cutevt_tag == *gammaN* && $mc_tag == *BeamB*) || ($cutevt_tag == *Ngamma* && $mc_tag == *BeamA*) || ($cutevt_tag == *0n0n* && $mc_tag == *BeamB*) ]] && continue 
-                    echo -e "\033[33;2m"$cut_tag" / "$template_tag" / "$data_tag" / \033[0m\033[33m"$mc_tag"\033[0m \033[2m(D efficiency, "$pnp_flag")\033[0m"
+                    echo -e "\033[33;2m"$ver'/'$cut_tag" / "$template_tag" / "$data_tag" / \033[0m\033[33m"$mc_tag"\033[0m \033[2m(D efficiency, "$pnp_flag")\033[0m"
 
                     ####################
                     # D efficiency     # -> [ 36 min ]
                     ####################
-                    itag_deff=$cut_tag"/deffsave_"$mc_tag # no binning info
+                    itag_deff=$ver'/'$cut_tag"/deffsave_"$mc_tag # no binning info
                     if [[ ${4:-0} -eq 1 || ${4:-0} -eq 3 ]] ; then
-                        echo "    -> generate D efficiency table from MC (about 36 min)"
-                        ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff $pnp_flag
+                        echo "++ [ generate D efficiency table from MC ]"
+                        ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff $pnp_flag "$cutd_weight"
                     fi
 
-                    itag_deff_calc=$cut_tag"/"$TAG_BINNING"/deffcalc_"$mc_tag
+                    itag_deff_calc=$ver'/'$cut_tag"/"$TAG_BINNING"/deffcalc_"$mc_tag
                     [[ ${4:-0} -eq 2 || ${4:-0} -eq 3 ]] && {
                         ./eff_calc.exe "rootfiles/"$itag_deff".root" $itag_deff_calc "$BINNING_Y" "$BINNING_PT" $SAVE_PNG
                     }
-                    # echo -e "  \033[2m"$itag_deff"\n  -> "$itag_deff_calc"\033[0m"
+                    itag_deff_calc_weight=$itag_deff_calc'_weight'
 
                     ####################
                     # Cross-section    #
                     ####################
-                    itag_xsec=$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}
-                    echo "    itag_data_fit:  "$itag_data_fit
-                    echo "    itag_deff:      "$itag_deff_calc
-                    echo "    itag_evteff:    "$itag_evteff_calc
-                    # echo "    itag_fprompt:   "$input_fprompt
-                    echo "    lumi:           "$cutevt_lumi" nb-1"
-                    echo "                ==> "$itag_xsec
+                    lumi=$data_lumi
+                    [[ x$cutevt_lumi != x ]] && lumi=$cutevt_lumi
+                    itag_xsec=$ver'/'$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}
+                    # itag_xsec_w=$ver'/'$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc_weight##*/}'_'${itag_evteff_calc##*/}
+                    echo "    itag_data_fit: "$itag_data_fit
+                    echo "    itag_deff:     "$itag_deff_calc
+                    echo "    itag_evteff:   "$itag_evteff_calc
+                    echo "    lumi:          "$lumi" nb-1"
+                    echo "                >> "$itag_xsec
                     [[ ${5:-0} -eq 1 ]] && {
-                        echo "    -> calculate cross sections"
-                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $cutevt_lumi $itag_xsec $SAVE_PNG
+                        echo "++ [ calculate xsec ]"
+                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $lumi $itag_xsec $SAVE_PNG
+                        # [[ -f "rootfiles/"$itag_deff_calc_weight".root" ]] && {
+                        #     ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc_weight".root" "rootfiles/"$itag_evteff_calc".root" $lumi $itag_xsec_w $SAVE_PNG                            
+                        # }
                     }
 
                     [[ $cutevt_tag == *Ngamma* ]] || continue
@@ -205,11 +223,22 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     file_Ngamma='rootfiles/'$itag_xsec'.root'
                     file_gammaN=${file_Ngamma//Ngamma/gammaN} ; file_gammaN=${file_gammaN//BeamB/BeamA} ;
                     outputname=${itag_xsec//-Ngamma/} ; outputname=${outputname//-BeamB/} ; outputname=$outputname'_'$itag_fprompt
-                    echo "                     -> "$outputname
+
+                    # file_Ngamma_w='rootfiles/'$itag_xsec_w'.root'
+                    # file_gammaN_w=${file_Ngamma_w//Ngamma/gammaN} ; file_gammaN_w=${file_gammaN_w//BeamB/BeamA} ;
+                    # outputname_w=${itag_xsec_w//-Ngamma/} ; outputname_w=${outputname_w//-BeamB/} ; outputname_w=$outputname_w'_'$itag_fprompt
+
+                    echo -e " \033[2m>> [collect]\033[0m "$outputname
                     echo "    input_fprompt:   "$input_fprompt
                     [[ -f $file_gammaN && -f $file_Ngamma ]] && {
-                        [[ ${5:-0} -gt 0 ]] && ./xsec_collect.exe "${file_gammaN},${file_Ngamma}" "$input_fprompt" $outputname $SAVE_PNG
+                        [[ ${5:-0} -gt 0 ]] && {
+                            ./xsec_collect.exe "${file_gammaN},${file_Ngamma}" "$input_fprompt" $outputname $SAVE_PNG
+                            # [[ -f $file_Ngamma_w && -f $file_gammaN_w ]] && {
+                            #     ./xsec_collect.exe "${file_gammaN_w},${file_Ngamma_w}" "$input_fprompt" $outputname_w $SAVE_PNG
+                            # }
+                        }
                     }
+                    echo -e " \033[2m<< [collect]\033[0m"
                 done
             done
         done
