@@ -20,7 +20,7 @@ int macro(const std::string& inputstr, const std::string& cutstr, const std::str
 
   // template
   const auto ptemplate = xjjroot::parse_input(templatestr);
-  const auto alpha = ptemplate.content;
+  const auto alpha = "(" + ptemplate.content + ")";
   if (is_template)
     __XJJLOG << ">> alpha : " << alpha << std::endl;
   
