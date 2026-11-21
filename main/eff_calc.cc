@@ -146,7 +146,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   auto png_name = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
   
-  std::vector<std::string> draw_names = { "eff", "acc", "effreco", "effsel" };
+  std::vector<std::string> draw_names = { "acc", "effreco", "effsel", "eff" };
   if (has_weight) draw_names.push_back("eff_w");
 
   // TH2
@@ -188,11 +188,11 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   }
 
   std::vector<std::string> cover = {
-      "#bf{eff num} " + info.at("cut_eff_num"),
-      "#bf{effreco num} " + info.at("cut_reco_num"),
-      "#bf{acc num} " + info.at("cut_acc_num"),
-      "#bf{eff den} " + info.at("cut_eff_den"),
-      "#bf{File} " + info.at("inputmc")
+    "#bf{eff num} " + info.at("cut_eff_num"),
+    "#bf{effreco num} " + info.at("cut_reco_num"),
+    "#bf{acc num} " + info.at("cut_acc_num"),
+    "#bf{eff den} " + info.at("cut_eff_den"),
+    "#bf{File} " + info.at("inputmc")
   };
   if (has_weight) cover.push_back("#bf{BDT weight} " + info.at("weight_bdt"));
   pdf->draw_cover(cover, 0.03);
@@ -200,10 +200,13 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   pdf->close();
 
   auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
-  for (auto& [_, h] : h2s) xjjroot::writehist(h);
-  for (auto& [_, hh] : h1pts)
+  // for (auto& [_, h] : h2s) xjjroot::writehist(h);
+  for (auto& [key, hh] : h1pts) {
+    if (xjjc::str_contains(key, "_num") ||
+        xjjc::str_contains(key, "_den")) continue;
     for (auto& h : hh)
       xjjroot::writehist(h);
+  }
   xjjroot::writehist(h2_bins);
   auto* t = new TTree("info", "");
   for (auto& [key, content] : info) {
@@ -212,6 +215,22 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   t->Fill();
   t->Write();
   xjjroot::closefile(outf);
+
+  // if (has_weight) {
+  //   auto* outf_w = xjjroot::newfile("rootfiles/" + outputname + "_weight.root");
+  //   for (auto& h : h1pts.at("eff_w-y__rebin")) {
+  //     h->SetName(xjjc::str_replaceall(h->GetName(), {{"_eff_w", "_eff"}}).c_str());
+  //     xjjroot::writehist(h);
+  //   }
+  //   xjjroot::writehist(h2_bins);
+  //   auto* t_w = new TTree("info", "");
+  //   for (auto& [key, content] : info) {
+  //     t_w->Branch(key.c_str(), &content);
+  //   }
+  //   t_w->Fill();
+  //   t_w->Write();
+  //   xjjroot::closefile(outf_w);
+  // }
   
   return 0;
 }
