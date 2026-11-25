@@ -8,9 +8,10 @@
 
 #include "fpfitter.h"
 
-int macro(const std::string& inputname, const std::string& outputname) {
+int fit_fprompt(const std::string& inputname, const std::string& outputname) {
+  xjjc::whats_this("fit fprompt", "fit_fprompt.cc");
   //
-  auto* inf = TFile::Open(inputname.c_str());
+  auto* inf = xjjroot::openfile(inputname.c_str());
   auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
   draw::bintex tbins(h3_bins, 0, 2);
   auto ny = h3_bins->GetXaxis()->GetNbins();
@@ -30,10 +31,10 @@ int macro(const std::string& inputname, const std::string& outputname) {
   }
   infos["fit"]["var"] = var;
 
-  for (auto& [name, info] : infos) {
-    __XJJLOG << ">> " << name << std::endl;
-    xjjc::print_tab(info, -1);
-  }
+  // for (auto& [name, info] : infos) {
+  //   __XJJLOG << ">> " << name << std::endl;
+  //   xjjc::print_tab(info, -1);
+  // }
 
   xjjroot::setgstyle(1);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
@@ -46,13 +47,15 @@ int macro(const std::string& inputname, const std::string& outputname) {
 
     // prepare MC histograms
     std::map<std::string, std::vector<TH1D*>> h1sfs_mc;
+    std::map<std::string, TH1D*> h1s_mc;
     for (const std::string type_mc : { "mc-prompt", "mc-nonprompt" }) {
+      h1s_mc[type_mc] = xjjana::getobj_regexp_first<TH1D>(dir_y, ".+" + type_mc + ".*__y-" + xjjc::to_string(i), "", false);
       h1sfs_mc[type_mc] = xjjana::getobj_regexp<TH1D>(dir_y, ".+" + type_mc + ".*_sf-.+__y-" + xjjc::to_string(i), "", false);
       std::sort(h1sfs_mc[type_mc].begin(), h1sfs_mc[type_mc].end(),
                 [](const TH1D* ha, const TH1D* hb) {
                   return index_sf(ha) < index_sf(hb);
                 });
-      xjjroot::print_vec_v(h1sfs_mc[type_mc], 0);
+      // xjjroot::print_vec_v(h1sfs_mc[type_mc], 0);
     }
     if (nsf != h1sfs_mc.at("mc-prompt").size()) {
       __XJJLOG << "!! inconsistent number of scale factors, abort." << std::endl;
@@ -73,7 +76,8 @@ int macro(const std::string& inputname, const std::string& outputname) {
         xjjroot::setthgrstyle(h1_sf, kBlack, 20, 1.5, kBlack, 1, 1);
         return h1_sf;
       };
-      auto* h1_chi2 = make_h1_sf("chi2", "#chi^{2} / ndf");
+      auto* h1_chi2 = make_h1_sf("chi2", "#chi^{2}");
+      auto* h1_chi2ndf = make_h1_sf("chi2ndf", "#chi^{2} / ndf");
       auto* h1_fprompt = make_h1_sf("fprompt", "#it{f}_{prompt}");
       xjjroot::setthgrstyle(h1_fprompt, kGray, -1, -1, kGray);
 
@@ -87,7 +91,8 @@ int macro(const std::string& inputname, const std::string& outputname) {
       int ngr_fprompt = 0;
       std::vector<fpfitter*> results(nsf, nullptr);
       for (int k=0; k<nsf; k++) {
-        auto *h1_mc_prompt = h1sfs_mc.at("mc-prompt")[k], *h1_mc_nonprompt = h1sfs_mc.at("mc-nonprompt")[k];
+        // auto *h1_mc_prompt = h1sfs_mc.at("mc-prompt")[k], *h1_mc_nonprompt = h1sfs_mc.at("mc-nonprompt")[k];
+        auto *h1_mc_prompt = h1sfs_mc.at("mc-prompt")[k], *h1_mc_nonprompt = h1s_mc.at("mc-nonprompt");
         xjjc::progressslide(k, nsf, 2);
 
         auto* fitter = new fpfitter(h1_data, h1_mc_prompt, h1_mc_nonprompt, "-" + xjjc::str_eraseall(type_data, { "data-" }), "-sf-" + xjjc::to_string(k));
@@ -97,7 +102,9 @@ int macro(const std::string& inputname, const std::string& outputname) {
         // fitter->print_fitresult();
         h1_fprompt->SetBinContent(k+1, fitter->fprompt());
         h1_fprompt->SetBinError(k+1, fitter->fprompt_err_par());
-        h1_chi2->SetBinContent(k+1, fitter->chi2() / fitter->ndf());
+        h1_chi2ndf->SetBinContent(k+1, fitter->chi2() / fitter->ndf());
+        h1_chi2ndf->SetBinError(k+1, 0);
+        h1_chi2->SetBinContent(k+1, fitter->chi2());
         h1_chi2->SetBinError(k+1, 0);
 
         const double x = h1_bins_sf->GetBinCenter(k+1);
@@ -154,6 +161,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
       pdf->write();
 
       dir_type_output->cd();
+      xjjroot::writehist(h1_chi2ndf);
       xjjroot::writehist(h1_chi2);
       xjjroot::writehist(h1_fprompt);
       xjjroot::writehist(gr_fprompt);
@@ -186,7 +194,7 @@ int macro(const std::string& inputname, const std::string& outputname) {
 
 int main(int argc, char* argv[]) {
   if (argc == 3) {
-    return macro(argv[1], argv[2]);
+    return fit_fprompt(argv[1], argv[2]);
   }
   return 1;
 }

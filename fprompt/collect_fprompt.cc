@@ -30,6 +30,7 @@ Fprompt init(TDirectory* dir) {
       "fprompt.+_fix",
       "alpha.+_best",
       "chi2.+_best",
+      "chi2ndf.+_best",
     }) {
     const auto name = xjjc::str_eraseall(key, { ".+" });
     auto* h = xjjana::getobj_regexp_first<TH1D>(dir, "h1_.*" + key, "", false);
@@ -39,7 +40,7 @@ Fprompt init(TDirectory* dir) {
       if (g) fp.grs[name] = g;
     }
   }
-  for (const std::string &key : { "fprompt", "chi2" }) {
+  for (const std::string &key : { "fprompt", "chi2ndf" }) {
     fp.h1ys[key] = xjjana::getobj_regexp<TH1D>(dir, "h1_.*" + key + ".*__y-.+");
     for (auto& h : fp.h1ys[key])
       xjjana::sethminmax(h, 0., 1.5);
@@ -74,14 +75,15 @@ void style_fp(Fprompt& fp, const xjjroot::thgrstyle& ss) {
 
 void envelope_to_hist(const std::vector<TGraphAsymmErrors*>& gs, TH1D* h);
 
-int macro(const std::vector<std::string>& inputnames, const std::string& outputname,
+int collect_fprompt(const std::vector<std::string>& inputnames, const std::string& outputname,
           const std::string& newbintag, int save_png) {
+  xjjc::whats_this("collect final results of fprompt", "collect_fprompt.cc");
   bins::print();
   //
   std::map<std::string, std::vector<Fprompt>> fps;
   std::vector<Input> inputs;
   for (const auto &inputname : inputnames) {
-    auto* inf = TFile::Open(inputname.c_str());
+    auto* inf = xjjroot::openfile(inputname.c_str());
     auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
     Input in = { .tbins = draw::bintex(h3_bins, 0, 2) };
     for (const std::string name : { "data", "prompt", "nonprompt", "fit" } ) {
@@ -187,7 +189,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   pdf->getc()->RedrawAxis();
   pdf->write(Form("%s/fprompt_syst.pdf", name_png.c_str()), save_png ? "" : "X");
   
-  for (const std::string& xvar : { "chi2", "alpha" }) {
+  for (const std::string& xvar : { "chi2ndf", "alpha" }) {
     pdf->prepare();
     auto* h_dump = fp_dump.h1s.at(xvar + "_best");
     h_dump->Draw("axis");
@@ -222,11 +224,11 @@ int main(int argc, char* argv[]) {
     bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
     bins::ptbins = xjjc::str_convert_vector<double>(argv[5], ",");
     const auto inputs = xjjc::str_divide_trim(argv[1], ",");
-    return macro(inputs, argv[2], argv[3], std::atoi(argv[6]));
+    return collect_fprompt(inputs, argv[2], argv[3], std::atoi(argv[6]));
   }
   // if (argc == 3) {
   //   const auto inputs = xjjc::str_divide_trim(argv[1], ",");
-  //   return macro(inputs, argv[2]);
+  //   return collect_fprompt(inputs, argv[2]);
   // }
   return 1;
 }

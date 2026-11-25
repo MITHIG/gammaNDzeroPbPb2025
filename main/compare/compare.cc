@@ -4,11 +4,11 @@
 
 #include "draw.h"
 
-int macro(const std::vector<std::string>& inputnames, const std::string& outputname,
+int compare(const std::vector<std::string>& inputnames, const std::string& outputname,
           const std::string& tags = "", const std::string& title = "",
           const std::string& excepth = "",
           float legdx = 0, float legdy = 0, int save_png = 0) {
-  __XJJLOG << ">> " << inputnames.size() << std::endl;
+  xjjc::whats_this("compare.cc");
   const std::vector<Color_t> colors = { kBlack, xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"], xjjroot::mycolor_middle["magenta"], xjjroot::mycolor_middle["cyan"], xjjroot::mycolor_middle["violet"] };
   const float cr = 2./3, ytop = 0.84, lspace = 1.2, tsize = 0.038, tsize_up = 0.038/cr;
 
@@ -87,7 +87,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       hs.erase(key);
     }
   }
-  xjjroot::print_tab(hs, 0);
+  xjjroot::print_tab(hs);
 
   if (hs.empty())
     return 2;
@@ -105,7 +105,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     xjjana::sethsmin(hratios[key], 0.71);
     xjjana::sethsmax(hratios[key], 1.29);
   }
-  xjjroot::print_tab(hratios, 0);
+  xjjroot::print_tab(hratios);
 
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   auto png_name = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/", "figs/" }, { ".pdf", "" } });
@@ -121,10 +121,10 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     auto labels = xjjc::str_divide_trim(tags, ",");
     if (tbins.valid()) {
       const auto index_pt = xjjc::str_extract_index(key, "__pt-");
-      std::cout<<"__pt-"<<index_pt<<std::endl;
+      // std::cout<<"__pt-"<<index_pt<<std::endl;
       labels.push_back(tbins.label_pt(index_pt));
       const auto index_y = xjjc::str_extract_index(key, "__y-");
-      std::cout<<"__y-"<<index_y<<std::endl;
+      // std::cout<<"__y-"<<index_y<<std::endl;
       if (index_y >= 0)
         labels.push_back(tbins.label_y(index_y));
     }
@@ -155,19 +155,19 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 int main(int argc, char* argv[]) {
   __XJJLOG << ">> argc " << argc << std::endl;
   if (argc == 9) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5], std::atof(argv[6]), std::atof(argv[7]), std::atof(argv[8]));
+    return compare(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5], std::atof(argv[6]), std::atof(argv[7]), std::atof(argv[8]));
   }
   if (argc == 8) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5], std::atof(argv[6]), std::atof(argv[7]));
+    return compare(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5], std::atof(argv[6]), std::atof(argv[7]));
   }
   if (argc == 6) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5]);
+    return compare(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4], argv[5]);
   }
   if (argc == 5) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4]);
+    return compare(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], argv[4]);
   }
   if (argc == 3) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2]);
+    return compare(xjjc::str_divide_trim(argv[1], ","), argv[2]);
   }
   return 1;
 }

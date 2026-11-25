@@ -1,4 +1,5 @@
 #!/bin/bash 
+VER='v2'
 
 # TAG_BINNING="b-default"
 TAG_BINNING="b-ptdiff"
@@ -25,7 +26,7 @@ for cutevt_tag in "${CUTEVTS[@]}" ; do
             [[ ($cutevt_tag == *gammaN* && $template_tag == *BeamB*) || ($cutevt_tag == *Ngamma* && $template_tag == *BeamA*) || ($cutevt_tag == *0n0n* && $template_tag == *BeamB*) ]] && continue
 
             for data_tag in "${INPUTS_DATA[@]}" ; do
-                itag_data_fit=$cut_tag'/'$TAG_BINNING'/fithist_'$data_tag'_'$template_tag$fit_tag ##
+                itag_data_fit=$VER'/'$cut_tag'/'$TAG_BINNING'/fithist_'$data_tag'_'$template_tag$fit_tag ##
 
                 ls 'rootfiles/'$itag_data_fit'.root'
                 [[ ${1:-0} -eq 1 ]] && {

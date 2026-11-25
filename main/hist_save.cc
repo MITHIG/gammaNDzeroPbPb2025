@@ -7,8 +7,10 @@
 #define __BINS_MASS__
 #include "../include/bins.h"
 
-int macro(const std::string& inputstr, const std::string& cutstr, const std::string& output,
+int hist_save(const std::string& inputstr, const std::string& cutstr, const std::string& output,
           int is_template, const std::string& templatestr = "1") {
+  xjjc::whats_this(is_template ? "generate mass templates" : "fill data histograms", "hist_save.cc");
+
   // parse input
   const auto pinput = xjjroot::parse_input(inputstr);
   auto* trs = xjjana::chain_files(xjjc::str_divide_trim(pinput.content, ","), "Tree");
@@ -20,7 +22,7 @@ int macro(const std::string& inputstr, const std::string& cutstr, const std::str
 
   // template
   const auto ptemplate = xjjroot::parse_input(templatestr);
-  const auto alpha = "(" + ptemplate.content + ")";
+  const auto alpha = ptemplate.content;
   if (is_template)
     __XJJLOG << ">> alpha : " << alpha << std::endl;
   
@@ -48,7 +50,7 @@ int macro(const std::string& inputstr, const std::string& cutstr, const std::str
   };
 
   if (is_template) {
-    std::string scale_mass = "1.865+(Dmass-1.865)*" + alpha;
+    std::string scale_mass = "1.865+(Dmass-1.865)*(" + alpha + ")";
     project("_mc-match", cut + " && Dgen==23333", "Dpt:" + scale_mass + ":Dy");
     project("_mc-swap", cut + " && Dgen==23344", "Dpt:" + scale_mass + ":Dy");
     project("_mc-kk", cut + " && DisSignalKK");
@@ -80,7 +82,7 @@ int main(int argc, char* argv[]) {
   if (argc == 8) {
     bins::ybins = xjjc::str_convert_vector<double>(argv[4], ",");
     bins::ptbins = xjjc::str_convert_vector<double>(argv[5], ",");
-    return macro(argv[1], argv[2], argv[3], atoi(argv[6]), argv[7]);
+    return hist_save(argv[1], argv[2], argv[3], atoi(argv[6]), argv[7]);
   }
   return 1;
 }

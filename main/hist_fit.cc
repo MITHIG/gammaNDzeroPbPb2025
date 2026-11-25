@@ -7,9 +7,10 @@
 #include "dfitter.h"
 #include "draw.h"
 
-int macro(const std::string& input_data, const std::string& input_template, const std::string& outputname,
+
+int hist_fit(const std::string& input_data, const std::string& input_template, const std::string& outputname,
           const std::string& fit_opt = "3G-Peaky", int save_png = 0) {
-  std::cout<<std::endl;
+  xjjc::whats_this("fit invariant mass", "hist_fit.cc");
 
   const auto fitopt = xjjroot::parse_input(fit_opt);
   __XJJLOG << ">> fitting option : " << fit_opt << " -> " << fitopt.content << std::endl;
@@ -21,9 +22,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
 
 #define READ_FILE(q)                                                    \
   auto* inf##q = TFile::Open(input##q.c_str());                         \
-  auto info##q = xjjana::getval_regexp((TTree*)inf##q->Get("info"));    \
-  __XJJLOG << "++ info" << std::endl;                                   \
-  xjjc::print_tab(info##q, -1);
+  auto info##q = xjjroot::read_info(inf##q, "info");
 
   READ_FILE(_data);
   READ_FILE(_template);
@@ -74,16 +73,14 @@ int macro(const std::string& input_data, const std::string& input_template, cons
   make_h1_y("yield", "Raw Yield");
   make_h1_y("width68mc", "Signal Effective#scale[0.4]{ }#sigma in MC [GeV]");
   make_h1_y("width95mc", "Signal Effective 2#sigma in MC [GeV]");
-  make_h1_y("walpha", "#frac{#sigma_{data}}{#sigma_{MC}} - 1");
+  make_h1_y("chi2prob", "p-value");
+  make_h1_y("walpha", "#alpha =#scale[0.4]{ }#frac{#sigma_{data}}{#sigma_{MC}}");
   
   xjjroot::print_tab(h3s, 0);
   xjjroot::print_tab(h1pts, 0);
 
   xjjroot::setgstyle(1);
   auto dfs = xjjc::array2d<xjjroot::dfitter*>(tbins.npt(), tbins.ny());
-  // auto ndiv = std::ceil(std::sqrt(tbins.npt()));
-  // gStyle->SetLineScalePS(3./ndiv);
-  // auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf", "c", ndiv, ndiv);
   auto* pdf = new xjjroot::mypdf("figspdf/" + outputname + ".pdf");
   auto name_png = xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   for (int i=0; i<tbins.ny(); i++) {
@@ -96,7 +93,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
         &hmc = h1ptys.at("mc-match")[j][i], &hmcswap = h1ptys.at("mc-swap")[j][i],
         &hmckk = h1ptys.at("mc-kk")[j][i], &hmcpipi = h1ptys.at("mc-pipi")[j][i];
 
-      auto* df = new xjjroot::dfitter(fitopt.content.c_str());
+      auto* df = new xjjroot::dfitter(fitopt.content.c_str(), !i&&!j);
       df->fit(h, hmc, hmcswap, hmckk, hmcpipi);
       xjjroot::drawtexgroup(0.24, 0.86, { tbins.label_y(i), tbins.label_pt(j), "#bf{" + info_data.at("cut_tex") + "}" }, 0.035, 13);
       df->draw_leg();
@@ -112,8 +109,10 @@ int macro(const std::string& input_data, const std::string& input_template, cons
       h1pts.at("width95mc-y")[j]->SetBinContent(i+1, w95mc.first);
       h1pts.at("width95mc-y")[j]->SetBinError(i+1, w95mc.second);
       const auto walpha = df->alpha();
-      h1pts.at("walpha-y")[j]->SetBinContent(i+1, walpha.first);
+      h1pts.at("walpha-y")[j]->SetBinContent(i+1, 1 + walpha.first);
       h1pts.at("walpha-y")[j]->SetBinError(i+1, walpha.second);
+      h1pts.at("chi2prob-y")[j]->SetBinContent(i+1, df->chi2prob());
+      h1pts.at("chi2prob-y")[j]->SetBinError(i+1, 1.e-3);
     
       dfs[j][i] = df;
       gPad->RedrawAxis();
@@ -141,6 +140,7 @@ int macro(const std::string& input_data, const std::string& input_template, cons
       df->draw_legmc();
       xjjroot::drawtexgroup(0.24, 0.86, { tbins.label_y(i), tbins.label_pt(j) }, 0.035, 13);
       df->draw_params(0.24, 0.86-2*0.035*1.15, 0.035);
+      xjjroot::drawtexgroup(0.88, 0.86, { "#alpha = " + xjjc::str_replaceall_regex(info_template.at("alpha"), "\\((.+?)\\)", "$1") }, 0.035, 33);
       // xjjroot::drawtexgroup(0.88, 0.86, { info_fit.at("fitopt_tex") }, 0.035, 33);
       xjjroot::drawCMS(xjjroot::CMS::simulation, info_template.at("input_tex"));
       gPad->RedrawAxis();
@@ -162,11 +162,12 @@ int macro(const std::string& input_data, const std::string& input_template, cons
       leg->AddEntry(h1pts.at(p)[j], tbins.label_pt(j).c_str(), "p");
     }
     h1pts.at(p).front()->Draw("axis");
-    if (p == "walpha-y") xjjroot::drawline_horizon(0, h1pts.at(p).front());
+    if (p == "walpha-y") xjjroot::drawline_horizon(1, h1pts.at(p).front());
     for (auto& h : h1pts.at(p)) h->Draw("pe1 same");
     leg->Draw();
     xjjroot::drawtexgroup(0.24, 0.85, {
         info_data.at("cut_tex"),
+        "#alpha = " + xjjc::str_replaceall_regex(info_template.at("alpha"), "\\((.+?)\\)", "$1"),
         info_fit.at("fitopt_tex"),
       }, 0.035, 13, 42, 1.25);
     xjjroot::drawCMS(xjjc::str_contains(p, "mc") ? xjjroot::CMS::simulation : xjjroot::CMS::internal,
@@ -230,13 +231,13 @@ int macro(const std::string& input_data, const std::string& input_template, cons
 
 int main(int argc, char* argv[]) {
   if (argc == 6) {
-    return macro(argv[1], argv[2], argv[3], argv[4], atoi(argv[5]));
+    return hist_fit(argv[1], argv[2], argv[3], argv[4], atoi(argv[5]));
   }
   if (argc == 5) {
-    return macro(argv[1], argv[2], argv[3], argv[4]);
+    return hist_fit(argv[1], argv[2], argv[3], argv[4]);
   }
   if (argc == 4) {
-    return macro(argv[1], argv[2], argv[3]);
+    return hist_fit(argv[1], argv[2], argv[3]);
   }
   return 1;
 }

@@ -62,7 +62,7 @@ Stats get_stats(const std::vector<double>& values, const std::string& name) {
 
 Dataset read_dataset(const std::string& path, const int npt, const int ny) {
   Dataset result;
-  auto* inf = xjjroot::readfile(path);
+  auto* inf = xjjroot::openfile(path);
   if (!inf) return result;
   auto* tree = static_cast<TTree*>(inf->Get("toys"));
   if (!tree) return result;
@@ -101,7 +101,7 @@ Dataset read_dataset(const std::string& path, const int npt, const int ny) {
 
 int macro(const std::vector<std::string>& inputnames, const std::string& outputname,
           int draw_rms = 0, int save_png = 0) {
-  auto* inf0 = xjjroot::readfile(inputnames.front());
+  auto* inf0 = xjjroot::openfile(inputnames.front());
   if (!inf0) return 2;
   auto* h3_bins = xjjana::getobj<TH3D>(inf0, "h3_bins");
   if (!h3_bins) return 2;

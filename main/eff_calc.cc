@@ -7,8 +7,8 @@
 
 #include "../include/draw.h"
 
-int macro(const std::string& inputname, const std::string& outputname, int save_png = 1) {
-  std::cout<<std::endl;
+int eff_calc(const std::string& inputname, const std::string& outputname, int save_png = 1) {
+  xjjc::whats_this("D eff - calculate eff table", "eff_calc.cc");
 
   auto* inf = TFile::Open(inputname.c_str());
   auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
@@ -240,9 +240,9 @@ int main(int argc, char* argv[]) {
     bins::ybins = xjjc::str_convert_vector<double>(argv[3], ",");
     bins::ptbins = xjjc::str_convert_vector<double>(argv[4], ",");
     if (argc == 6)
-      return macro(argv[1], argv[2], atoi(argv[5]));
+      return eff_calc(argv[1], argv[2], atoi(argv[5]));
     if (argc == 5)
-      return macro(argv[1], argv[2]);
+      return eff_calc(argv[1], argv[2]);
   }
   return 1;
 }

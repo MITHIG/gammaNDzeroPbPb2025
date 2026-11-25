@@ -25,7 +25,7 @@ namespace bins {
 
 #ifdef __BINS_PTY_EFF__
   const int ny = 48; const float miny = -2.4, maxy = 2.4;
-  const int npt = 40; const float minpt = 1, maxpt = 5;
+  const int npt = 30; const float minpt = 2, maxpt = 5;
 #endif
 
 #ifdef __BINS_PTY_DATAMCCOMP__
@@ -39,7 +39,6 @@ namespace bins {
 
 #ifdef __BINS_MASS__
   const int nmass = 80; const float minmass = 1.66, maxmass = 2.06;
-  // const int nmass = 60; const float minmass = 1.7, maxmass = 2.0;
 #endif
 
 }

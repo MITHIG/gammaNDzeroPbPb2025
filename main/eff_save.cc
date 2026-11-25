@@ -9,8 +9,9 @@
 
 const std::vector<std::string> pnp_labels = { "inclusive", "prompt", "nonprompt" };
 
-int macro(const std::string& inputmcstr, const std::string& cutevtstr, const std::string& cutdstr, const std::string& output, int pnp_flag = 0,
+int eff_save(const std::string& inputmcstr, const std::string& cutevtstr, const std::string& cutdstr, const std::string& output, int pnp_flag = 0,
           const std::string& weight_bdt = "") {
+  xjjc::whats_this("D eff - fill hists", "eff_save.cc");
   std::map<std::string, TChain*> trs;
   // parse inputmc
   const auto pi_inputmc = xjjroot::parse_input(inputmcstr);
@@ -104,13 +105,13 @@ int macro(const std::string& inputmcstr, const std::string& cutevtstr, const std
 
 int main(int argc, char* argv[]) {
   if (argc == 7) {
-    return macro(argv[1], argv[2], argv[3], argv[4], std::atoi(argv[5]), argv[6]);
+    return eff_save(argv[1], argv[2], argv[3], argv[4], std::atoi(argv[5]), argv[6]);
   }
   if (argc == 6) {
-    return macro(argv[1], argv[2], argv[3], argv[4], std::atoi(argv[5]));
+    return eff_save(argv[1], argv[2], argv[3], argv[4], std::atoi(argv[5]));
   }
   if (argc == 5) {
-    return macro(argv[1], argv[2], argv[3], argv[4]);
+    return eff_save(argv[1], argv[2], argv[3], argv[4]);
   }
   return 1;
 }

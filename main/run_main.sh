@@ -1,14 +1,18 @@
 #!/bin/bash
 
-SAVE_PNG=0
+SAVE_PNG=1
 ver='v2'
 
 TAG_BINNING="b-default" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 5.' ; INPUT_FPROMPT='../fprompt/rootfiles/0nXn-twodirs-25_Dbdt/b-ycoarse/collect__2025PbPb_BeamA-prompt_BeamA-nonprompt_Dip3D-Dip3Dsig/'$TAG_BINNING'.root;;fprompt-25MC' ;
 # TAG_BINNING="b-ptdiff" ; BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; BINNING_PT='2., 3., 4., 5.' ; INPUT_FPROMPT='null' ;
 # TAG_BINNING="b-ycoarse" ; BINNING_Y='-2., -1., 0., 1., 2.' ; BINNING_PT='2., 5.' ; INPUT_FPROMPT='null' ;
 
-templateopt='0.95;pol0 #alpha;'
-fitopt='3G-Peaky-Sig;;'
+templateopt='1.07;#alpha = 1.07;'
+# templateopt='1;Fixed to MC;-tmc'
+fitopt='3G-Peaky-DSig;;'
+# fitopt='Peaky-DSig-Exp-Fwidth;;_f-2023'
+# fitopt='Peaky;;_f-2gaus'
+femdpu='0.95'
 
 INPUTS_DATA=(
     "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPb/Dzero_260928-symmva_PbPbUPC_HIForward_Dpt-2_Dsize_Golden_24PD.root;2025 PbPb (5.36 TeV);2025PbPb;0.057607"
@@ -22,17 +26,16 @@ INPUTS_DATA=(
 )
 CUTEVTS=( # lumi is nb-1 - directly from brilcalc
     # # --- 2025 0nXn ZDCOr
-    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_forest < 19.4;Xn0n (#gammaN);0nXn-gammaN-25;"
-    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_forest < 17.2;0nXn (N#gamma);0nXn-Ngamma-25;"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_forest < 19.4;Xn0n (#gammaN);0nXn-gammaN-25;"
+    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_forest < 17.2;0nXn (N#gamma);0nXn-Ngamma-25;"
 
-    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_forest < 18;Xn0n (#gammaN);0nXn-gammaN-25;"
-    "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_forest < 18;0nXn (N#gamma);0nXn-Ngamma-25;"
-
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 17.2;Xn0n (#gammaN);0nXn-gammaN-25-gapeta5;"
+    # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 15.2;0nXn (N#gamma);0nXn-Ngamma-25-gapeta5;"
     # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN);0nXn-gammaN-25-preapp;"
     # "isL1ZDCOr && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma);0nXn-Ngamma-25-preapp;"
     # # --- 2025 0nXn ZB
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_eta5 < 16;Xn0n (#gammaN) ZB;0nXn-gammaN-25-ZB;0.0082426"
-    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_eta5 < 16;0nXn (N#gamma) ZB;0nXn-Ngamma-25-ZB;0.0082426"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCgammaN && HFEMaxPlus_forest < 19.4;Xn0n (#gammaN) ZB;0nXn-gammaN-25-ZB;0.00804756"
+    # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCNgamma && HFEMaxMinus_forest < 17.2;0nXn (N#gamma) ZB;0nXn-Ngamma-25-ZB;0.00804756"
     # # --- 2025 0nAn -> need to change inputs
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumPlus < 1100 && HFEMaxPlus_eta5 < 16;An0n (#gammaN) ZeroBias;0nAn-gammaN-25-ZB;0.0082426"
     # "isZeroBias && cscTightHalo2015Filter && selectedVtxFilter && ZDCsumMinus < 1000 && HFEMaxMinus_eta5 < 16;0nAn (N#gamma) ZeroBias;0nAn-Ngamma-25-ZB;0.0082426"
@@ -47,7 +50,6 @@ INPUTS_TEMPLATE=(
 
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamA_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2024-SoftQCD-BeamA"
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2024PbPb/Dzero_260714-gen_HiForest_260328_prompt_GNucleus-QCD-PhotonBeamB_Bin-Pthat0_Drej-genmatched_Dpt-2_Dsize.root;P#scale[0.8]{YTHIA}8 N#gamma (5.36 TeV);2024-SoftQCD-BeamB"
-
     # "/eos/cms/store/group/phys_heavyions/wangj/Forest2025PbPbMC/Dzero_261002-ptdiff_HiForest_260904_GNucleusToD0-BeamA_SoftQCD_KPiKKPiPi_2025_trkpt0p1_Drej-genmatched_Dpt-1_Dsize.root;P#scale[0.8]{YTHIA}8 #gammaN (5.36 TeV);2025-SoftQCD-BeamA"
 )
 INPUTS_MC=(
@@ -142,7 +144,6 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
             ####################
             itag_template=$ver'/'$cut_tag"/"$TAG_BINNING"/template_"$template_tag #
             if [[ ${2:-0} -eq 1 ]] ; then
-                echo "++ [ generate mass templates from MC ]"
                 ./hist_save.exe "$input_template" "$cutstr" $itag_template "$BINNING_Y" "$BINNING_PT" 1 "$templateopt" # 1: is_template
             fi
             # echo -e "  \033[2m"$itag_template"\033[0m"
@@ -157,7 +158,6 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 ####################
                 itag_data=$ver'/'$cut_tag"/"$TAG_BINNING"/savehist_"$data_tag #
                 [[ ${3:-0} -eq 1 || ${3:-0} -eq 3 ]] && {
-                    echo "++ [ fill data mass ]"
                     ./hist_save.exe "$input_data" "$cutstr" $itag_data "$BINNING_Y" "$BINNING_PT" 0 "1" # 0: not template
                 }
 
@@ -167,7 +167,6 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                 IFS=';' ; fitopts=($fitopt) ; unset IFS ; fit_tag=${fitopts[2]} ; 
                 itag_data_fit=$ver'/'$cut_tag"/"$TAG_BINNING"/fithist_"$data_tag"_"$template_tag$fit_tag ## 
                 [[ ${3:-0} -eq 2 || ${3:-0} -eq 3 ]] && {
-                    echo "++ [ fit invariant mass ]"
                     ./hist_fit.exe "rootfiles/"$itag_data".root" "rootfiles/"$itag_template".root" $itag_data_fit "$fitopt" $SAVE_PNG
                 }
                 # echo -e "  \033[2m"$itag_data"\n  -> "$itag_data_fit"\033[0m"
@@ -183,7 +182,6 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     ####################
                     itag_deff=$ver'/'$cut_tag"/deffsave_"$mc_tag # no binning info
                     if [[ ${4:-0} -eq 1 || ${4:-0} -eq 3 ]] ; then
-                        echo "++ [ generate D efficiency table from MC ]"
                         ./eff_save.exe "$input_mc" "$cutevtstr" "$cutdstr" $itag_deff $pnp_flag "$cutd_weight"
                     fi
 
@@ -206,8 +204,7 @@ for cutevtstr in "${CUTEVTS[@]}" ; do
                     echo "    lumi:          "$lumi" nb-1"
                     echo "                >> "$itag_xsec
                     [[ ${5:-0} -eq 1 ]] && {
-                        echo "++ [ calculate xsec ]"
-                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $lumi $itag_xsec $SAVE_PNG
+                        ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $lumi $itag_xsec $femdpu $SAVE_PNG
                         # [[ -f "rootfiles/"$itag_deff_calc_weight".root" ]] && {
                         #     ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc_weight".root" "rootfiles/"$itag_evteff_calc".root" $lumi $itag_xsec_w $SAVE_PNG                            
                         # }

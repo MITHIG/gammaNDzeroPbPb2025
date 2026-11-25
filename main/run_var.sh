@@ -20,14 +20,14 @@ else
     evtgap=${evtgap/HFEMax/HFEMaxMinus}
     evtgap=${evtgap/NOMINAL_GAP/17.2}
 fi
-echo $evtgap # !!
 IFS=';' evtgaps=($evtgap)
 cutdtopo=${6:-"((Dy<-1 && Dmva_BDT>0.143) || (Dy>=-1 && Dy<0 && Dmva_BDT>0.142) || (Dy>=0 && Dy<1 && Dmva_BDT>0.123) || (Dy>=1 && Dmva_BDT>0.098));;"}
 dcut_tag_DEFAULT='Dbdt-'${LABELS_DIR[$isNgamma]}
 IFS=';' cutdtopos=($cutdtopo)
 fitopt=${7:-"3G-Peaky-Sig;;"}
-templateopt=${8:-'0.95;pol0 #alpha;'}
-runlevel=${9:-00000}
+templateopt=${8:-'1.07;;'}
+femdpu=${9:-'0.92;;'}
+runlevel=${10:-00000}
 ##
 
 if [[ $binning -eq 0 ]] ; then
@@ -145,7 +145,9 @@ run_level=${runlevel:4:1}
 ####################
 # Cross-section    #
 ####################
-itag_xsec=$ver'/'$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}
+IFS=';' ; femdpu_tags=($femdpu) ; unset IFS ; femdpu_value=${femdpu_tags[0]} ; femdpu_tag=${femdpu_tags[2]} ;
+
+itag_xsec=$ver'/'$cut_tag'/'$TAG_BINNING'/xsec_'${itag_data_fit##*/}'_'${itag_deff_calc##*/}'_'${itag_evteff_calc##*/}$femdpu_tag
 echo "    itag_data_fit: "$itag_data_fit
 echo "    itag_deff:     "$itag_deff_calc
 echo "    itag_evteff:   "$itag_evteff_calc
@@ -155,7 +157,7 @@ echo -e "    \033[2mitag_fprompt:  "$itag_fprompt"\033[0m"
 
 run_level=$runlevel
 [[ $run_level -gt 0 ]] && {
-    ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $LUMINOSITY $itag_xsec $SAVE_PNG
+    ./xsec_calc.exe "rootfiles/"$itag_data_fit".root" "rootfiles/"$itag_deff_calc".root" "rootfiles/"$itag_evteff_calc".root" $LUMINOSITY $itag_xsec $femdpu_value $SAVE_PNG
     [[ $isNgamma -eq 1 ]] && {
         file_Ngamma='rootfiles/'$itag_xsec'.root'
         file_gammaN=${file_Ngamma//Ngamma/gammaN} ; file_gammaN=${file_gammaN//BeamB/BeamA} ;

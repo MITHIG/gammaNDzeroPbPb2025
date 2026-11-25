@@ -1,20 +1,16 @@
 #include <TH2D.h>
 #include "xjjanauti.h"
+#include "xjjstruct.h"
 #include "xjjmypdf.h"
 
 #include "../include/draw.h"
 
-int macro(const std::string& inputname, const std::string& outputname, int save_png = 0) {
-  std::cout<<std::endl;
+int evteff_calc(const std::string& inputname, const std::string& outputname, int save_png = 0) {
+  xjjc::whats_this("event eff - calculation", "evteff_calc.cc");
 
-  auto* inf = TFile::Open(inputname.c_str());
-  if (!inf || inf->IsZombie()) {
-    __XJJLOG << "!! failed to open input file: " << inputname << ", abort." << std::endl;
-    return 1;
-  }
-  auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
-  __XJJLOG << "++ info" << std::endl;
-  xjjc::print_tab(info, -1);
+  auto* inf = xjjroot::openfile(inputname.c_str());
+  if (!inf) return 2;
+  auto info = xjjroot::read_info(inf, "info");
 
   std::map<std::string, TH2D*> h2s;
   std::map<std::string, std::vector<TH1D*>> h1pts;
@@ -31,8 +27,8 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
       h1pts[name + "-y"].push_back(h_y);
     }
   }
-  xjjroot::print_tab(h2s, 0);
-  xjjroot::print_tab(h1pts, 0);
+  // xjjroot::print_tab(h2s, 0);
+  // xjjroot::print_tab(h1pts, 0);
 
   const auto tbins = draw::bintex(h2s["bins"], 0, 1);
   const auto npt = tbins.npt(), ny = tbins.ny();
@@ -56,8 +52,8 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   };
   make_eff("evteff", "evteff_num", "evteff_den", "#epsilon_{event selections}");
 
-  xjjroot::print_tab(h2s, 0);
-  xjjroot::print_tab(h1pts, 0);
+  // xjjroot::print_tab(h2s, 0);
+  // xjjroot::print_tab(h1pts, 0);
 
   for (auto& [_, h] : h2s) {
     xjjroot::sethempty(h, 0, -0.1);
@@ -151,9 +147,9 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
 
 int main(int argc, char* argv[]) {
   if (argc == 4)
-    return macro(argv[1], argv[2], atoi(argv[3]));
+    return evteff_calc(argv[1], argv[2], atoi(argv[3]));
   if (argc == 3)
-    return macro(argv[1], argv[2]);
+    return evteff_calc(argv[1], argv[2]);
   return 1;
 }
 

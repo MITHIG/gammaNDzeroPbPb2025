@@ -24,14 +24,23 @@ namespace fonll {
     TLegend *leg_n, *leg_p;
     float tsize = 0.031, lspace = 1.2, lheight = tsize*lspace;
   };
+  
+  const std::map<std::string, Color_t> colors_model = {
+    { "blue", static_cast<Color_t>(TColor::GetColor("#015AA6")) },
+    { "green", static_cast<Color_t>(TColor::GetColor("#458984")) },
+    { "yellow", static_cast<Color_t>(TColor::GetColor("#F2B445")) },
+    { "red", static_cast<Color_t>(TColor::GetColor("#A6442E")) },
+    { "orange", static_cast<Color_t>(TColor::GetColor("#D95829")) },
+    { "purple", static_cast<Color_t>(TColor::GetColor("#734886")) },
+  };
 
   const std::vector<Model> configs = {
-    { .name = "CT18ANLO_mc13", .color = static_cast<Color_t>(TColor::GetColor("#015AA6")), .tex = "CT18ANLO (pPDF, m_{c}=1.3 GeV)", },
-    { .name = "CT18ANLO_mc15", .color = static_cast<Color_t>(TColor::GetColor("#458984")), .tex = "CT18ANLO (pPDF, m_{c}=1.5 GeV)" },
-    { .name = "EPPS21Pb_mc13", .color = static_cast<Color_t>(TColor::GetColor("#F2B445")), .tex = "EPPS21 (nPDF, m_{c}=1.3 GeV)" },
-    { .name = "EPPS21Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#A6442E")), .tex = "EPPS21 (nPDF, m_{c}=1.5 GeV)" },
-    { .name = "nNNPDF30Pb_mc15", .color = static_cast<Color_t>(TColor::GetColor("#D95829")), .tex = "nNNPDF3.0 (nPDF, m_{c}=1.5 GeV)" },
-    { .name = "EPPS16_mc13", .color = static_cast<Color_t>(TColor::GetColor("#734886")), .tex = "EPPS16 (nPDF, m_{c}=1.3 GeV)" }
+    { .name = "CT18ANLO_mc13", .color = colors_model.at("blue"), .tex = "CT18ANLO (pPDF, m_{c}=1.3 GeV)" },
+    { .name = "CT18ANLO_mc15", .color = colors_model.at("green"), .tex = "CT18ANLO (pPDF, m_{c}=1.5 GeV)" },
+    { .name = "EPPS21Pb_mc13", .color = colors_model.at("orange"), .tex = "EPPS21 (nPDF, m_{c}=1.3 GeV)" },
+    { .name = "EPPS21Pb_mc15", .color = colors_model.at("red"), .tex = "EPPS21 (nPDF, m_{c}=1.5 GeV)" },
+    { .name = "nNNPDF30Pb_mc15", .color = colors_model.at("yellow"), .tex = "nNNPDF3.0 (nPDF, m_{c}=1.5 GeV)" },
+    // { .name = "EPPS16_mc13", .color = colors_model.at("purple"), .tex = "EPPS16 (nPDF, m_{c}=1.3 GeV)" },
 
     // { .name = "CT18ANLO_mc13", .color = static_cast<Color_t>(TColor::GetColor("#ed9418")), .tex = "CT18ANLO (pPDF, m_{c}=1.3 GeV)", },
     // { .name = "CT18ANLO_mc15", .color = static_cast<Color_t>(TColor::GetColor("#e44760")), .tex = "CT18ANLO (pPDF, m_{c}=1.5 GeV)" },
@@ -87,9 +96,9 @@ double fonll::DrawSets::ymaximum() {
 }
 
 void fonll::DrawSets::draw_base(const std::vector<std::string>& draws, float ltsize) {
-  auto draw_one = [this](const std::string& name, int i, Color_t color, int nmodels) {
-    if (models[i].gs.find(name) == models[i].gs.end()) return;
-    auto* g = models[i].gs.at(name);
+  auto draw_one = [this](const std::string& name, int which_model, Color_t color, int i, int nmodels) {
+    if (models[which_model].gs.find(name) == models[which_model].gs.end()) return;
+    auto* g = models[which_model].gs.at(name);
     if (!g) return;
     for (int j=0; j<g->GetN(); j++) {
       const auto y = g->GetPointY(j), eylow = g->GetErrorYlow(j), eyhigh = g->GetErrorYhigh(j);
@@ -104,16 +113,17 @@ void fonll::DrawSets::draw_base(const std::vector<std::string>& draws, float lts
 
   int im = 0, nm_p = 0, nm_n = 0;
   int has_mc13 = 0, has_mc15 = 0;
-  for (const auto& m : models) {
+  for (int i=0; i<models.size(); i++) {
+    const auto m = models[i];
     if (std::find(draws.begin(), draws.end(), m.name) == draws.end()) continue;
     if (xjjc::str_contains(m.tex, "nPDF")) nm_n++;
     if (xjjc::str_contains(m.tex, "pPDF")) nm_p++;
     if (xjjc::str_contains(m.name, "mc13")) has_mc13++;
     if (xjjc::str_contains(m.name, "mc15")) has_mc15++;
 
-    draw_one("Scale7", im, xjjroot::color_alpha(m.color, 0.15), draws.size());
-    draw_one("PDF", im, xjjroot::color_alpha(m.color, 0.7), draws.size());
-    draw_one("Central", im, m.color, draws.size());
+    draw_one("Scale7", i, xjjroot::color_alpha(m.color, 0.15), im, draws.size());
+    draw_one("PDF", i, xjjroot::color_alpha(m.color, 0.7), im, draws.size());
+    draw_one("Central", i, m.color, im, draws.size());
 
     im++;
   }

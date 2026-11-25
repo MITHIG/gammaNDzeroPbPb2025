@@ -46,7 +46,7 @@ int macro(const std::string& inputname, const std::string& outputname,
   if (ntoys <= 0) return 2;
   gROOT->SetBatch(true);
 
-  auto* inf = xjjroot::readfile(inputname);
+  auto* inf = xjjroot::openfile(inputname);
   if (!inf) return 2;
   const auto info_fit = util::read_info(inf, "fit/info");
   const auto info_data = util::read_info(inf, "data/info");

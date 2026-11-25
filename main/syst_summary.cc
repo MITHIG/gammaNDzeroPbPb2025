@@ -45,9 +45,9 @@ TGraphAsymmErrors* get_rel_unc(const TGraphAsymmErrors* g);
 const float ytop = 0.84, lspace = 1.2, tsize = 0.038;
 float ypos(float i = 0, float margin = 0) { return ytop+margin-i*(tsize*lspace); }
 
-int macro(const std::vector<std::string>& inputnames, const std::string& inputprompt,
+int syst_summary(const std::vector<std::string>& inputnames, const std::string& inputprompt,
           const std::string& outputname, int save_png) {
-  __XJJLOG << ">> " << inputnames.size() << std::endl;
+  xjjc::whats_this("combine syst uncert", "syst_summary.cc");
   const std::vector<Color_t> colors = { xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"], xjjroot::mycolor_middle["magenta"], xjjroot::mycolor_middle["cyan"], xjjroot::mycolor_middle["violet"] };
   // const auto alphas = xjjroot::grayscales_alpha(inputnames.size());
 
@@ -80,11 +80,14 @@ int macro(const std::vector<std::string>& inputnames, const std::string& inputpr
       xjjroot::setleg(leg, tsize);
       for (int i=0; i<inputnames.size(); i++) {
         const auto inputp = xjjroot::parse_input(inputnames[i]);
-        auto* inf = TFile::Open(inputp.content.c_str());
+        auto* inf = xjjroot::openfile(inputp.content.c_str());
         const auto cc = colors[i%colors.size()];
         auto* dir = (TDirectory*)inf->Get(Form("dir__pt-%d", j));
 
         auto* g_err = xjjana::getobj<TGraphAsymmErrors>(dir, "gr-err_y_xsec_" + key);
+        if (tbins.npt() > 1) {
+          g_err->RemovePoint(0); // !!
+        }
         xjjroot::setthgrstyle(g_err, cc, xjjroot::mstylelist_solid(i), 1.4, cc, 1, 1);
         gs_err.push_back(g_err); //
         gs_rel.push_back(get_rel_unc(g_err)); // only for drawing
@@ -92,6 +95,10 @@ int macro(const std::vector<std::string>& inputnames, const std::string& inputpr
 
         if (i == 0) {
           auto* h = xjjana::getobj<TH1D>(dir, "h1_y_xsec_" + key);
+          if (tbins.npt() > 1) {
+            h->SetBinContent(1, -1);
+            h->SetBinError(1, 1.e-2);
+          }
           hs[j][key] = h;
         }
       }
@@ -109,15 +116,26 @@ int macro(const std::vector<std::string>& inputnames, const std::string& inputpr
       pdf->prepare();
       hempty->Draw("axis");
       xjjroot::drawline_horizon(0, hempty);
-      for (int k=0; k<hs[j][key]->GetNbinsX(); k++) {
-        const auto xleft = hs[j][key]->GetBinCenter(k+1) - hs[j][key]->GetBinWidth(k+1) * 0.5,
-          step = hs[j][key]->GetBinWidth(k+1) / gs_rel.size();
+      for (int k=0; k<gr_rel_total->GetN(); k++) {
+        double xx, yy;
+        gr_rel_total->GetPoint(k, xx, yy);
+        const auto xleft = xx - gr_rel_total->GetErrorXlow(k),          
+          step = (gr_rel_total->GetErrorXlow(k)+gr_rel_total->GetErrorXhigh(k)) / gs_rel.size();
         for (int i=0; i<gs_rel.size(); i++) {
           xjjroot::drawbox(xleft + i*step, 0 - gs_rel[i]->GetErrorYlow(k),
                            xleft + (i+1)*step, gs_rel[i]->GetErrorYhigh(k),
                            colors[i], 0.5);
         }
       }
+      // for (int k=0; k<hs[j][key]->GetNbinsX(); k++) {
+      //   const auto xleft = hs[j][key]->GetBinCenter(k+1) - hs[j][key]->GetBinWidth(k+1) * 0.5,
+      //     step = hs[j][key]->GetBinWidth(k+1) / gs_rel.size();
+      //   for (int i=0; i<gs_rel.size(); i++) {
+      //     xjjroot::drawbox(xleft + i*step, 0 - gs_rel[i]->GetErrorYlow(k),
+      //                      xleft + (i+1)*step, gs_rel[i]->GetErrorYhigh(k),
+      //                      colors[i], 0.5);
+      //   }
+      // }
       gr_rel_total->Draw("5 same");
       leg->Draw();
       xjjroot::drawtexgroup(0.23, ypos(-0.2), { texs.at(key).tex, tbins.label_pt(j) }, tsize, 13);
@@ -168,33 +186,72 @@ int macro(const std::vector<std::string>& inputnames, const std::string& inputpr
   TLegend* leg_data = new TLegend(0.22, 0.76-0.038, 0.40, 0.76);
   xjjroot::setleg(leg_data, 0.035);
   leg_data->AddEntry(hs.front()["sum"], "Data", "p");
-
+  
   for (int j=0; j<tbins.npt(); j++) {
     fonll::DrawSets ds("../theory/FONLL_all_predictions_vs_y_21Sept2026_CTEQ18_with_pt_2_5.root", tbins.edgelow_pt(j), tbins.edgeup_pt(j));
     const auto ymax = ds.ymaximum();
-
+    
     for (const auto key : { "sum", "sum-prompt", "gammaN", "NgammaRef" } ) {
       if (hs[j].find(key) == hs[j].end()) continue;
+
+      auto* hempty = new TH1D("hempty", Form(";%s;%s", hs[j][key]->GetXaxis()->GetTitle(), hs[j][key]->GetYaxis()->GetTitle()), 8, -2, 2);
+      xjjroot::sethempty(hempty, 0, 0.2);
+      hempty->SetMinimum(0);
+      hempty->SetMaximum(ymax*1.4);
+
+      auto draw_base_data = [&texs, &key, &tbins, &j, &lumi, &leg_data, &drawh1_X0, &hs, &gs_syst]() {
+        drawh1_X0(hs[j][key]);
+        gs_syst[j][key]->Draw("5 same");
+        if (key == "sum-prompt")
+          gs_syst[j]["sum-prompt-syst"]->Draw("[] same");
+        xjjroot::drawtexgroup(0.23, ypos(-0.2), { texs.at(key).tex, tbins.label_pt(j) }, tsize, 13);
+        xjjroot::drawtexgroup(0.90, ypos(-0.2), { xjjroot::CMS::DzDzbar2 }, tsize, 33);
+        xjjroot::drawCMS(xjjroot::CMS::internal, Form("%.1f #mub^{-1} (PbPb 5.36 TeV)", lumi));
+        leg_data->Draw();
+        gPad->RedrawAxis();
+      };
       
       // auto prop = texs[key];
       const auto draw_theory = key == "sum" || key == "sum-prompt";
-      if (draw_theory)
-        hs[j][key]->SetMaximum(ymax*1.3);
+      // if (draw_theory)
+      //   hs[j][key]->SetMaximum(ymax*1.35);
+      
+      __XJJLOG << "++ all" << std::endl;
       pdf->prepare();
-      hs[j][key]->Draw("axis");
-      if (ds.valid() && draw_theory) ds.draw();
-      drawh1_X0(hs[j][key]);
-      gs_syst[j][key]->Draw("5 same");
-      if (key == "sum-prompt")
-        gs_syst[j]["sum-prompt-syst"]->Draw("[] same");
-      // gs_syst[j][key]->Draw("[] same");
-      xjjroot::drawtexgroup(0.23, ypos(-0.2), { texs.at(key).tex, tbins.label_pt(j) }, tsize, 13);
-      xjjroot::drawtexgroup(0.90, ypos(-0.2), { xjjroot::CMS::DzDzbar2 }, tsize, 33);
-      xjjroot::drawCMS(xjjroot::CMS::internal, Form("%.1f #mub^{-1} (PbPb 5.36 TeV)", lumi));
-      leg_data->Draw();
-      gPad->RedrawAxis();
-      pdf->write(Form("%s_%s_pt-%d.pdf", name_png.c_str(), key, j), save_png && draw_theory ? "" : "X");
+      if (ds.valid() && draw_theory) {
+        hempty->Draw("axis");
+        ds.draw();
+      } else {
+        hs[j][key]->Draw("axis");
+      }
+      draw_base_data();
+      pdf->write(Form("%s_%s_pt-%d_fonll.pdf", name_png.c_str(), key, j), save_png && draw_theory ? "" : "X");
+
+      __XJJLOG << "++ mc13" << std::endl;
+      pdf->prepare();
+      if (ds.valid() && draw_theory) {
+        hempty->Draw("axis");
+        ds.draw_mc13();
+      } else {
+        hs[j][key]->Draw("axis");
+      }
+      draw_base_data();
+      pdf->write(Form("%s_%s_pt-%d_fonll-mc13.pdf", name_png.c_str(), key, j), save_png && draw_theory ? "" : "X");
+
+      __XJJLOG << "++ mc15" << std::endl;
+      pdf->prepare();
+      if (ds.valid() && draw_theory) {
+        hempty->Draw("axis");
+        ds.draw_mc15();
+      } else {
+        hs[j][key]->Draw("axis");
+      }
+      draw_base_data();
+      pdf->write(Form("%s_%s_pt-%d_fonll-mc15.pdf", name_png.c_str(), key, j), save_png && draw_theory ? "" : "X");
+
+      delete hempty;
     }
+
   }
 
   pdf->close();
@@ -204,7 +261,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& inputpr
 
 int main(int argc, char* argv[]) {
   if (argc == 5) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atoi(argv[4]));
+    return syst_summary(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atoi(argv[4]));
   }
   return 1;
 }

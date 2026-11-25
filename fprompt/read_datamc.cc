@@ -11,26 +11,23 @@
 #define __COOK_NAME__
 #include "style.h"
 
-int macro(const std::string& inputname_data,
+int read_datamc(const std::string& inputname_data,
           const std::string& inputname_prompt, const std::string& inputname_nonprompt,
           const std::string& outputname,
           const std::string& var) {
-
+  xjjc::whats_this("read data and signal from data-mc", "read_datamc.cc");
   std::map<std::string, xjjc::info> infos;
   std::map<std::string, std::vector<TH1D*>> h1ys;
   std::map<std::string, std::vector<std::vector<TH1D*>>> h1ysfs;
 
   // data inputs
-  auto* inf_data = TFile::Open(inputname_data.c_str());
-  if (!inf_data) {
-    __XJJLOG << "!! bad data input: " << inputname_data << ", abort."<< std::endl;
-    return 2;
-  }
+  auto* inf_data = xjjroot::openfile(inputname_data.c_str());
+  if (!inf_data) return 2;
   infos["data"] = xjjana::get_info(inf_data, "data/info");
   auto* h3_bins = xjjana::getobj<TH3D>(inf_data, "h3_bins_y-mass-pt");
-  float sfstep = 0.02, sfmin = 0.9, sfmax = 1.6; // ip3D
+  float sfstep = 0.01, sfmin = 0.8, sfmax = 1.3; // ip3D
   if (xjjc::str_contains(var, "sig")) { // ip3Dsig
-    sfmin = 0.7; sfmax = 1.2;
+    sfmin = 0.7; sfmax = 1.1;
   }
   int nsf = (sfmax-sfmin)/sfstep + 1;
   auto* h1_bins_sf = new TH1D("h1_bins_sf", ";Resolution scale factor#scale[0.5]{ }#alpha_{reso};", nsf, sfmin - sfstep*0.5, sfmax + sfstep*0.5);
@@ -100,7 +97,7 @@ int macro(const std::string& inputname_data,
   if (read_file(inputname_prompt, "prompt")) return 2;
   if (read_file(inputname_nonprompt, "nonprompt")) return 2;
 
-  xjjroot::print_tab(h1ys, 0);
+  // xjjroot::print_tab(h1ys, 0);
 
   auto* outf = xjjroot::newfile(outputname + ".root");
   auto* dir_var = outf->mkdir(Form("dir_%s", var.c_str()));
@@ -152,7 +149,7 @@ int main(int argc, char* argv[]) {
     inputs.push_back(argv[3]);
   }
   if (inputs.size() == 5) {
-    return macro(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4]);
+    return read_datamc(inputs[0], inputs[1], inputs[2], inputs[3], inputs[4]);
   }
   return 1;
 }

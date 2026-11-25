@@ -11,8 +11,10 @@
  *                                                                                         * 
  *   "3G"  : Using 3-Gaussian function to model signal (default is 2-Gaussian function)    *
  *   "Peaky"  : Have peaky background                                                      *
- *   "Exp"  : Have peaky background                                                        *
- *   "Sig"  : Draw significance info and lines at signal region                            *
+ *   "Exp"    : Exponential background                                                     *
+ *   "Fwidth" : Float signal width                                                         *
+ *   "DSig"  : Draw significance info and lines at signal region                           *
+ *   "DAlpha"  : Draw alpha = sigma_data/sigma_mc info                                     *
  *   "V"  : Switch off Quiet mode of fitting                                               * 
  *                                                                                         * 
  * The core function of this class is                                                      * 
@@ -42,7 +44,7 @@ namespace xjjroot {
   class dfitter
   {
   public:
-    dfitter(Option_t* option = "");
+    dfitter(Option_t* option = "", bool verboseopt = false);
     ~dfitter() {};
 
     void fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1* hmassMCSwapped,
@@ -103,7 +105,8 @@ namespace xjjroot {
     bool opt_haskkpipi_;
     bool opt_expbkg_;
     bool opt_float_;
-    bool opt_sig_;
+    bool opt_drawsig_;
+    bool opt_drawalpha_;
     bool opt_verbose_;
 
     // status
@@ -118,34 +121,37 @@ namespace xjjroot {
 
     void make_legs();
     void calculate_SnB();
-    void parse_opt();
+    void parse_opt(bool verbose = false);
     void parse_fmc();
 
     TF1* clone_fun(const TF1* fun, const std::string& fun_name) const;
   };
 }
 
-xjjroot::dfitter::dfitter(Option_t* option) :
+xjjroot::dfitter::dfitter(Option_t* option, bool verboseopt) :
   option_(option), fun_f_(nullptr), fun_f_template_(nullptr), fun_mc_match_(nullptr), fun_mc_swap_(nullptr),
   fun_mc_kk_(nullptr), fun_mc_pipi_(nullptr) {
   vfun_mc_match_.clear();
-  parse_opt();
+  parse_opt(verboseopt);
   reset();
   make_legs();
 }
 
-void xjjroot::dfitter::parse_opt() {
+void xjjroot::dfitter::parse_opt(bool verbose) {
   opt_3gaus_ = xjjc::str_contains(option_, "3G");
   opt_expbkg_ = xjjc::str_contains(option_, "Exp");
   opt_float_ = xjjc::str_contains(option_, "Fwidth");
   opt_haskkpipi_ = xjjc::str_contains(option_, "Peaky");
-  xjjc::print_tab(std::map<std::string, bool>{
-      {"Triple gaus", opt_3gaus_},
-      {"Expo bkg", opt_expbkg_},
-      {"Float width", opt_float_},
-      {"Has KK/pipi", opt_haskkpipi_},
-    }, 0);
-  opt_sig_ = xjjc::str_contains(option_, "Sig");
+  if (verbose) {
+    xjjc::print_tab(std::map<std::string, bool>{
+        {"Triple gaus", opt_3gaus_},
+        {"Expo bkg", opt_expbkg_},
+        {"Float width", opt_float_},
+        {"Has KK/pipi", opt_haskkpipi_},
+      }, 0);
+  }
+  opt_drawsig_ = xjjc::str_contains(option_, "DSig");
+  opt_drawalpha_ = xjjc::str_contains(option_, "DAlpha");
   opt_verbose_ = xjjc::str_contains(option_, "V");
 }
 
@@ -476,7 +482,7 @@ void xjjroot::dfitter::fit(const TH1* hmass, const TH1* hmassMCSignal, const TH1
     fun_kk->Draw("same");
     fun_pipi->Draw("same");
   }
-  if (opt_sig_) {
+  if (opt_drawsig_) {
     fun_notmatch->SetRange(signal_region_l_, signal_region_h_);
     fun_notmatch->Draw("same");
     xjjroot::drawline(signal_region_l_, 0, signal_region_l_, fun_f_->Eval(signal_region_l_), fun_notmatch->GetLineColor(), fun_notmatch->GetLineStyle(), fun_notmatch->GetLineWidth());
@@ -522,8 +528,11 @@ std::vector<std::string> xjjroot::dfitter::draw_result(float x, float y, float t
     Form("Prob = %.2f%s", chi2prob()*100, "%"),
     Form("#bar{m} = %.3f%s", fun_f_->GetParameter(1), (fun_f_->GetParError(1)==0 ? " (fixed)" : Form("#scale[0.4]{ }#pm %.3f", fun_f_->GetParError(1)))),
   };
+  if (opt_drawalpha_) {
+    text.push_back("#sigma_{data}/#sigma_{MC} - 1 = " + std::string(Form("%.2f %s", fun_f_->GetParameter(11), (fun_f_->GetParError(11) == 0 ? "(fixed)" : Form("#pm %.2f", fun_f_->GetParError(11))))));
+  }
   std::vector<Color_t> color(text.size(), kBlack);
-  if (opt_sig_) {
+  if (opt_drawsig_) {
     text.push_back(Form("S = %.0f, B = %.0f", S_, B_));
     text.push_back(Form("S/#sqrt{S+B} = %.1f", S_/TMath::Sqrt(S_ + B_)));
     xjjc::vec_append(color, std::vector<Color_t>(2, fstyle.at("notmatch").lcolor));
@@ -751,10 +760,8 @@ void xjjroot::dfitter::draw_params(float x, float y, float tsize, float lspacesc
     "Mean = " + std::string(Form("%.3f (signal), %.3f (swap)", fun_mc_match_->GetParameter(1), fun_mc_swap_->GetParameter(1))),
     "Signal#scale[0.5]{ }#sigma in MC = " + sigma_match,
     "Fraction of each gaus = " + frac_match,
-    "#sigma_{data}/#sigma_{MC} - 1 = " + std::string(Form("%.2f %s", fun_f_->GetParameter(11), (fun_f_->GetParError(11)==0 ? "(fixed)" : Form("#pm %.2f", fun_f_->GetParError(11))))),
     Form("N#scale[0.7]{sig} / (N#scale[0.7]{sig} + N#scale[0.7]{swap}) = %.2f", fun_f_->GetParameter(7)/(fun_f_->GetParameter(7)+fun_f_->GetParameter(15))),
   };
-  if (fun_f_->GetParError(11)==0) rtex.erase(rtex.begin() + 3);
   if (opt_haskkpipi_) {
     xjjc::vec_append(rtex, {
         "In mass window:",

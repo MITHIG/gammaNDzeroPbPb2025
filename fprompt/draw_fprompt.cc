@@ -21,6 +21,7 @@ Fprompt init(TDirectory* dir, const std::string& name) {
   __XJJLOG << "++ " << name << std::endl;
   Fprompt fp;
   fp.h1s["chi2-sf"] = xjjana::getobj_regexp_first<TH1D>(dir, "h1_chi2-sf_.+");
+  fp.h1s["chi2ndf-sf"] = xjjana::getobj_regexp_first<TH1D>(dir, "h1_chi2ndf-sf_.+");
   fp.h1s["fprompt-sf"] = xjjana::getobj_regexp_first<TH1D>(dir, "h1_fprompt-sf_.+");
   fp.grs["fprompt-sf"] = xjjana::getobj_regexp_first<TGraphAsymmErrors>(dir, "gr_fprompt-sf_.+");
   for (const std::string wp : { "best", "fix" }) {
@@ -50,9 +51,10 @@ Fprompt init(TDirectory* dir, const std::string& name) {
   return fp;
 }
 
-int macro(const std::string& inputname, const std::string& outputname, int save_png) {
+int draw_fprompt(const std::string& inputname, const std::string& outputname, int save_png) {
+  xjjc::whats_this("draw fprompt", "draw_fprompt.cc");
   //
-  auto* inf = TFile::Open(inputname.c_str());
+  auto* inf = xjjroot::openfile(inputname.c_str());
   auto* h3_bins = xjjana::getobj<TH3D>(inf, "h3_bins_y-mass-pt");
   draw::bintex tbins(h3_bins, 0, 2);
   auto ny = h3_bins->GetXaxis()->GetNbins();
@@ -62,24 +64,25 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   std::map<std::string, xjjc::info> infos;
   for (const std::string name : { "data", "prompt", "nonprompt", "fit" } ) {
     infos[name] = xjjana::get_info(inf, Form("info/%s", name.c_str()));
-    xjjc::print_tab(infos.at(name), -1);
+    // xjjc::print_tab(infos.at(name), -1);
   }
   const auto var = infos.at("fit").at("var");
   const auto var_tex = style_data(var, 1).title;
 
   auto make_hvsy = [&tbins](const char* name, const char* ytitle,
-                            double hmin, double hmax) {
+                            double hmin = 0., double hmax = 0.) {
     auto* h = tbins.make_h1_y<TH1D>(name);
     h->GetYaxis()->SetTitle(ytitle);
     xjjroot::sethempty(h);
-    xjjana::sethabsminmax(h, hmin, hmax);
+    if (hmax > hmin)
+      xjjana::sethabsminmax(h, hmin, hmax);
     return h;
   };
 
   std::map<std::string, std::vector<Fprompt>> fpys;
   std::map<std::string, std::vector<TH1D*>> h1sfs_fprompt;
   std::map<std::string, std::map<std::string, TGraphAsymmErrors*>> grs_fprompt = { { "fix", {} }, { "best", {} } };
-  std::map<std::string, std::map<std::string, TH1D*>> h1s_alpha = { { "fix", {} }, { "best", {} } }, h1s_chi2 = { { "fix", {} }, { "best", {} } };
+  std::map<std::string, std::map<std::string, TH1D*>> h1s_alpha = { { "fix", {} }, { "best", {} } }, h1s_chi2 = { { "fix", {} }, { "best", {} } }, h1s_chi2ndf = { { "fix", {} }, { "best", {} } };
   for (const std::string type_data : { "data-sub", "data-sigswap" }) {
     auto ss = style_data(type_data);
     const std::string tag_var_type = Form("%s_%s", var.c_str(), type_data.c_str());
@@ -98,7 +101,9 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
       xjjroot::setthgrstyle(grs_fprompt[wp][type_data], ss_wp.color, ss.mstyle, 1.7, ss_wp.color, 1, 1);
       h1s_alpha[wp][type_data] = make_hvsy(Form("h1_alpha-y_%s", suffix.c_str()), "Best scale factor#scale[0.5]{ }#alpha_{reso}", 0.5, 2.2);
       xjjroot::setthgrstyle(h1s_alpha[wp][type_data], ss.color, ss.mstyle, 1.7, ss.color, 1, 1);
-      h1s_chi2[wp][type_data] = make_hvsy(Form("h1_chi2-y_%s", suffix.c_str()), "Minimum#scale[0.5]{ }#chi^{2} / ndf", 0., 3.5);
+      h1s_chi2ndf[wp][type_data] = make_hvsy(Form("h1_chi2ndf-y_%s", suffix.c_str()), "Minimum#scale[0.5]{ }#chi^{2} / ndf", 0., 3.5);
+      xjjroot::setthgrstyle(h1s_chi2ndf[wp][type_data], ss.color, ss.mstyle, 1.7, ss.color, 1, 1);
+      h1s_chi2[wp][type_data] = make_hvsy(Form("h1_chi2-y_%s", suffix.c_str()), "Minimum#scale[0.5]{ }#chi^{2}");
       xjjroot::setthgrstyle(h1s_chi2[wp][type_data], ss.color, ss.mstyle, 1.7, ss.color, 1, 1);
     }
 
@@ -116,6 +121,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
         __XJJLOG << "!! inconsistent binning, abort." << std::endl;
         return 2;
       }
+      xjjroot::setthgrstyle(fp.h1s.at("chi2ndf-sf"), ss.color, ss.mstyle, 1.7, ss.color, 1, 1);
       xjjroot::setthgrstyle(fp.h1s.at("chi2-sf"), ss.color, ss.mstyle, 1.7, ss.color, 1, 1);
       xjjroot::setthgrstyle(fp.grs.at("fprompt-sf"), ss.color, ss.mstyle, 1.7, ss.color, 1, 1);
       xjjroot::setthgrstyle(fp.h1s.at("fprompt-sf"), ss.color, ss.mstyle, 1.7, ss.color, 1, 1, -1, -1, -1, 0.2, 0.2);
@@ -132,6 +138,8 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
             grs_fprompt[wp][type_data]->SetPointError(i, ex_k, ex_k, eyl_k, eyh_k);
             h1s_alpha[wp][type_data]->SetBinContent(i+1, h1_bins_sf->GetBinCenter(k+1));
             h1s_alpha[wp][type_data]->SetBinError(i+1, 0);
+            h1s_chi2ndf[wp][type_data]->SetBinContent(i+1, fp.h1s.at("chi2ndf-sf")->GetBinContent(k+1));
+            h1s_chi2ndf[wp][type_data]->SetBinError(i+1, 0);
             h1s_chi2[wp][type_data]->SetBinContent(i+1, fp.h1s.at("chi2-sf")->GetBinContent(k+1));
             h1s_chi2[wp][type_data]->SetBinError(i+1, 0);
           }
@@ -201,10 +209,10 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
   pdf->write();
 
   pdf->prepare();
-  h1s_chi2["best"]["data-sub"]->Draw("axis");
-  xjjroot::drawbox(h1s_chi2["best"]["data-sub"]->GetXaxis()->GetXmin(), 0.8,
-                   h1s_chi2["best"]["data-sub"]->GetXaxis()->GetXmax(), 1.2, kGray, 0.1);
-  for (auto& [_, h] : h1s_chi2.at("best"))
+  h1s_chi2ndf["best"]["data-sub"]->Draw("axis");
+  xjjroot::drawbox(h1s_chi2ndf["best"]["data-sub"]->GetXaxis()->GetXmin(), 0.8,
+                   h1s_chi2ndf["best"]["data-sub"]->GetXaxis()->GetXmax(), 1.2, kGray, 0.1);
+  for (auto& [_, h] : h1s_chi2ndf.at("best"))
     h->Draw("pl same");
   draw_global();
   leg2->Draw();
@@ -303,6 +311,7 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
     for (const std::string& wp : { "fix", "best" }) {
       xjjroot::writehist(grs_fprompt.at(wp).at(type));
       xjjroot::writehist(h1s_alpha.at(wp).at(type));
+      xjjroot::writehist(h1s_chi2ndf.at(wp).at(type));
       xjjroot::writehist(h1s_chi2.at(wp).at(type));
     }
     for (auto& fp : fps) {
@@ -331,9 +340,8 @@ int macro(const std::string& inputname, const std::string& outputname, int save_
 }
 
 int main(int argc, char* argv[]) {
-  std::cout<<"argc : "<<argc<<std::endl;
   if (argc == 4) {
-    return macro(argv[1], argv[2], std::atoi(argv[3]));
+    return draw_fprompt(argv[1], argv[2], std::atoi(argv[3]));
   }
   return 1;
 }

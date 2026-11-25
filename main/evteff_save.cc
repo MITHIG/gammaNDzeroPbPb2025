@@ -8,17 +8,14 @@
 #define __BINS_MASS__
 #include "../include/bins.h"
 
-int macro(const std::string& inputstr, const std::string& cutstr_evt, const std::string& cutstr_d,
+int evteff_save(const std::string& inputstr, const std::string& cutstr_evt, const std::string& cutstr_d,
           const std::string& output) {
-
+  xjjc::whats_this("event eff - fill hists", "evteff_save.cc");
   bins::print();
   
   const auto pinput = xjjroot::parse_input(inputstr);
-  auto* inf = TFile::Open(pinput.content.c_str());
-  if (!inf || inf->IsZombie()) {
-    __XJJLOG << "!! failed to open input file, abort." << std::endl;
-    return 1;
-  }
+  auto* inf = xjjroot::openfile(pinput.content.c_str());
+  if (!inf) return 2;
   auto* tree = dynamic_cast<TTree*>(inf->Get("Tree"));
   if (!tree) {
     __XJJLOG << "!! failed to get TTree named, abort." << std::endl;
@@ -138,7 +135,7 @@ int main (int argc, char* argv[]) {
   if (argc == 7) {
     bins::ybins = xjjc::str_convert_vector<double>(argv[5], ",");
     bins::ptbins = xjjc::str_convert_vector<double>(argv[6], ",");
-    return macro(argv[1], argv[2], argv[3], argv[4]);
+    return evteff_save(argv[1], argv[2], argv[3], argv[4]);
   }
   return 1;
 }

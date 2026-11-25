@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SAVE_PNG=0
+SAVE_PNG=1
 
 TAG_TARGET_BINNING="b-default" ; TARGET_BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; TARGET_BINNING_PT='2., 5.' ;
 # TAG_TARGET_BINNING="b-ptdiff" ; TARGET_BINNING_Y='-2., -1.5, -1., -0.5, 0., 0.5, 1., 1.5, 2.' ; TARGET_BINNING_PT='2., 3., 4., 5.' ;
@@ -9,8 +9,8 @@ BINNINT_TAG='b-ycoarse'
 SAMPLE_TAG='twodirs'
 
 INPUTS=(
-    # 'rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/draw_2025PbPb_BeamA-2025-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-2025-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-nonprompt.root 0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/hists__2025PbPb_BeamA-2025-prompt_BeamA-nonprompt'
-    'rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-nonprompt.root 0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt'
+    'rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/draw_2025PbPb_BeamA-2025-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-2025-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-2025-nonprompt.root 0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/hists__2025PbPb_BeamA-prompt_BeamA-nonprompt'
+    # 'rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/draw_2025PbPb_BeamA-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-prompt.root,rootfiles_data-mc/0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/cook_BeamA-nonprompt.root 0nXn-'$SAMPLE_TAG'-25_Dbdt/'$BINNINT_TAG'/hists__2025PbPb_BeamA-2024-prompt_BeamA-2024-nonprompt'
 )
 
 VARS=(

@@ -3,7 +3,6 @@
 #include "xjjstruct.h"
 
 #include "draw.h"
-#include "util.h"
 
 struct Property {
   std::string tex;
@@ -13,11 +12,11 @@ struct Property {
 const float ytop = 0.84, lspace = 1.2, tsize = 0.036;
 float ypos(float i = 0, float margin = 0) { return ytop+margin-i*(tsize*lspace); }
 
-int macro(const std::vector<std::string>& inputnames, const std::string& outputname, const std::string& tags,
+int syst_comp(const std::vector<std::string>& inputnames, const std::string& outputname, const std::string& tags,
           float legdx = 0, float legdy = 0,
           int numscan = 0, const std::string& varscan = "",
           int save_png = 0) { //
-  __XJJLOG << ">> " << inputnames.size() << std::endl;
+  xjjc::whats_this("calculate syst uncert of one source", "syst_comp.cc");
   std::vector<Color_t> colors = { kBlack };
   // if (numscan) xjjc::vec_append(colors, xjjroot::grayscales_color(inputnames.size(), xjjroot::mycolor_middle["red"]));
   if (numscan) xjjc::vec_append(colors, std::vector<Color_t>(inputnames.size()-1, xjjroot::mycolor_middle["blue"]));
@@ -27,7 +26,9 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
   auto* h3_bins = xjjana::getobj<TH3D>(Form("%s::h3_bins", xjjroot::parse_input(inputnames.front()).content.c_str()));
   draw::bintex tbins(h3_bins, 0, 2);
   const auto colors_y = xjjroot::grayscales_color(tbins.ny());
-  const auto info = util::read_info(TFile::Open(xjjroot::parse_input(inputnames.front()).content.c_str()), "info");
+  auto* inf0 = xjjroot::openfile(xjjroot::parse_input(inputnames.front()).content);
+  if (!inf0) return 2;
+  const auto info = xjjroot::read_info(inf0, "info");
   const auto lumi = std::atof(info.at("lumi").c_str())*1.e3;
 
   const std::map<std::string, Property> texs = {
@@ -72,7 +73,8 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
       __XJJLOG << "!! numscan is true but no scan numbers are provided, switch off numscan." << std::endl;
       numscan = 0;
     }
-    auto* inf = TFile::Open(inputp.content.c_str());
+    auto* inf = xjjroot::openfile(inputp.content);
+    if (!inf) return 2;
     const auto cc = colors[i%colors.size()];
     for (int j=0; j<tbins.npt(); j++) {
       auto* dir = (TDirectory*)inf->Get(Form("dir__pt-%d", j));
@@ -269,7 +271,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
     
     outf->cd();
   }
-  util::Writeinfo tinfo("info");
+  xjjroot::Writeinfo tinfo("info");
   tinfo.cast_branch("lumi", lumi);
   tinfo.close();
   
@@ -280,13 +282,13 @@ int macro(const std::vector<std::string>& inputnames, const std::string& outputn
 
 int main(int argc, char* argv[]) {
   if (argc == 9) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atof(argv[4]), std::atof(argv[5]), std::atoi(argv[6]), argv[7], std::atoi(argv[8]));
+    return syst_comp(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atof(argv[4]), std::atof(argv[5]), std::atoi(argv[6]), argv[7], std::atoi(argv[8]));
   }
   if (argc == 8) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atof(argv[4]), std::atof(argv[5]), std::atoi(argv[6]), argv[7]);
+    return syst_comp(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atof(argv[4]), std::atof(argv[5]), std::atoi(argv[6]), argv[7]);
   }
   if (argc == 6) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atof(argv[4]), std::atof(argv[5]));
+    return syst_comp(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atof(argv[4]), std::atof(argv[5]));
   }
   return 1;
 }

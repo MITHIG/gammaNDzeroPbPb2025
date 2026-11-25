@@ -9,7 +9,7 @@ namespace draw {
   std::string png_name(const xjjroot::mypdf* pdf) {
     return xjjc::str_replaceall(pdf->getfilename(), { { "figspdf/" , "figs/" }, { ".pdf", "" } });
   }
-  const std::string title_ph = "PbPb (5.36 TeV)";
+  const std::string title_ph = "PbPb (5.36 TeV)", title_xsec = "#frac{d^{2}#sigma}{d#it{y}d#it{p}_{T}} [mb/GeV]";
   const std::vector<Color_t> colors = { xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["green"] };
   const std::vector<Color_t> colors_wblack = { kBlack, xjjroot::mycolor_middle["red"], xjjroot::mycolor_middle["blue"], xjjroot::mycolor_middle["green"] };
   Color_t icolor(int i, const std::vector<Color_t>& tcolors = colors_wblack) { return tcolors[i%tcolors.size()]; }

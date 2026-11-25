@@ -1,17 +1,18 @@
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
+#include "xjjstruct.h"
 
 #include "measurements.h"
 #include "draw.h"
 #include "util.h"
 
-int macro(const std::vector<std::string>& inputnames, const std::string& input_fprompt, const std::string& outputname,
+int xsec_collect(const std::vector<std::string>& inputnames, const std::string& input_fprompt, const std::string& outputname,
           int save_png = 0) {
+  xjjc::whats_this("combine gammaN & Ngamma xsec", "xsec_collect.cc");
   if (inputnames.size() != 2) {
     __XJJLOG << "!! inputnames should have two files, abort." << std::endl;
     return 2;
   }
-
   TH2D* h2_fprompt = nullptr;
   if (input_fprompt != "null") {
     auto* inf = TFile::Open(input_fprompt.c_str());
@@ -20,7 +21,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
     }
   }
   const auto has_fprompt = static_cast<bool>(h2_fprompt);
-  __XJJLOG << ">> \e[1m[fprompt]\e[0m " << (has_fprompt ? "yes" : "no") << std::endl;
+  __XJJLOG << ">> [fprompt] " << (has_fprompt ? "yes" : "no") << std::endl;
   
   enum class Cat { gammaN, Ngamma, NgammaRef, sum };
   const std::vector<std::string> labels = { "gammaN", "Ngamma", "Ngamma-ref", "sum" }; // 
@@ -31,13 +32,14 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
   xjjc::array2D<TH1D*> hsxsec; // [npt][nhist]
   std::map<std::string, std::vector<TGraphErrors*>> gsxsec; // [npt]
   std::vector<std::string> tagspt;
-  float lumi = -1.;
+  float lumi = -1., f_emdpu = 1.;
   TH3D* h3_bins = nullptr;
   for (const auto& input : inputnames) {
     __XJJLOG << "++ " << input << std::endl;
     auto* inf = TFile::Open(input.c_str());
-    const auto info = util::read_info(inf);
+    const auto info = xjjroot::read_info(inf, "info");
     lumi = std::atof(info.at("lumi").c_str());
+    f_emdpu = std::atof(info.at("f_emdpu").c_str());
     const auto isNgamma = std::atoi(info.at("event_is").c_str());
     if (isNgamma < 0 || isNgamma > 1) continue;
     
@@ -100,6 +102,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
     xjjroot::drawtexgroup(0.88, 0.86, { xjjroot::CMS::DzDzbar2 }, 0.043, 33, 42, 1.25);
     xjjroot::drawCMS(xjjroot::CMS::internal, Form("%.1f #mub^{-1} (PbPb 5.36 TeV)", lumi*1.e3));
   };
+  const std::string tex_f_emdpu = Form("#it{f}_{EMD PU} = %.2f", f_emdpu);
 
   auto draw_hs = [](std::vector<TH1D*> vh) {
     if (vh.empty()) return;
@@ -109,6 +112,20 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
     for (auto h : vh) h->Draw("pe1 same");
   };
 
+  auto consist_chi2 = [](TH1D* h1, TH1D* h2) {
+    double chi2 = 0.; int ndf = 0;
+    for (int i = 1; i <= h1->GetNbinsX(); ++i) {
+      const auto diff = h1->GetBinContent(i) - h2->GetBinContent(i);
+      const auto err1 = h1->GetBinError(i), err2 = h2->GetBinError(i);
+      const auto variance = err1*err1 + err2*err2;
+      if (variance > 0.) {
+        chi2 += diff*diff / variance;
+        ndf++;
+      }
+    }
+    return TMath::Prob(chi2, ndf);
+  };
+  
   const float x1 = 0.54, y1 = 0.755, tsize = 0.038, lspace = 1.25, tlsize = tsize*lspace;
   auto y_pos = [&y1, &tlsize](float i = 0, float margin = 0) { return (y1 + margin - i*tlsize); };
 
@@ -120,7 +137,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
   auto draw_HIN_25_002 = [&tbins, &tsize, &y1, &tlsize](int isNgamma, TH1D* hdata, const std::string& tdata) {
     measurement::draw_HIN_25_002(static_cast<Event>(isNgamma));
     auto xx = isNgamma ? 0.222 : 0.54;
-    auto* leg_vs23 = new TLegend(xx, y1-tlsize*0.9 - tlsize*(tbins.npt()+2), xx+0.3, y1-tlsize*0.9);
+    auto* leg_vs23 = new TLegend(xx, y1-tlsize*0.9 - tlsize*3, xx+0.3, y1-tlsize*0.9);
     xjjroot::setleg(leg_vs23, tsize);
     leg_vs23->AddEntry(hdata, tdata.c_str(), "p");
     leg_vs23->AddEntry((TObject*)0, "", NULL);
@@ -138,7 +155,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
     draw_hs({ hsxsec[j][int(Cat::gammaN)], hsxsec[j][int(Cat::NgammaRef)] });
     draw_global();
     leg->Draw();
-    xjjroot::drawtexgroup(0.23, 0.85, { tbins.label_pt(j) }, 0.04, 13, 42, 1.25);
+    xjjroot::drawtexgroup(0.23, 0.85, { tbins.label_pt(j), tex_f_emdpu, Form("p value = %.2f", consist_chi2(hsxsec[j][int(Cat::gammaN)], hsxsec[j][int(Cat::NgammaRef)])) }, 0.04, 13, 42, 1.25);
     pdf->write(Form("%s_symm_pt-%d.pdf", name_png.c_str(), j), save_png ? "" : "X");
 
     xjjroot::setthgrstyle(hsxsec[j][int(Cat::gammaN)], xjjroot::mycolor_middle["red"], -1, -1, xjjroot::mycolor_middle["red"]);
@@ -148,7 +165,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
       draw_HIN_25_002(i, hsxsec[j][i], tbins.label_pt(j));
       hsxsec[j][i]->Draw("pe1 same");
       draw_global();
-      xjjroot::drawtexgroup(0.23, 0.85, { texs[i] }, 0.04, 13, 42, 1.25);
+      xjjroot::drawtexgroup(0.23, 0.85, { texs[i], tex_f_emdpu }, 0.04, 13, 42, 1.25);
       pdf->write(Form("%s_%s_pt-%d.pdf", name_png.c_str(), labels[i].c_str(), j), save_png ? "" : "X");
     }
     xjjroot::setthgrstyle(hsxsec[j][int(Cat::gammaN)], colors[int(Cat::gammaN)], -1, -1, colors[int(Cat::gammaN)]);
@@ -156,7 +173,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
     pdf->prepare();
     draw_hs({ hsxsec[j][int(Cat::sum)] });
     draw_global();
-    xjjroot::drawtexgroup(0.23, 0.85, { texs[int(Cat::sum)], tbins.label_pt(j) }, 0.04, 13, 42, 1.25);
+    xjjroot::drawtexgroup(0.23, 0.85, { texs[int(Cat::sum)], tbins.label_pt(j), tex_f_emdpu }, 0.04, 13, 42, 1.25);
     pdf->write();
 
     if (has_fprompt) {
@@ -164,7 +181,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
       draw_hs({ hsxsec[j][int(Cat::sum) + 1] });
       gsxsec["sum-prompt"][j]->Draw("[] same");
       draw_global();
-      xjjroot::drawtexgroup(0.23, 0.85, { texs[int(Cat::sum)], tbins.label_pt(j) }, 0.04, 13, 42, 1.25);
+      xjjroot::drawtexgroup(0.23, 0.85, { texs[int(Cat::sum)], tbins.label_pt(j), tex_f_emdpu }, 0.04, 13, 42, 1.25);
       pdf->write();
     }
   }
@@ -172,7 +189,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
   pdf->close();
 
   for (int j=0; j<tbins.npt(); j++) {
-    std::cout<<tbins.latex_pt(j)<<std::endl;
+    __XJJLOG << "++ " << tbins.latex_pt(j) << std::endl;
     const auto hs = hsxsec[j];
     for (int i=0; i<tbins.ny(); i++) {
       std::cout << "$" + tbins.latex_y(i) + "$";
@@ -181,7 +198,7 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
       }
       std::cout<< " \\\\" << std::endl;
     }
-    std::cout<<std::endl;
+    __XJJLOG << ">> symmetry pvalue = " << consist_chi2(hs[int(Cat::gammaN)], hs[int(Cat::NgammaRef)]) << std::endl;
   }
   
   auto* outf = xjjroot::newfile("rootfiles/" + outputname + ".root");
@@ -198,9 +215,10 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
 
     outf->cd();
   }
-  util::Writeinfo tinfo;
-  tinfo.init("info");
+
+  xjjroot::Writeinfo tinfo("info");
   tinfo.cast_branch("lumi", lumi);
+  tinfo.cast_branch("f_emdpu", f_emdpu);
   tinfo.close();
   xjjroot::closefile(outf);
   return 0;
@@ -208,6 +226,6 @@ int macro(const std::vector<std::string>& inputnames, const std::string& input_f
 
 int main(int argc, char* argv[]) {
   if (argc == 5) {
-    return macro(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atoi(argv[4]));
+    return xsec_collect(xjjc::str_divide_trim(argv[1], ","), argv[2], argv[3], std::atoi(argv[4]));
   }
 }

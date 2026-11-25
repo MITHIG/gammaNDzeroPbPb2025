@@ -1,20 +1,21 @@
 #include <TH3D.h>
 #include "xjjanauti.h"
 #include "xjjmypdf.h"
+#include "xjjstruct.h"
 
 #include "measurements.h"
 #include "draw.h"
-#include "util.h"
 
 namespace global {
   float BR_DtoKpi = 0.03936, err_BR_DtoKpi = 0.030*1.e-2;
 }
 
-int macro(const std::string& inputname_raw, const std::string& inputname_effd,
+int xsec_calc(const std::string& inputname_raw, const std::string& inputname_effd,
           const std::string& inputname_effevent, // const std::string inputname_fprompt,
-          float lumi, const std::string& outputdir, int save_png = 0) {
-
+          float lumi, const std::string& outputdir, float f_emdpu, int save_png = 0) {
+  xjjc::whats_this("calculate cross sections", "xsec_calc.cc");
   __XJJLOG << ">> lumi: " << lumi << " nb-1" << std::endl;
+  __XJJLOG << ">> f_emdpu: " << f_emdpu << std::endl;
   std::map<std::string, std::vector<TH1D*>> h1pts;
   // std::map<std::string, std::vector<TH1D*>> h1ys;
   std::map<std::string, std::map<std::string, std::string>> infos;
@@ -24,10 +25,10 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   draw::bintex tbins(h3_bins, 0, 2);
   //
   auto get_h1pts = [&h1pts, &infos](const std::string &inputname, const std::string &category,
-                                          const std::vector<std::string>& h1names,
-                                          const std::vector<std::string>& infots) {
-    __XJJLOG << "[" << category << "] " << inputname << std::endl;
-    auto* inf = TFile::Open(inputname.c_str());
+                                    const std::vector<std::string>& h1names,
+                                    const std::vector<std::string>& infots) {
+    __XJJLOG << "++ [" << category << "] \e[2m" << inputname << "\e[0m" << std::endl;
+    auto* inf = xjjroot::openfile(inputname.c_str());
     if (!inf) {
       __XJJLOG << "?? no " << category << " input file: " << inputname << ", skip." << std::endl;
       return 2;
@@ -50,13 +51,12 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     }
     // info
     for (auto& tr : infots) {
-      auto info = xjjana::getval_regexp((TTree*)inf->Get(tr.c_str()));
+      auto info = xjjroot::read_info(inf, tr);
       auto name = category;
       if (tr != "info")
         name += ("_" + xjjc::str_eraseall(tr, { "/info" }));
       infos[name] = info;
-      __XJJLOG << ">> [info] " << name << std::endl;
-      xjjc::print_tab(info, -1);
+      __XJJLOG << ">> [" << category << "] info : " << name << std::endl;
     }
     return 0;
   };
@@ -64,14 +64,10 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   get_h1pts(inputname_raw, "raw", { "h1_y_yield" }, { "data/info", "template/info" });
   get_h1pts(inputname_effd, "effd", { "h1_y_eff__rebin" }, { "info" });
   get_h1pts(inputname_effevent, "effevent", { "h1_y_evteff" }, { "info" });
-  // get_h1pts(inputname_fprompt, "fprompt", {  }, {  });
 
   Event event_is = xjjc::str_contains(infos.at("raw_data").at("cut_tag"), "gammaN") ? Event::gammaN :
     (xjjc::str_contains(infos.at("raw_data").at("cut_tag"), "Ngamma") ? Event::Ngamma : Event::Other);
-  __XJJLOG << ">> event_is, by " << infos.at("raw_data").at("cut_tag") << " : " << static_cast<int>(event_is) << std::endl;
-  // auto info = xjjana::getval_regexp((TTree*)inf->Get("info"));
-  // __XJJLOG << "++ info" << std::endl;
-  // xjjc::print_tab(info, -1);
+  __XJJLOG << ">> event_is = " << static_cast<int>(event_is) << ", accordint to " << infos.at("raw_data").at("cut_tag") << std::endl;
 
   xjjroot::print_tab(h1pts, 0);
   for (int j=0; j<tbins.npt(); j++) {
@@ -87,14 +83,23 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     h_corr->GetYaxis()->SetTitle("Corrected Yield");
     h1pts["y_corr"].push_back(h_corr);
 
-    auto* h_xsec = (TH1D*)h_corr->Clone(xjjc::str_replaceall(h_corr->GetName(), "corr", "xsec").c_str());
-    h_xsec->Divide(h1pts.at("y_evteff")[j]);
-    h_xsec->Scale(0.5/global::BR_DtoKpi/(lumi*1.e6)/tbins.binwidth_pt(j)/*dpt*/, "width");
+    auto* h_xsec_nofemdpu = (TH1D*)h_corr->Clone(xjjc::str_replaceall(h_corr->GetName(), "corr", "xsec-nofemdpu").c_str());
+    h_xsec_nofemdpu->Divide(h1pts.at("y_evteff")[j]);
+    h_xsec_nofemdpu->Scale(0.5/global::BR_DtoKpi/(lumi*1.e6)/tbins.binwidth_pt(j)/*dpt*/, "width");
+    h_xsec_nofemdpu->GetYaxis()->SetTitle("#frac{d^{2}#sigma}{d#it{y}d#it{p}_{T}} [mb/GeV] (no EMD PU corr)");
+    xjjroot::sethempty(h_xsec_nofemdpu, 0, 0.2); // closer to axis than other hists
+    h1pts["y_xsec-nofemdpu"].push_back(h_xsec_nofemdpu);
+
+    auto* h_xsec = (TH1D*)h_xsec_nofemdpu->Clone(xjjc::str_replaceall(h_xsec_nofemdpu->GetName(), "xsec-nofemdpu", "xsec").c_str());
+    h_xsec->Scale(1./f_emdpu);
     h_xsec->GetYaxis()->SetTitle("#frac{d^{2}#sigma}{d#it{y}d#it{p}_{T}} [mb/GeV]");
     xjjroot::sethempty(h_xsec, 0, 0.2); // closer to axis than other hists
-    if (tbins.npt() == 1)
-      xjjroot::setthgrstyle(h_xsec, xjjroot::mycolor_middle["red"], -1, -1, xjjroot::mycolor_middle["red"]);
     h1pts["y_xsec"].push_back(h_xsec);
+
+    if (tbins.npt() == 1) {
+      xjjroot::setthgrstyle(h_xsec_nofemdpu, xjjroot::mycolor_middle["red"], -1, -1, xjjroot::mycolor_middle["red"]);
+      xjjroot::setthgrstyle(h_xsec, xjjroot::mycolor_middle["red"], -1, -1, xjjroot::mycolor_middle["red"]);
+    }
   }
 
   xjjroot::setgstyle(1);
@@ -132,8 +137,8 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   xjjroot::drawtex(legvs23->GetX1() + 0.008, legvs23->GetY1()+tlsize*1.5 - 0.005, "2023 PbPb (HIN-25-002)", tsize, 12);
   pdf->write();
 
-  for (auto& h : h1pts.at("y_xsec"))
-    xjjroot::print_th(h);
+  // for (auto& h : h1pts.at("y_xsec"))
+  //   xjjroot::print_th(h);
   
   auto* leg = new TLegend(x1, y1-tlsize*tbins.npt(), x1+0.3, y1);
   xjjroot::setleg(leg, tsize);
@@ -141,7 +146,7 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
     leg->AddEntry(h1pts.at("y_yield")[i], tbins.label_pt(i).c_str(), "p");
   leg->Draw();
 
-  for (auto& t : { "y_yield", "y_yield-lumi", "y_eff__rebin", "y_evteff", "y_corr", "y_xsec" }) {
+  for (auto& t : { "y_yield", "y_yield-lumi", "y_eff__rebin", "y_evteff", "y_corr", "y_xsec-nofemdpu", "y_xsec" }) {
     pdf->prepare();
     xjjana::sethsmin(h1pts.at(t), 0.);
     xjjana::sethsmax(h1pts.at(t), 1.8);
@@ -188,9 +193,9 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
       xjjroot::writehist(h);
   xjjroot::writehist(h3_bins);
 
-  util::Writeinfo tinfo;
-  tinfo.init("info");
+  xjjroot::Writeinfo tinfo("info");
   tinfo.cast_branch("lumi", lumi);
+  tinfo.cast_branch("f_emdpu", f_emdpu);
   tinfo.cast_branch("event_is", static_cast<int>(event_is));
   tinfo.cast_branch("data_input", infos.at("raw_data")["input"]);
   tinfo.cast_branch("data_input_tex", infos.at("raw_data")["input_tex"]);
@@ -212,7 +217,6 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
   tinfo.cast_branch("evteff_cutd_tex", infos.at("effevent")["cut_d_tex"]);
   tinfo.cast_branch("evteff_cutevt", infos.at("effevent")["cut_evt"]);
   tinfo.cast_branch("evteff_cutevt_tex", infos.at("effevent")["cut_evt_tex"]);
-  // tinfo.cast_branch("", infos.at("")[""]);
   tinfo.close();
 
   xjjroot::closefile(outf);
@@ -221,12 +225,11 @@ int macro(const std::string& inputname_raw, const std::string& inputname_effd,
 }
 
 int main(int argc, char* argv[]) {
-  __XJJLOG << " [xsec_calc]" << std::endl;
-  if (argc == 7) {
-    return macro(argv[1], argv[2], argv[3], atof(argv[4]), argv[5], std::atoi(argv[6]));
+  if (argc == 8) {
+    return xsec_calc(argv[1], argv[2], argv[3], atof(argv[4]), argv[5], std::atof(argv[6]), std::atoi(argv[7]));
   }
-  if (argc == 6) {
-    return macro(argv[1], argv[2], argv[3], atof(argv[4]), argv[5]);
+  if (argc == 7) {
+    return xsec_calc(argv[1], argv[2], argv[3], atof(argv[4]), argv[5], std::atof(argv[6]));
   }
   return 1;
 }
